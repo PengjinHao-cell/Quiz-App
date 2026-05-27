@@ -194,6 +194,14 @@ def _parse_questions(text: str) -> list:
                         answer = ans2.group(1).upper()
                         continue
 
+            # 清理题目文本（去除残留的编号前缀符号如 、）
+            question_text = re.sub(r'^[、,，]\s*', '', question_text.strip())
+
+            # 过滤掉非题目标题行（如"试题类型"、"题型"等分类标签）
+            if re.match(r'^(试题类型|题型|第[一二三四五六七八九十\d]+章|第[一二三四五六七八九十\d]+节)', question_text):
+                i = j
+                continue
+
             # 仅当有题目文本且有选项时保存
             if question_text and options:
                 questions.append({

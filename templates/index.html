@@ -30,8 +30,18 @@
                             </div>
                         </div>
                         <div class="bank-actions">
-                            <a href="{{ url_for('quiz_page', bank_id=bank.id, mode='practice') }}" class="btn btn-primary">练习模式</a>
-                            <a href="{{ url_for('quiz_page', bank_id=bank.id, mode='exam') }}" class="btn btn-exam">考试模式</a>
+                            <label class="count-label">题数：
+                                <select class="count-select" id="count-{{ bank.id }}">
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                    <option value="30">30</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                    <option value="0" selected>全部({{ bank.question_count }})</option>
+                                </select>
+                            </label>
+                            <a href="#" class="btn btn-primary" onclick="startQuiz('{{ bank.id }}', 'practice')">练习模式</a>
+                            <a href="#" class="btn btn-exam" onclick="startQuiz('{{ bank.id }}', 'exam')">考试模式</a>
                             <button class="btn btn-danger" onclick="deleteBank('{{ bank.id }}')">删除</button>
                         </div>
                     </div>

@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // ---------- 加载题目 ----------
 
 function loadQuestions() {
-    fetch(`/api/bank/${config.bankId}/questions?mode=${config.mode}`)
+    fetch(`/api/bank/${config.bankId}/questions?mode=${config.mode}&count=${config.count || 0}`)
         .then((res) => {
             if (!res.ok) throw new Error("加载题目失败");
             return res.json();

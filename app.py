@@ -9,6 +9,7 @@ Python 刷题助手 Web 应用
 import os
 import uuid
 import json
+import random
 import datetime
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from werkzeug.utils import secure_filename
@@ -171,24 +172,34 @@ def quiz_page(bank_id):
     if mode not in ("practice", "exam"):
         mode = "practice"
 
+    count = request.args.get("count", "0")  # 0 = 全部
+
     try:
         bank = load_bank(bank_id)
     except FileNotFoundError:
         return render_template("error.html", message="题库不存在或已被删除"), 404
 
+    total_in_bank = len(bank["questions"])
+    # 计算实际题目数
+    count_int = int(count) if count.isdigit() else 0
+    actual_total = count_int if count_int > 0 else total_in_bank
+    actual_total = min(actual_total, total_in_bank)
+
     return render_template(
         "quiz.html",
         bank_id=bank_id,
         bank_name=bank["original_filename"],
-        total=len(bank["questions"]),
+        total=actual_total,
         mode=mode,
+        count=count,
     )
 
 
 @app.route("/api/bank/<bank_id>/questions")
 def api_get_questions(bank_id):
-    """API: 获取某个题库的所有题目（不含正确答案，考试/练习模式不同处理）"""
+    """API: 获取某个题库的题目（支持 count 参数限制数量，随机选取）"""
     mode = request.args.get("mode", "practice")
+    count = request.args.get("count", "0")  # 0 = 全部
 
     try:
         bank = load_bank(bank_id)
@@ -196,21 +207,25 @@ def api_get_questions(bank_id):
         return jsonify({"error": "题库不存在"}), 404
 
     questions = bank["questions"]
+
+    # 随机打乱并截取指定数量
+    count_int = int(count) if count.isdigit() else 0
+    shuffled = random.sample(questions, min(count_int if count_int > 0 else len(questions), len(questions)))
+
     result = {
         "bank_id": bank_id,
         "bank_name": bank["original_filename"],
-        "total": len(questions),
+        "total": len(shuffled),
         "mode": mode,
         "questions": [],
     }
 
-    for q in questions:
+    for q in shuffled:
         item = {
             "id": q["id"],
             "text": q["text"],
             "options": q["options"],
         }
-        # 练习模式下可以附带答案（前端决定是否显示）
         if mode == "practice":
             item["answer"] = q.get("answer", "")
         result["questions"].append(item)

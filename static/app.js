@@ -162,6 +162,14 @@ function updateFileName(input) {
     }
 }
 
+// ---------- 开始刷题（带题数选择） ----------
+
+function startQuiz(bankId, mode) {
+    const countEl = document.getElementById(`count-${bankId}`);
+    const count = countEl ? countEl.value : "0";
+    window.location.href = `/quiz/${bankId}?mode=${mode}&count=${count}`;
+}
+
 // ---------- 消息提示 ----------
 
 function showMessage(text, type) {
