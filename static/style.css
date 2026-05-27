@@ -381,13 +381,72 @@ header h1 {
     flex-direction: column;
 }
 
+.bank-name-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .bank-name {
     font-weight: 600;
     color: #2d3748;
-    max-width: 300px;
+    max-width: 280px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.btn-rename {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 2px 4px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: all 0.2s;
+    line-height: 1;
+}
+
+.bank-card:hover .btn-rename {
+    opacity: 0.6;
+}
+
+.btn-rename:hover {
+    opacity: 1 !important;
+    background: #edf2f7;
+}
+
+/* Type badges */
+.bank-type-badges {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+
+.type-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.type-badge.single {
+    background: #ebf8ff;
+    color: #2b6cb0;
+}
+
+.type-badge.multi {
+    background: #faf5ff;
+    color: #6b46c1;
+}
+
+.type-badge.judge {
+    background: #fffaf0;
+    color: #c05621;
 }
 
 .bank-meta {

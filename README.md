@@ -13,6 +13,11 @@
 | ✏️ **粘贴文本** | 任意格式的题目文字 → **DeepSeek AI 自动整理**为标准题库 |
 | 📚 **内置题库** | 开箱即用的 Python 示例题库 |
 
+### 📚 题库管理
+- ✏️ **重命名题库** — 鼠标悬停题库名，点击 ✏️ 图标即可修改名称
+- 🏷️ **题型标识** — 每个题库卡片上显示题型分布小标签（单选/多选/判断）
+- 🗑️ **删除题库** — 一键删除不再需要的题库
+
 ### 🧠 刷题模式
 - ✏️ **练习模式** — 作答后即时反馈对错，答对自动移出错题本
 - 📝 **考试模式** — 模拟真实考试，统一交卷评分
@@ -88,8 +93,7 @@ quiz-app/
 ├── .env                    # API Key（已 gitignore，不上传）
 │
 ├── data/                   # 解析后的题库 JSON
-
-│   └── ...
+│   └── *.json
 │
 ├── uploads/                # 原始上传文件
 │
@@ -152,6 +156,7 @@ quiz-app/
 | GET | `/result/<bank_id>` | 成绩页面 |
 | GET | `/api/bank/<bank_id>/questions` | 获取题目（参数：`mode`, `count`, `q`） |
 | POST | `/api/bank/<bank_id>/submit` | 提交答案 |
+| POST | `/api/bank/<bank_id>/rename` | 重命名题库 |
 | POST | `/api/bank/<bank_id>/delete` | 删除题库 |
 | POST | `/api/init-sample` | 初始化示例题库 |
 

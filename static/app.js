@@ -337,6 +337,54 @@ function handleAiParse() {
         });
 }
 
+// ---------- 重命名题库 ----------
+
+function renameBank(bankId) {
+    const nameEl = document.getElementById(`bname-${bankId}`);
+    if (!nameEl) return;
+
+    const oldName = nameEl.textContent;
+    const newName = prompt("请输入新的题库名称：", oldName);
+
+    if (!newName || newName.trim() === oldName) return;
+    if (newName.trim().length > 100) {
+        alert("名称不能超过 100 个字符");
+        return;
+    }
+
+    fetch(`/api/bank/${bankId}/rename`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName.trim() }),
+    })
+        .then((res) => {
+            if (!res.ok) return res.json().then(d => { throw new Error(d.error); });
+            return res.json();
+        })
+        .then((data) => {
+            if (data.success) {
+                nameEl.textContent = newName.trim();
+                nameEl.title = newName.trim();
+                // 同时更新搜索下拉框中的名称
+                const sel = document.getElementById("search-bank-select");
+                if (sel) {
+                    for (const opt of sel.options) {
+                        if (opt.value === bankId) {
+                            // 更新选项文本，保留题数部分
+                            const countMatch = opt.text.match(/\((\d+)题\)/);
+                            const count = countMatch ? countMatch[1] : "";
+                            opt.text = count ? `${newName.trim()} (${count}题)` : newName.trim();
+                            break;
+                        }
+                    }
+                }
+            }
+        })
+        .catch((err) => {
+            alert("重命名失败：" + err.message);
+        });
+}
+
 // ---------- 消息提示 ----------
 
 function showMessage(text, type) {

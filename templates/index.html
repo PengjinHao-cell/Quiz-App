@@ -97,10 +97,18 @@
                         <div class="bank-info">
                             <span class="bank-icon">📄</span>
                             <div class="bank-details">
-                                <span class="bank-name" title="{{ bank.original_filename }}">{{ bank.original_filename }}</span>
+                                <div class="bank-name-row">
+                                    <span class="bank-name" id="bname-{{ bank.id }}" title="{{ bank.original_filename }}">{{ bank.original_filename }}</span>
+                                    <button class="btn-rename" onclick="renameBank('{{ bank.id }}')" title="重命名">✏️</button>
+                                </div>
                                 <span class="bank-meta">
                                     上传时间: {{ bank.upload_time }} &nbsp;|&nbsp; {{ bank.question_count }} 题
                                 </span>
+                                <div class="bank-type-badges">
+                                    {% if bank.single_count > 0 %}<span class="type-badge single">单选 {{ bank.single_count }}</span>{% endif %}
+                                    {% if bank.multi_count > 0 %}<span class="type-badge multi">多选 {{ bank.multi_count }}</span>{% endif %}
+                                    {% if bank.judge_count > 0 %}<span class="type-badge judge">判断 {{ bank.judge_count }}</span>{% endif %}
+                                </div>
                             </div>
                         </div>
                         <div class="bank-actions">

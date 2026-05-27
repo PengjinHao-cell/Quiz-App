@@ -39,7 +39,7 @@ def allowed_file(filename: str) -> bool:
 
 
 def load_bank_list() -> list:
-    """加载所有题库的元数据（不加载完整题目）"""
+    """加载所有题库的元数据（含题型统计）"""
     banks = []
     if not os.path.isdir(DATA_FOLDER):
         return banks
@@ -50,11 +50,25 @@ def load_bank_list() -> list:
             try:
                 with open(filepath, "r", encoding="utf-8") as f:
                     data = json.load(f)
+                questions = data.get("questions", [])
+                # 统计题型分布
+                single_count = multi_count = judge_count = 0
+                for q in questions:
+                    t = detect_question_type(q)
+                    if t == "single":
+                        single_count += 1
+                    elif t == "multi":
+                        multi_count += 1
+                    elif t == "judge":
+                        judge_count += 1
                 banks.append({
                     "id": data.get("id", ""),
                     "original_filename": data.get("original_filename", ""),
                     "upload_time": data.get("upload_time", ""),
-                    "question_count": len(data.get("questions", [])),
+                    "question_count": len(questions),
+                    "single_count": single_count,
+                    "multi_count": multi_count,
+                    "judge_count": judge_count,
                 })
             except Exception:
                 continue
@@ -400,6 +414,26 @@ def api_submit(bank_id):
 def result_page(bank_id):
     """结果页面"""
     return render_template("result.html", bank_id=bank_id)
+
+
+@app.route("/api/bank/<bank_id>/rename", methods=["POST"])
+def api_rename_bank(bank_id):
+    """重命名题库"""
+    data = request.get_json()
+    new_name = data.get("name", "").strip()
+    if not new_name:
+        return jsonify({"error": "名称不能为空"}), 400
+    if len(new_name) > 100:
+        return jsonify({"error": "名称过长"}), 400
+
+    try:
+        bank = load_bank(bank_id)
+    except FileNotFoundError:
+        return jsonify({"error": "题库不存在"}), 404
+
+    bank["original_filename"] = new_name
+    save_bank(bank_id, bank)
+    return jsonify({"success": True})
 
 
 @app.route("/api/bank/<bank_id>/delete", methods=["POST"])
