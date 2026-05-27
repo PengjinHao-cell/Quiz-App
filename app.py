@@ -12,6 +12,7 @@ import uuid
 import json
 import random
 import datetime
+import urllib.request
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from werkzeug.utils import secure_filename
 from parser import parse_file, create_sample_questions
@@ -277,9 +278,10 @@ def quiz_page(bank_id):
 
 @app.route("/api/bank/<bank_id>/questions")
 def api_get_questions(bank_id):
-    """API: 获取某个题库的题目（支持 count 参数限制数量，随机选取）"""
+    """API: 获取某个题库的题目（支持 count/q 参数）"""
     mode = request.args.get("mode", "practice")
     count = request.args.get("count", "0")  # 0 = 全部
+    q = request.args.get("q", "").strip()  # 搜索关键词
 
     try:
         bank = load_bank(bank_id)
@@ -287,6 +289,20 @@ def api_get_questions(bank_id):
         return jsonify({"error": "题库不存在"}), 404
 
     questions = bank["questions"]
+
+    # 搜索过滤
+    if q:
+        q_lower = q.lower()
+        filtered = []
+        for question in questions:
+            if q_lower in question["text"].lower():
+                filtered.append(question)
+                continue
+            for opt_text in question["options"].values():
+                if q_lower in opt_text.lower():
+                    filtered.append(question)
+                    break
+        questions = filtered
 
     # 按比例抽选题目
     count_int = int(count) if count.isdigit() else 0
@@ -391,6 +407,152 @@ def api_delete_bank(bank_id):
     """删除题库"""
     delete_bank_files(bank_id)
     return jsonify({"success": True})
+
+
+# =========================== AI 文本解析 ===========================
+
+def parse_with_llm(raw_text: str) -> list:
+    """
+    调用 DeepSeek API 将纯文本解析为结构化题目列表。
+    返回格式同 parse_file：[{id, text, options, answer}, ...]
+    """
+    api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+    if not api_key:
+        # 尝试从 .env 文件读取
+        env_path = os.path.join(os.path.dirname(__file__), ".env")
+        if os.path.exists(env_path):
+            with open(env_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("DEEPSEEK_API_KEY="):
+                        api_key = line.split("=", 1)[1].strip().strip("\"'")
+                        break
+    if not api_key:
+        raise RuntimeError("DEEPSEEK_API_KEY 未设置（可放 ~/.zshrc 或项目 .env 文件）")
+
+    prompt = f"""你是一个专业的题库解析助手。请将以下考试题目文本解析为JSON格式。
+
+要求：
+1. 识别每一道题目及其题型（single=单选题, multi=多选题, judge=判断题）
+2. 提取题目标题（text）
+3. 提取选项（options，用字典 {{'A':'内容','B':'内容',...}}）
+4. 提取正确答案（answer，单选题填单个字母如"A"，多选题填字母组合如"ABC"，判断题填"A"或"B"）
+5. 过滤掉非题目的内容（如"注意事项"、"试卷标题"、"题型说明"等）
+6. 如果某个选项包含多个子选项（如"A、xxx B、xxx"），请拆分为独立选项
+7. 忽略"分值"、"试题类型"等元数据标记
+8. 如果某题缺少选项或答案，尽量根据上下文推断，无法推断则跳过
+
+请直接返回JSON数组，不要包含其他说明文字。
+格式：[{{"id": 1, "type": "single", "text": "题目内容", "options": {{"A": "选项A", "B": "选项B"}}, "answer": "A"}}]
+
+---
+{raw_text}
+---"""
+
+    data = json.dumps({
+        "model": "deepseek-chat",
+        "messages": [
+            {"role": "system", "content": "你是一个JSON输出机器人，只输出合法JSON。"},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.1,
+        "max_tokens": 16384,
+    }).encode('utf-8')
+
+    req = urllib.request.Request(
+        "https://api.deepseek.com/chat/completions",
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            body = json.loads(resp.read().decode('utf-8'))
+            content = body["choices"][0]["message"]["content"]
+    except Exception as e:
+        raise RuntimeError(f"AI API 调用失败: {e}")
+
+    # 提取 JSON（AI 有时会在 ```json ... ``` 中返回）
+    json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', content)
+    if json_match:
+        content = json_match.group(1)
+
+    try:
+        questions = json.loads(content)
+    except json.JSONDecodeError:
+        raise RuntimeError(f"AI 返回格式异常，无法解析为JSON")
+
+    if not isinstance(questions, list):
+        raise RuntimeError(f"AI 返回格式异常：期望数组，得到 {type(questions).__name__}")
+
+    # 规范化
+    result = []
+    for i, q in enumerate(questions):
+        text = q.get("text", "").strip()
+        if len(text) < 3:
+            continue
+        opts = q.get("options", {})
+        if len(opts) < 2:
+            continue
+        answer = q.get("answer", "").strip().upper()
+        if not answer:
+            continue
+        qtype = q.get("type", "single")
+        if qtype not in ("single", "multi", "judge"):
+            qtype = "single"
+        result.append({
+            "id": i + 1,
+            "type": qtype,
+            "text": text,
+            "options": opts,
+            "answer": answer,
+        })
+
+    return result
+
+
+@app.route("/api/parse-text", methods=["POST"])
+def api_parse_text():
+    """接收纯文本，用 AI 解析为结构化的题库"""
+    data = request.get_json()
+    raw_text = data.get("text", "").strip()
+
+    if not raw_text:
+        return jsonify({"error": "请输入题目文本"}), 400
+    if len(raw_text) < 20:
+        return jsonify({"error": "文本太短，请粘贴更多内容"}), 400
+
+    try:
+        questions = parse_with_llm(raw_text)
+    except RuntimeError as e:
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        return jsonify({"error": f"解析失败：{str(e)}"}), 500
+
+    if not questions:
+        return jsonify({"error": "未能从文本中识别出有效题目，请检查内容格式"}), 400
+
+    # 保存题库
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    bank_id = uuid.uuid4().hex[:12]
+    bank_data = {
+        "id": bank_id,
+        "original_filename": f"AI解析题库_{timestamp}",
+        "upload_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "questions": questions,
+    }
+    save_bank(bank_id, bank_data)
+
+    return jsonify({
+        "success": True,
+        "bank_id": bank_id,
+        "question_count": len(questions),
+        "redirect": url_for("quiz_page", bank_id=bank_id, mode="practice"),
+    })
 
 
 # =========================== 示例题库初始化 ===========================

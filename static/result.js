@@ -5,6 +5,15 @@
  */
 
 document.addEventListener("DOMContentLoaded", () => {
+    // 启动画面淡出
+    setTimeout(() => {
+        const splash = document.getElementById("splash-screen");
+        if (splash) {
+            splash.classList.add("splash-fade-out");
+            setTimeout(() => { splash.style.display = "none"; }, 500);
+        }
+    }, 300);
+
     // 从 sessionStorage 读取结果
     const resultStr = sessionStorage.getItem("quizResult");
     const quizMode = sessionStorage.getItem("quizMode") || "practice";
@@ -63,7 +72,11 @@ function saveToHistory(data, quizMode, bankName) {
     localStorage.setItem("quizHistory", JSON.stringify(history));
 }
 
+// 存储当前结果供分享使用
+let _lastResult = null;
+
 function renderResult(data, quizMode, bankName) {
+    _lastResult = { data, quizMode, bankName };
     const { total, correct, score, details } = data;
 
     // ---------- 评分等级 ----------
@@ -141,5 +154,75 @@ function renderResult(data, quizMode, bankName) {
     });
 
     detailsContainer.innerHTML = html;
+}
+
+// ---------- 分享/导出 ----------
+
+function buildShareText() {
+    if (!_lastResult) return "";
+    const { data, quizMode, bankName } = _lastResult;
+    const { total, correct, score } = data;
+
+    let level;
+    if (score >= 90) level = "优秀 🎉";
+    else if (score >= 70) level = "良好 👍";
+    else if (score >= 60) level = "及格 💪";
+    else level = "需加强 📚";
+
+    const modeText = quizMode === "exam" ? "考试模式" : "练习模式";
+
+    return [
+        "📝 刷题通 - 答题结果",
+        "━━━━━━━━━━━━━━━━━",
+        `题库：${bankName || "未知"}`,
+        `模式：${modeText}`,
+        `得分：${score} 分  (${level})`,
+        `正确：${correct} / ${total} 题`,
+        `正确率：${total > 0 ? Math.round(correct / total * 100) : 0}%`,
+        "━━━━━━━━━━━━━━━━━",
+        "via 刷题通",
+    ].join("\n");
+}
+
+function copyResult() {
+    const text = buildShareText();
+    if (!text) return;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showShareMsg("✅ 成绩已复制到剪贴板，快去分享吧！");
+        }).catch(() => {
+            fallbackCopy(text);
+        });
+    } else {
+        fallbackCopy(text);
+    }
+}
+
+function fallbackCopy(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand("copy");
+        showShareMsg("✅ 成绩已复制到剪贴板！");
+    } catch (_) {
+        showShareMsg("❌ 复制失败，请手动选取文本复制");
+    }
+    document.body.removeChild(ta);
+}
+
+function showShareMsg(msg) {
+    const el = document.getElementById("share-msg");
+    if (!el) return;
+    el.textContent = msg;
+    el.className = "msg success";
+    el.style.display = "block";
+    setTimeout(() => {
+        el.style.display = "none";
+    }, 3000);
 }
 

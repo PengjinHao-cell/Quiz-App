@@ -18,6 +18,9 @@ data/*
 !data/party_bank.json
 !data/*.json
 
+# API keys (never commit)
+.env
+
 # Dev / temp scripts (not for production)
 init_bank.py
 rebuild_bank.py

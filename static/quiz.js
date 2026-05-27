@@ -35,12 +35,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
     config = QUIZ_CONFIG;
     loadQuestions();
+
+    // 启动画面至少显示 300ms 后开始淡出
+    setTimeout(dismissSplash, 300);
+});
+
+function dismissSplash() {
+    const splash = document.getElementById("splash-screen");
+    if (!splash) return;
+    splash.classList.add("splash-fade-out");
+    setTimeout(() => {
+        splash.style.display = "none";
+    }, 500);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ---------- 加载题目 ----------
 
 function loadQuestions() {
-    fetch(`/api/bank/${config.bankId}/questions?mode=${config.mode}&count=${config.count || 0}`)
+    const searchParam = config.q ? `&q=${encodeURIComponent(config.q)}` : "";
+    fetch(`/api/bank/${config.bankId}/questions?mode=${config.mode}&count=${config.count || 0}${searchParam}`)
         .then((res) => {
             if (!res.ok) throw new Error("加载题目失败");
             return res.json();
@@ -96,6 +112,14 @@ function showQuestion(index) {
 
     const container = document.getElementById("question-container");
     const options = Object.entries(q.options);
+    // 选项乱序（≥3个选项时随机排列，保留原始字母用于提交）
+    const shuffledOptions = options.length >= 3 ? [...options] : options;
+    if (shuffledOptions.length >= 3 && options.length >= 3) {
+        for (let i = shuffledOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+        }
+    }
 
     // 选择题型标签
     let typeLabel = "";
@@ -117,8 +141,8 @@ function showQuestion(index) {
         currentAnswer = [];
     }
 
-    // 生成选项 HTML
-    const optionsHTML = options
+    // 生成选项 HTML（已乱序）
+    const optionsHTML = shuffledOptions
         .map(([letter, text]) => {
             let checked = "";
             let selectedClass = "";
@@ -186,10 +210,16 @@ function showQuestion(index) {
         }
     }
 
+    const isFav = isFavorited(config.bankId, q.id);
+    const starIcon = isFav ? "⭐" : "☆";
+    const starTitle = isFav ? "取消收藏" : "收藏此题";
+
     container.innerHTML = `
         <div class="question-card">
             <div class="question-number">
                 ${typeLabel} 第 ${index + 1} / ${questions.length} 题
+                <span class="fav-btn ${isFav ? 'fav-active' : ''}"
+                      onclick="toggleFav(${q.id})" title="${starTitle}">${starIcon}</span>
             </div>
             <div class="question-text">${escapeHTML(q.text)}</div>
             <ul class="options-list">
@@ -232,6 +262,26 @@ function selectOption(questionId, letter) {
     } else {
         // 单选/判断
         userAnswers[questionId] = letter;
+    }
+
+    // 自动收录错题到错题本（练习模式：选完判定后）
+    if (config.mode === "practice") {
+        // 单选题/判断题：选完即判定
+        if (qtype !== "multi") {
+            const userAns = String(userAnswers[questionId] || "").toUpperCase();
+            const correctAns = (q.answer || "").toUpperCase();
+            if (userAns && correctAns && userAns !== correctAns) {
+                addToWrongBook(q, userAns, config.bankId, config.bankName);
+            } else if (userAns && correctAns && userAns === correctAns) {
+                // 答对了 → 如果有错题记录则移除
+                const key = `${config.bankId}_${q.id}`;
+                const book = getWrongBook();
+                if (book[key]) {
+                    removeFromWrongBook(key);
+                }
+            }
+        }
+        // 多选题的判定在 updatePracticeFeedback 中做
     }
 
     // 练习模式：只更新提示和选项样式，不重渲染整张卡片
@@ -289,6 +339,22 @@ function selectOption(questionId, letter) {
     updateSheetHighlight();
 }
 
+// ---------- 收藏切换 ----------
+
+function toggleFav(questionId) {
+    const q = questions.find(qq => qq.id === questionId);
+    if (!q) return;
+    const nowFav = toggleFavorite(q, config.bankId, config.bankName);
+    // 更新星标样式
+    const container = document.getElementById("question-container");
+    const favBtn = container.querySelector(".fav-btn");
+    if (favBtn) {
+        favBtn.textContent = nowFav ? "⭐" : "☆";
+        favBtn.title = nowFav ? "取消收藏" : "收藏此题";
+        favBtn.classList.toggle("fav-active", nowFav);
+    }
+}
+
 // ---------- 练习模式反馈（原地更新，不重渲染） ----------
 
 function updatePracticeFeedback(index) {
@@ -329,9 +395,18 @@ function updatePracticeFeedback(index) {
         } else if (userArr.length >= correctLen && q.answer) {
             const sortedUser = [...userArr].sort().join("");
             const sortedCorrect = [...q.answer.toUpperCase().replace(/\s/g, "")].sort().join("");
+            const isCorrect = sortedUser === sortedCorrect;
+            // 错题本自动收录（多选题）
+            if (!isCorrect) {
+                addToWrongBook(q, sortedUser, config.bankId, config.bankName);
+            } else {
+                const key = `${config.bankId}_${q.id}`;
+                const book = getWrongBook();
+                if (book[key]) removeFromWrongBook(key);
+            }
             hintHTML = `
-                <div class="practice-hint ${sortedUser === sortedCorrect ? "correct" : "wrong"}">
-                    ${sortedUser === sortedCorrect
+                <div class="practice-hint ${isCorrect ? "correct" : "wrong"}">
+                    ${isCorrect
                         ? "✅ 回答正确！"
                         : `❌ 回答错误！正确答案是 <strong>${q.answer}</strong>`}
                 </div>
@@ -577,6 +652,23 @@ function submitExam() {
             return res.json();
         })
         .then((data) => {
+            // 将错题存入错题本
+            if (data.details) {
+                data.details.forEach((detail) => {
+                    if (!detail.is_correct) {
+                        const q = questions.find(qq => qq.id === detail.id);
+                        if (q) {
+                            addToWrongBook(q, detail.user_answer, config.bankId, config.bankName);
+                        }
+                    } else {
+                        // 答对了的题从错题本移除
+                        const key = `${config.bankId}_${detail.id}`;
+                        const book = getWrongBook();
+                        if (book[key]) removeFromWrongBook(key);
+                    }
+                });
+            }
+
             // 将结果数据存入 sessionStorage 供结果页使用
             sessionStorage.setItem("quizResult", JSON.stringify(data));
             sessionStorage.setItem("quizMode", config.mode);

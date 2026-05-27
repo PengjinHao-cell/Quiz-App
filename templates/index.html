@@ -7,11 +7,44 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    <!-- 启动缓冲画面 -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-card">
+            <div class="splash-icon">📝</div>
+            <h1 class="splash-title">刷题通</h1>
+            <p class="splash-subtitle">加载中...</p>
+            <div class="splash-bar-bg">
+                <div class="splash-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <header>
 <h1>📝 刷题通</h1>
             <p class="subtitle">上传题库文件（PDF / DOCX），开始刷题练习</p>
         </header>
+
+        <!-- 学习统计（由 renderStats 动态填充） -->
+        <section class="stats-section" id="stats-section" style="display:none;"></section>
+
+        <!-- 题目收藏 -->
+        <section class="wrongbook-section" id="fav-section" style="display:none;">
+            <div class="wrongbook-section-header">
+                <h2>⭐ 题目收藏</h2>
+                <button class="btn btn-small btn-danger-outline" onclick="clearFavorites()">🗑 清空收藏</button>
+            </div>
+            <div id="fav-container"></div>
+        </section>
+
+        <!-- 错题本 -->
+        <section class="wrongbook-section" id="wrongbook-section" style="display:none;">
+            <div class="wrongbook-section-header">
+                <h2>📕 错题本</h2>
+                <button class="btn btn-small btn-danger-outline" onclick="clearWrongBook()">🗑 清空错题本</button>
+            </div>
+            <div id="wrongbook-container"></div>
+        </section>
 
         <!-- 历史记录 -->
         <section class="history-section" id="history-section" style="display:none;">
@@ -33,6 +66,25 @@
             <div class="history-actions">
                 <button class="btn btn-small btn-secondary" onclick="clearHistory()">🗑 清空记录</button>
             </div>
+        </section>
+
+        <!-- 题库搜索 -->
+        <section class="search-section" id="search-section" style="display:none;">
+            <h2>🔍 搜题</h2>
+            <div class="search-bar">
+                <select id="search-bank-select" class="search-select">
+                    <option value="">-- 选择题库 --</option>
+                    {% if banks %}
+                        {% for bank in banks %}
+                        <option value="{{ bank.id }}">{{ bank.original_filename }} ({{ bank.question_count }}题)</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+                <input type="text" id="search-input" class="search-input"
+                       placeholder="输入关键词搜索题目..." autocomplete="off">
+                <button class="btn btn-primary" onclick="doSearch()">🔍 搜索</button>
+            </div>
+            <div id="search-results" class="search-results"></div>
         </section>
 
         <!-- 题库列表 -->
@@ -80,31 +132,55 @@
         <!-- 上传新题库 -->
         <section class="upload-section">
             <h2>📤 上传新题库</h2>
-            <form id="upload-form" enctype="multipart/form-data">
+
+            <!-- 切换标签 -->
+            <div class="upload-tabs">
+                <button class="upload-tab active" onclick="switchUploadTab('file')" id="tab-file">📄 上传文件</button>
+                <button class="upload-tab" onclick="switchUploadTab('text')" id="tab-text">✏️ 粘贴文本</button>
+            </div>
+
+            <!-- 文件上传 -->
+            <div id="upload-panel-file">
+                <form id="upload-form" enctype="multipart/form-data">
+                    <div class="form-row">
+                        <label class="file-label" for="file-input">
+                            <span id="file-name-display">选择文件 (PDF / DOCX)</span>
+                        </label>
+                        <input type="file" id="file-input" name="file" accept=".pdf,.docx" hidden
+                               onchange="updateFileName(this)">
+                    </div>
+                    <div class="form-row mode-select">
+                        <label>
+                            <input type="radio" name="mode" value="practice" checked> 练习模式
+                            <span class="mode-hint">（可实时查看答案）</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="mode" value="exam"> 考试模式
+                            <span class="mode-hint">（隐藏答案，交卷后出分）</span>
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <button type="submit" class="btn btn-primary btn-large" id="upload-btn">
+                            🚀 上传并开始刷题
+                        </button>
+                    </div>
+                </form>
+                <div id="upload-msg" class="msg"></div>
+            </div>
+
+            <!-- 文本粘贴上传 -->
+            <div id="upload-panel-text" style="display:none;">
                 <div class="form-row">
-                    <label class="file-label" for="file-input">
-                        <span id="file-name-display">选择文件 (PDF / DOCX)</span>
-                    </label>
-                    <input type="file" id="file-input" name="file" accept=".pdf,.docx" hidden
-                           onchange="updateFileName(this)">
-                </div>
-                <div class="form-row mode-select">
-                    <label>
-                        <input type="radio" name="mode" value="practice" checked> 练习模式
-                        <span class="mode-hint">（可实时查看答案）</span>
-                    </label>
-                    <label>
-                        <input type="radio" name="mode" value="exam"> 考试模式
-                        <span class="mode-hint">（隐藏答案，交卷后出分）</span>
-                    </label>
+                    <textarea id="ai-text-input" class="ai-textarea"
+                              placeholder="粘贴题目文本，AI 自动识别题型和答案...&#10;&#10;示例：&#10;1、中国共产党成立于哪一年？&#10;A、1919年 B、1920年 C、1921年 D、1922年&#10;答案：C&#10;&#10;2、以下哪些是马克思主义的来源？&#10;A、德国古典哲学 B、英国古典政治经济学 C、法国空想社会主义 D、美国实用主义&#10;答案：ABC"></textarea>
                 </div>
                 <div class="form-row">
-                    <button type="submit" class="btn btn-primary btn-large" id="upload-btn">
-                        🚀 上传并开始刷题
+                    <button class="btn btn-primary btn-large" id="ai-parse-btn" onclick="handleAiParse()">
+                        🤖 AI 智能解析
                     </button>
                 </div>
-            </form>
-            <div id="upload-msg" class="msg"></div>
+                <div id="ai-parse-msg" class="msg"></div>
+            </div>
         </section>
     </div>
 

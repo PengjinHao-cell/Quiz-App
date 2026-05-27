@@ -7,6 +7,18 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    <!-- 启动缓冲画面 -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-card">
+            <div class="splash-icon">📝</div>
+            <h1 class="splash-title">刷题通</h1>
+            <p class="splash-subtitle">加载题目中...</p>
+            <div class="splash-bar-bg">
+                <div class="splash-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <header class="quiz-header">
             <div class="quiz-header-left">
@@ -63,12 +75,14 @@
 
     <script>
         // 将后端数据传递到前端
+        const urlParams = new URLSearchParams(window.location.search);
         const QUIZ_CONFIG = {
             bankId: "{{ bank_id }}",
             bankName: "{{ bank_name }}",
             total: {{ total }},
             mode: "{{ mode }}",
-            count: "{{ count }}"
+            count: "{{ count }}",
+            q: urlParams.get("q") || ""
         };
     </script>
     <script src="{{ url_for('static', filename='utils.js') }}"></script>
