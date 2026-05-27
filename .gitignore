@@ -32,3 +32,4 @@ parse_party.py
 dump_raw.py
 fix_types.py
 raw_text.txt
+.DS_Store
