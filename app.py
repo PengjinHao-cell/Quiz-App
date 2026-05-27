@@ -195,8 +195,14 @@ def delete_bank_files(bank_id: str):
 # =========================== 页面路由 ===========================
 
 @app.route("/")
-def index():
-    """欢迎页 - 题库列表"""
+def welcome():
+    """欢迎页"""
+    return render_template("welcome.html")
+
+
+@app.route("/app")
+def app_main():
+    """主应用页 - 题库列表"""
     banks = load_bank_list()
     return render_template("index.html", banks=banks)
 

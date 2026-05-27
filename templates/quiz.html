@@ -22,7 +22,7 @@
     <div class="container">
         <header class="quiz-header">
             <div class="quiz-header-left">
-                <a href="{{ url_for('index') }}" class="btn btn-back">← 返回题库列表</a>
+                <a href="{{ url_for('app_main') }}" class="btn btn-back">← 返回题库列表</a>
                 <div class="quiz-info">
                     <h1>{{ bank_name }}</h1>
                     <span class="badge badge-{{ mode }}">{% if mode == 'exam' %}📝 考试模式{% else %}✏️ 练习模式{% endif %}</span>

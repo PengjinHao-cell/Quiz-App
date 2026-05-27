@@ -100,7 +100,7 @@ body {
 
 /* ---------- Header ---------- */
 header {
-    text-align: center;
+    text-align: center !important;
     margin-bottom: 32px;
 }
 
@@ -109,6 +109,8 @@ header h1 {
     font-weight: 700;
     color: #2d3748;
     margin-bottom: 8px;
+    text-align: center !important;
+    width: 100%;
 }
 
 .subtitle {
