@@ -225,8 +225,10 @@ function selectOption(questionId, letter) {
                 const input = item.querySelector("input[type='checkbox']");
                 if (input && currentArr.includes(input.value)) {
                     item.classList.add("selected");
+                    input.checked = true;
                 } else {
                     item.classList.remove("selected");
+                    input.checked = false;
                 }
             });
         } else {
@@ -234,8 +236,10 @@ function selectOption(questionId, letter) {
                 const input = item.querySelector("input[type='radio']");
                 if (input && input.value === letter) {
                     item.classList.add("selected");
+                    input.checked = true;
                 } else {
                     item.classList.remove("selected");
+                    input.checked = false;
                 }
             });
         }
