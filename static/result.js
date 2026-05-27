@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
         const data = JSON.parse(resultStr);
+        saveToHistory(data, quizMode, bankName);
         renderResult(data, quizMode, bankName);
     } catch (e) {
         document.getElementById("result-summary").innerHTML = `
@@ -31,6 +32,36 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
     }
 });
+
+function saveToHistory(data, quizMode, bankName) {
+    const bankId = sessionStorage.getItem("quizBankId") || "";
+    const record = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        bank_id: bankId,
+        bank_name: bankName || "未知题库",
+        mode: quizMode,
+        score: data.score,
+        correct: data.correct,
+        total: data.total,
+        time: new Date().toLocaleString("zh-CN", { hourCycle: "h23" }),
+    };
+
+    let history = [];
+    try {
+        const raw = localStorage.getItem("quizHistory");
+        history = raw ? JSON.parse(raw) : [];
+    } catch (_) {
+        history = [];
+    }
+
+    history.unshift(record);
+    // 最多保留 50 条
+    if (history.length > 50) {
+        history = history.slice(0, 50);
+    }
+
+    localStorage.setItem("quizHistory", JSON.stringify(history));
+}
 
 function renderResult(data, quizMode, bankName) {
     const { total, correct, score, details } = data;

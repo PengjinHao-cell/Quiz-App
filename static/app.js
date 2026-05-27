@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (uploadForm) {
         uploadForm.addEventListener("submit", handleUpload);
     }
+    renderHistory();
 });
 
 // ---------- 文件上传 ----------
@@ -186,4 +187,91 @@ function showMessage(text, type) {
             msgDiv.className = "msg";
         }, 3000);
     }
+}
+
+// ---------- 历史记录 ----------
+
+function renderHistory() {
+    const section = document.getElementById("history-section");
+    const tbody = document.getElementById("history-tbody");
+    if (!section || !tbody) return;
+
+    let history = [];
+    try {
+        const raw = localStorage.getItem("quizHistory");
+        if (raw) {
+            history = JSON.parse(raw);
+        }
+    } catch (_) {
+        history = [];
+    }
+
+    if (history.length === 0) {
+        section.style.display = "none";
+        return;
+    }
+
+    section.style.display = "block";
+
+    let html = "";
+    history.forEach((r, idx) => {
+        const modeLabel = r.mode === "exam" ? "📋 考试" : "✏️ 练习";
+        const scoreClass =
+            r.score >= 90
+                ? "excellent"
+                : r.score >= 70
+                    ? "good"
+                    : r.score >= 60
+                        ? "fair"
+                        : "poor";
+
+        // 如果有 bank_id，生成可点击链接
+        const bankNameHtml = r.bank_id
+            ? `<a href="#" onclick="startQuiz('${r.bank_id}', '${r.mode}')" title="再次刷题">${escapeHTML(r.bank_name)}</a>`
+            : escapeHTML(r.bank_name);
+
+        html += `
+            <tr data-index="${idx}">
+                <td class="hist-time">${escapeHTML(r.time)}</td>
+                <td class="hist-bank">${bankNameHtml}</td>
+                <td>${modeLabel}</td>
+                <td><span class="hist-score ${scoreClass}">${r.score}分</span> (${r.correct}/${r.total})</td>
+                <td>
+                    <button class="btn btn-small btn-danger-outline" onclick="deleteHistoryItem(${idx})">删除</button>
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+}
+
+function deleteHistoryItem(idx) {
+    let history = [];
+    try {
+        const raw = localStorage.getItem("quizHistory");
+        history = raw ? JSON.parse(raw) : [];
+    } catch (_) {
+        history = [];
+    }
+
+    if (idx >= 0 && idx < history.length) {
+        history.splice(idx, 1);
+        localStorage.setItem("quizHistory", JSON.stringify(history));
+        renderHistory();
+    }
+}
+
+function clearHistory() {
+    if (!confirm("确定要清空所有答题记录吗？此操作不可恢复。")) return;
+    localStorage.removeItem("quizHistory");
+    renderHistory();
+}
+
+// ---------- 工具函数 ----------
+
+function escapeHTML(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
 }

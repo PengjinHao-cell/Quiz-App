@@ -459,6 +459,7 @@ function submitExam() {
             sessionStorage.setItem("quizResult", JSON.stringify(data));
             sessionStorage.setItem("quizMode", config.mode);
             sessionStorage.setItem("quizBankName", config.bankName);
+            sessionStorage.setItem("quizBankId", config.bankId);
 
             // 跳转到结果页
             window.location.href = `/result/${config.bankId}`;

@@ -13,6 +13,28 @@
             <p class="subtitle">上传题库文件（PDF / DOCX），开始刷题练习</p>
         </header>
 
+        <!-- 历史记录 -->
+        <section class="history-section" id="history-section" style="display:none;">
+            <h2>📊 答题记录</h2>
+            <div class="history-table-wrap">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>题库</th>
+                            <th>模式</th>
+                            <th>得分</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-tbody"></tbody>
+                </table>
+            </div>
+            <div class="history-actions">
+                <button class="btn btn-small btn-secondary" onclick="clearHistory()">🗑 清空记录</button>
+            </div>
+        </section>
+
         <!-- 题库列表 -->
         <section class="bank-section">
             <h2>📚 已保存的题库</h2>
