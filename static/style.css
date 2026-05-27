@@ -534,6 +534,34 @@ header h1 {
     font-size: 0.85rem;
     color: #a0aec0;
     margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Question Type Badge */
+.question-type-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.question-type-badge.single {
+    background: #ebf8ff;
+    color: #2b6cb0;
+}
+
+.question-type-badge.multi {
+    background: #faf5ff;
+    color: #6b46c1;
+}
+
+.question-type-badge.judge {
+    background: #fffaf0;
+    color: #c05621;
 }
 
 .question-text {
@@ -583,6 +611,7 @@ header h1 {
     background: #fff5f5;
 }
 
+.option-input,
 .option-radio {
     width: 20px;
     height: 20px;
@@ -745,6 +774,24 @@ header h1 {
 .detail-answers .correct-ans {
     color: #38a169;
     font-weight: 600;
+}
+
+/* Option highlight in result details */
+.detail-options {
+    font-size: 0.9rem;
+    line-height: 1.8;
+    margin-bottom: 4px;
+}
+
+.detail-options .correct-show {
+    color: #38a169;
+    font-weight: 600;
+}
+
+.detail-options .wrong-show {
+    color: #e53e3e;
+    font-weight: 600;
+    text-decoration: line-through;
 }
 
 .result-actions {

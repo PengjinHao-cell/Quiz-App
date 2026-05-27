@@ -19,4 +19,6 @@ check_quality.py
 check_bad.py
 dump_raw.py
 test_parser.py
+fix_types.py
+test_api.py
 raw_text.txt

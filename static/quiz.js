@@ -1,7 +1,7 @@
 /**
  * 刷题页面交互逻辑
- * - 加载题目
- * - 选项选择
+ * - 加载题目（支持单选/多选/判断三种题型）
+ * - 选项选择（单选题/判断题用 radio，多选题用 checkbox）
  * - 上一题 / 下一题导航
  * - 练习模式即时反馈
  * - 考试模式：选择后自动前进 + 交卷提交
@@ -9,7 +9,7 @@
  */
 
 let questions = [];
-let userAnswers = {};   // { questionId: "A" }
+let userAnswers = {};   // { questionId: "A" } or "AB" for multi
 let currentIndex = 0;
 let config = {};
 
@@ -46,7 +46,7 @@ function loadQuestions() {
             // 初始化用户答案
             userAnswers = {};
             questions.forEach((q) => {
-                userAnswers[q.id] = "";
+                userAnswers[q.id] = q.type === "multi" ? [] : "";
             });
 
             // 显示导航栏
@@ -77,20 +77,52 @@ function showQuestion(index) {
 
     currentIndex = index;
     const q = questions[index];
+    const qtype = q.type || "single";
 
     const container = document.getElementById("question-container");
     const options = Object.entries(q.options);
 
+    // 选择题型标签
+    let typeLabel = "";
+    if (qtype === "multi") {
+        typeLabel = '<span class="question-type-badge multi">多选题</span>';
+    } else if (qtype === "judge") {
+        typeLabel = '<span class="question-type-badge judge">判断题</span>';
+    } else {
+        typeLabel = '<span class="question-type-badge single">单选题</span>';
+    }
+
+    // 根据题型生成不同 input type
+    const inputType = (qtype === "multi") ? "checkbox" : "radio";
+    const inputName = (qtype === "multi") ? `q-${q.id}-opt` : `q-${q.id}`;
+
+    // 当前用户答案
+    let currentAnswer = userAnswers[q.id];
+    if (qtype === "multi" && !Array.isArray(currentAnswer)) {
+        currentAnswer = [];
+    }
+
     // 生成选项 HTML
     const optionsHTML = options
         .map(([letter, text]) => {
-            const checked = userAnswers[q.id] === letter ? "checked" : "";
-            const selectedClass = userAnswers[q.id] === letter ? "selected" : "";
+            let checked = "";
+            let selectedClass = "";
+            if (qtype === "multi") {
+                if (Array.isArray(currentAnswer) && currentAnswer.includes(letter)) {
+                    checked = "checked";
+                    selectedClass = "selected";
+                }
+            } else {
+                if (currentAnswer === letter) {
+                    checked = "checked";
+                    selectedClass = "selected";
+                }
+            }
             return `
                 <li class="option-item ${selectedClass}"
                     onclick="selectOption(${q.id}, '${letter}')">
-                    <input type="radio" name="q-${q.id}" value="${letter}"
-                           class="option-radio" ${checked}
+                    <input type="${inputType}" name="${inputName}" value="${letter}"
+                           class="option-input" ${checked}
                            onclick="event.stopPropagation(); selectOption(${q.id}, '${letter}')">
                     <span class="option-label">${letter}.</span>
                     <span class="option-text">${escapeHTML(text)}</span>
@@ -101,20 +133,42 @@ function showQuestion(index) {
 
     // 练习模式：选择后显示正确答案提示
     let hintHTML = "";
-    if (config.mode === "practice" && userAnswers[q.id]) {
-        const isCorrect = userAnswers[q.id] === q.answer;
-        hintHTML = `
-            <div class="practice-hint ${isCorrect ? "correct" : "wrong"}">
-                ${isCorrect
-                    ? "✅ 回答正确！"
-                    : `❌ 回答错误！正确答案是 <strong>${q.answer}</strong>`}
-            </div>
-        `;
+    if (config.mode === "practice") {
+        if (qtype === "multi") {
+            // 多选题：判断 arrays 是否相等
+            const userArr = Array.isArray(userAnswers[q.id]) ? userAnswers[q.id] : [];
+            if (userArr.length > 0 && q.answer) {
+                const sortedUser = [...userArr].sort().join("");
+                const sortedCorrect = [...q.answer.toUpperCase().replace(/\s/g, "")].sort().join("");
+                const isCorrect = sortedUser === sortedCorrect;
+                hintHTML = `
+                    <div class="practice-hint ${isCorrect ? "correct" : "wrong"}">
+                        ${isCorrect
+                            ? "✅ 回答正确！"
+                            : `❌ 回答错误！正确答案是 <strong>${q.answer}</strong>`}
+                    </div>
+                `;
+            }
+        } else {
+            // 单选/判断题
+            if (userAnswers[q.id] && q.answer) {
+                const isCorrect = String(userAnswers[q.id]).toUpperCase() === q.answer.toUpperCase();
+                hintHTML = `
+                    <div class="practice-hint ${isCorrect ? "correct" : "wrong"}">
+                        ${isCorrect
+                            ? "✅ 回答正确！"
+                            : `❌ 回答错误！正确答案是 <strong>${q.answer}</strong>`}
+                    </div>
+                `;
+            }
+        }
     }
 
     container.innerHTML = `
         <div class="question-card">
-            <div class="question-number">第 ${index + 1} / ${questions.length} 题</div>
+            <div class="question-number">
+                ${typeLabel} 第 ${index + 1} / ${questions.length} 题
+            </div>
             <div class="question-text">${escapeHTML(q.text)}</div>
             <ul class="options-list">
                 ${optionsHTML}
@@ -136,7 +190,27 @@ function showQuestion(index) {
 // ---------- 选择选项 ----------
 
 function selectOption(questionId, letter) {
-    userAnswers[questionId] = letter;
+    const q = questions.find(qq => qq.id === questionId);
+    if (!q) return;
+    const qtype = q.type || "single";
+
+    if (qtype === "multi") {
+        // 多选题：toggle
+        if (!Array.isArray(userAnswers[questionId])) {
+            userAnswers[questionId] = [];
+        }
+        const arr = userAnswers[questionId];
+        const idx = arr.indexOf(letter);
+        if (idx >= 0) {
+            arr.splice(idx, 1);
+        } else {
+            arr.push(letter);
+        }
+        userAnswers[questionId] = [...arr]; // trigger reactivity
+    } else {
+        // 单选/判断
+        userAnswers[questionId] = letter;
+    }
 
     // 练习模式：立即刷新显示答案反馈
     if (config.mode === "practice") {
@@ -144,27 +218,42 @@ function selectOption(questionId, letter) {
     } else {
         // 考试模式：仅更新选中样式
         const items = document.querySelectorAll(".option-item");
-        items.forEach((item) => {
-            const radio = item.querySelector("input[type='radio']");
-            if (radio && radio.value === letter) {
-                item.classList.add("selected");
-            } else {
-                item.classList.remove("selected");
-            }
-        });
+        if (qtype === "multi") {
+            // 更新 checkbox 状态
+            const currentArr = Array.isArray(userAnswers[questionId]) ? userAnswers[questionId] : [];
+            items.forEach((item) => {
+                const input = item.querySelector("input[type='checkbox']");
+                if (input && currentArr.includes(input.value)) {
+                    item.classList.add("selected");
+                } else {
+                    item.classList.remove("selected");
+                }
+            });
+        } else {
+            items.forEach((item) => {
+                const input = item.querySelector("input[type='radio']");
+                if (input && input.value === letter) {
+                    item.classList.add("selected");
+                } else {
+                    item.classList.remove("selected");
+                }
+            });
+        }
         updateProgress();
 
-        // 考试模式：选择后自动跳到下一题
-        const nextIndex = currentIndex + 1;
-        if (nextIndex < questions.length) {
-            setTimeout(() => {
-                showQuestion(nextIndex);
-            }, 300);
-        } else {
-            // 最后一题已答完，高亮交卷按钮
-            const submitBtn = document.getElementById("btn-submit");
-            if (submitBtn) {
-                submitBtn.style.animation = "pulse 0.8s ease 3";
+        // 考试模式：单选/判断选择后自动跳到下一题（多选题不自动跳）
+        if (qtype !== "multi") {
+            const nextIndex = currentIndex + 1;
+            if (nextIndex < questions.length) {
+                setTimeout(() => {
+                    showQuestion(nextIndex);
+                }, 300);
+            } else {
+                // 最后一题已答完，高亮交卷按钮
+                const submitBtn = document.getElementById("btn-submit");
+                if (submitBtn) {
+                    submitBtn.style.animation = "pulse 0.8s ease 3";
+                }
             }
         }
     }
@@ -181,15 +270,18 @@ function updateNavigation() {
     const nextBtn = document.getElementById("btn-next");
     const indicator = document.getElementById("question-indicator");
 
-    prevBtn.disabled = currentIndex === 0;
-    nextBtn.disabled = currentIndex === questions.length - 1;
-    indicator.textContent = `${currentIndex + 1} / ${questions.length}`;
+    if (prevBtn) prevBtn.disabled = currentIndex === 0;
+    if (nextBtn) nextBtn.disabled = currentIndex === questions.length - 1;
+    if (indicator) indicator.textContent = `${currentIndex + 1} / ${questions.length}`;
 }
 
 function updateProgress() {
-    const answered = Object.values(userAnswers).filter((a) => a !== "").length;
-    document.getElementById("progress-text").textContent =
-        `${answered} / ${questions.length}`;
+    const answered = Object.values(userAnswers).filter((a) => {
+        if (Array.isArray(a)) return a.length > 0;
+        return a !== "";
+    }).length;
+    const el = document.getElementById("progress-text");
+    if (el) el.textContent = `${answered} / ${questions.length}`;
 }
 
 // ---------- 上一题 / 下一题 ----------
@@ -228,6 +320,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
                     e.preventDefault();
                     if (currentIndex < questions.length - 1) showQuestion(currentIndex + 1);
+                } else if (e.key >= "a" && e.key <= "h") {
+                    e.preventDefault();
+                    const letter = e.key.toUpperCase();
+                    const q = questions[currentIndex];
+                    if (q && q.options && q.options[letter]) {
+                        selectOption(q.id, letter);
+                    }
                 }
             });
         }
@@ -260,12 +359,19 @@ function renderAnswerSheet() {
     const total = questions.length;
     document.getElementById("sheet-total").textContent = total;
     document.getElementById("sheet-answered-count").textContent =
-        Object.values(userAnswers).filter((a) => a !== "").length;
+        Object.values(userAnswers).filter((a) => {
+            if (Array.isArray(a)) return a.length > 0;
+            return a !== "";
+        }).length;
 
     let html = "";
     for (let i = 0; i < total; i++) {
         const q = questions[i];
-        const isAnswered = userAnswers[q.id] !== "";
+        const isAnswered = (() => {
+            const ans = userAnswers[q.id];
+            if (Array.isArray(ans)) return ans.length > 0;
+            return ans !== "";
+        })();
         const isCurrent = (i === currentIndex);
         let cls = "sheet-num";
         if (isCurrent) cls += " current";
@@ -280,7 +386,11 @@ function updateSheetHighlight() {
     const items = document.querySelectorAll(".sheet-num");
     items.forEach((el, i) => {
         const q = questions[i];
-        const isAnswered = userAnswers[q.id] !== "";
+        const isAnswered = (() => {
+            const ans = userAnswers[q.id];
+            if (Array.isArray(ans)) return ans.length > 0;
+            return ans !== "";
+        })();
         const isCurrent = (i === currentIndex);
         el.className = "sheet-num";
         if (isCurrent) el.classList.add("current");
@@ -288,13 +398,19 @@ function updateSheetHighlight() {
     });
 
     document.getElementById("sheet-answered-count").textContent =
-        Object.values(userAnswers).filter((a) => a !== "").length;
+        Object.values(userAnswers).filter((a) => {
+            if (Array.isArray(a)) return a.length > 0;
+            return a !== "";
+        }).length;
 }
 
 // ---------- 提交考试 ----------
 
 function submitExam() {
-    const answered = Object.values(userAnswers).filter((a) => a !== "").length;
+    const answered = Object.values(userAnswers).filter((a) => {
+        if (Array.isArray(a)) return a.length > 0;
+        return a !== "";
+    }).length;
     const unanswered = questions.length - answered;
 
     let confirmMsg = `确定要交卷吗？`;
@@ -304,16 +420,24 @@ function submitExam() {
 
     if (!confirm(confirmMsg)) return;
 
-    // 构建提交数据
+    // 构建提交数据：将多选题答案转换为排序字符串
     const answers = {};
+    const question_ids = questions.map(q => q.id); // 实际展示的题目 ID
+
     Object.entries(userAnswers).forEach(([qid, ans]) => {
-        if (ans) answers[qid] = ans;
+        if (Array.isArray(ans)) {
+            if (ans.length > 0) {
+                answers[qid] = [...ans].sort().join("");
+            }
+        } else if (ans) {
+            answers[qid] = ans;
+        }
     });
 
     fetch(`/api/bank/${config.bankId}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers }),
+        body: JSON.stringify({ answers, question_ids }),
     })
         .then((res) => {
             if (!res.ok) throw new Error("提交失败");

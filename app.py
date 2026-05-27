@@ -7,6 +7,7 @@
 """
 
 import os
+import re
 import uuid
 import json
 import random
@@ -70,6 +71,85 @@ def load_bank(bank_id: str) -> dict:
 
     with open(filepath, "r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def detect_question_type(question: dict) -> str:
+    """根据已有字段或题目内容推测题型：single / multi / judge"""
+    # 优先使用存储的 type 字段
+    stored_type = question.get("type", "")
+    if stored_type in ("single", "multi", "judge"):
+        return stored_type
+
+    text = question.get("text", "")
+    options = question.get("options", {})
+    num_opts = len(options)
+    answer = question.get("answer", "").upper().strip()
+    text_upper = text.upper()
+
+    # 判断题特征：2 个选项，或题干含 "判断题"、"正确/错误"
+    if num_opts == 2 and set(options.keys()) <= {"A", "B"}:
+        return "judge"
+    if any(kw in text for kw in ["判断题", "判断对错", "正确错误", "对错题"]):
+        return "judge"
+    if any(kw in text_upper for kw in ["判断题", "判断对错", "×", "√", "TRUE", "FALSE"]):
+        return "judge"
+
+    # 多选题特征：题干含"多选题"、"多项选择"、"多选"，或答案长度 > 1
+    if any(kw in text for kw in ["多选题", "多项选择", "多选", "多选题", "多项选择题"]):
+        return "multi"
+    if any(kw in text_upper for kw in ["MULTI", "多选", "多选题"]):
+        return "multi"
+    if len(answer) > 2 and all(c in "ABCDEFGH" for c in answer):
+        return "multi"
+    if number_match := re.search(r"(\d+)", answer):
+        pass  # 纯数字答案不是多选题
+
+    # 默认单选题
+    return "single"
+
+
+def sample_questions_proportional(questions: list, count: int) -> list:
+    """按题型按比例抽选题目"""
+    if count >= len(questions):
+        return random.sample(questions, len(questions))
+
+    # 按题型分组
+    singles = [q for q in questions if detect_question_type(q) == "single"]
+    multis = [q for q in questions if detect_question_type(q) == "multi"]
+    judges = [q for q in questions if detect_question_type(q) == "judge"]
+
+    pools = []
+    if singles:
+        pools.append(("single", singles))
+    if multis:
+        pools.append(("multi", multis))
+    if judges:
+        pools.append(("judge", judges))
+
+    total = len(questions)
+    result = []
+    remaining = count
+
+    for i, (ptype, pool) in enumerate(pools):
+        if i == len(pools) - 1:
+            # 最后一个池子用完剩余配额
+            n = remaining
+        else:
+            n = max(1, int(count * len(pool) / total))
+        n = min(n, len(pool), remaining)
+        if n > 0:
+            result.extend(random.sample(pool, n))
+            remaining -= n
+
+    # 如果还有配额，从所有题目中补齐
+    if remaining > 0:
+        already_ids = {q["id"] for q in result}
+        remaining_pool = [q for q in questions if q["id"] not in already_ids]
+        extra = random.sample(remaining_pool, min(remaining, len(remaining_pool)))
+        result.extend(extra)
+
+    random.shuffle(result)
+    return result
 
 
 def save_bank(bank_id: str, data: dict):
@@ -208,9 +288,12 @@ def api_get_questions(bank_id):
 
     questions = bank["questions"]
 
-    # 随机打乱并截取指定数量
+    # 按比例抽选题目
     count_int = int(count) if count.isdigit() else 0
-    shuffled = random.sample(questions, min(count_int if count_int > 0 else len(questions), len(questions)))
+    if count_int > 0 and count_int < len(questions):
+        shuffled = sample_questions_proportional(questions, count_int)
+    else:
+        shuffled = random.sample(questions, len(questions))
 
     result = {
         "bank_id": bank_id,
@@ -221,10 +304,12 @@ def api_get_questions(bank_id):
     }
 
     for q in shuffled:
+        qtype = detect_question_type(q)
         item = {
             "id": q["id"],
             "text": q["text"],
             "options": q["options"],
+            "type": qtype,  # single / multi / judge
         }
         if mode == "practice":
             item["answer"] = q.get("answer", "")
@@ -235,25 +320,43 @@ def api_get_questions(bank_id):
 
 @app.route("/api/bank/<bank_id>/submit", methods=["POST"])
 def api_submit(bank_id):
-    """提交答题结果，返回评分"""
+    """提交答题结果，返回评分（仅评分实际抽选的题目）"""
     data = request.get_json()
     user_answers = data.get("answers", {})
+    question_ids = data.get("question_ids", [])  # 实际展示的题目 ID 列表
 
     try:
         bank = load_bank(bank_id)
     except FileNotFoundError:
         return jsonify({"error": "题库不存在"}), 404
 
-    questions = bank["questions"]
-    total = len(questions)
+    all_questions = bank["questions"]
+    # 构建 ID -> 题目的映射
+    qmap = {str(q["id"]): q for q in all_questions}
+
+    # 如果传了 question_ids，只评分这些题目；否则评分所有有答案的题目
+    if question_ids:
+        target_ids = [str(qid) for qid in question_ids]
+    else:
+        target_ids = [qid for qid in user_answers.keys() if user_answers[qid]]
+
+    total = len(target_ids)
     correct_count = 0
     details = []
 
-    for q in questions:
-        qid = str(q["id"])
+    for qid in target_ids:
+        q = qmap.get(qid)
+        if q is None:
+            continue
         user_ans = user_answers.get(qid, "").strip().upper()
         correct_ans = q.get("answer", "").strip().upper()
-        is_correct = user_ans == correct_ans if correct_ans else False
+        # 多选题：排序后比较
+        if detect_question_type(q) == "multi":
+            user_sorted = "".join(sorted(user_ans.replace(" ", "")))
+            correct_sorted = "".join(sorted(correct_ans.replace(" ", "")))
+            is_correct = user_sorted == correct_sorted
+        else:
+            is_correct = user_ans == correct_ans if correct_ans else False
 
         if is_correct:
             correct_count += 1
