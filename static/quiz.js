@@ -135,9 +135,16 @@ function showQuestion(index) {
     let hintHTML = "";
     if (config.mode === "practice") {
         if (qtype === "multi") {
-            // 多选题：判断 arrays 是否相等
+            // 多选题：只有选够正确选项个数时才判定（避免选一个就提示错误）
             const userArr = Array.isArray(userAnswers[q.id]) ? userAnswers[q.id] : [];
-            if (userArr.length > 0 && q.answer) {
+            const correctLen = q.answer ? q.answer.replace(/\s/g, "").length : 0;
+            if (userArr.length > 0 && userArr.length < correctLen) {
+                hintHTML = `
+                    <div class="practice-hint info">
+                        ✅ 已选 <strong>${userArr.length}</strong> 个选项，正确答案共 <strong>${correctLen}</strong> 个，请继续选择
+                    </div>
+                `;
+            } else if (userArr.length >= correctLen && q.answer) {
                 const sortedUser = [...userArr].sort().join("");
                 const sortedCorrect = [...q.answer.toUpperCase().replace(/\s/g, "")].sort().join("");
                 const isCorrect = sortedUser === sortedCorrect;

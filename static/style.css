@@ -650,6 +650,12 @@ header h1 {
     border: 1px solid #fed7d7;
 }
 
+.practice-hint.info {
+    background: #ebf8ff;
+    color: #2b6cb0;
+    border: 1px solid #bee3f8;
+}
+
 /* Navigation */
 .quiz-nav {
     display: flex;
