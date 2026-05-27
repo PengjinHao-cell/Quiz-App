@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 刷题助手</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧠 Python 刷题助手</h1>
+            <p class="subtitle">上传题库文件（PDF / DOCX），开始刷题练习</p>
+        </header>
+
+        <!-- 题库列表 -->
+        <section class="bank-section">
+            <h2>📚 已保存的题库</h2>
+            <div id="bank-list">
+                {% if banks %}
+                    {% for bank in banks %}
+                    <div class="bank-card" id="bank-{{ bank.id }}">
+                        <div class="bank-info">
+                            <span class="bank-icon">📄</span>
+                            <div class="bank-details">
+                                <span class="bank-name" title="{{ bank.original_filename }}">{{ bank.original_filename }}</span>
+                                <span class="bank-meta">
+                                    上传时间: {{ bank.upload_time }} &nbsp;|&nbsp; {{ bank.question_count }} 题
+                                </span>
+                            </div>
+                        </div>
+                        <div class="bank-actions">
+                            <a href="{{ url_for('quiz_page', bank_id=bank.id, mode='practice') }}" class="btn btn-primary">练习模式</a>
+                            <a href="{{ url_for('quiz_page', bank_id=bank.id, mode='exam') }}" class="btn btn-exam">考试模式</a>
+                            <button class="btn btn-danger" onclick="deleteBank('{{ bank.id }}')">删除</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <p>还没有题库，上传一个文件或初始化示例题库开始吧！</p>
+                        <button class="btn btn-secondary" onclick="initSample()">📥 加载示例题库</button>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- 上传新题库 -->
+        <section class="upload-section">
+            <h2>📤 上传新题库</h2>
+            <form id="upload-form" enctype="multipart/form-data">
+                <div class="form-row">
+                    <label class="file-label" for="file-input">
+                        <span id="file-name-display">选择文件 (PDF / DOCX)</span>
+                    </label>
+                    <input type="file" id="file-input" name="file" accept=".pdf,.docx" hidden
+                           onchange="updateFileName(this)">
+                </div>
+                <div class="form-row mode-select">
+                    <label>
+                        <input type="radio" name="mode" value="practice" checked> 练习模式
+                        <span class="mode-hint">（可实时查看答案）</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="mode" value="exam"> 考试模式
+                        <span class="mode-hint">（隐藏答案，交卷后出分）</span>
+                    </label>
+                </div>
+                <div class="form-row">
+                    <button type="submit" class="btn btn-primary btn-large" id="upload-btn">
+                        🚀 上传并开始刷题
+                    </button>
+                </div>
+            </form>
+            <div id="upload-msg" class="msg"></div>
+        </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

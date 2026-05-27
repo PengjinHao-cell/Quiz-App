@@ -1,0 +1,626 @@
+/* ========================================
+   Python 刷题助手 - 样式表
+   ======================================== */
+
+/* ---------- Reset & Base ---------- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: #f0f4f8;
+    color: #1a202c;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+}
+
+/* ---------- Header ---------- */
+header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 8px;
+}
+
+.subtitle {
+    color: #718096;
+    font-size: 1rem;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+    display: inline-block;
+    padding: 8px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn-primary {
+    background: #3182ce;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2b6cb0;
+}
+
+.btn-secondary {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.btn-secondary:hover {
+    background: #cbd5e0;
+}
+
+.btn-exam {
+    background: #dd6b20;
+    color: white;
+}
+
+.btn-exam:hover {
+    background: #c05621;
+}
+
+.btn-danger {
+    background: #e53e3e;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c53030;
+}
+
+.btn-back {
+    background: transparent;
+    color: #4a5568;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+.btn-back:hover {
+    background: #e2e8f0;
+    box-shadow: none;
+}
+
+.btn-large {
+    padding: 12px 32px;
+    font-size: 1.05rem;
+    width: 100%;
+}
+
+/* ---------- Bank Section ---------- */
+.bank-section, .upload-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.bank-section h2, .upload-section h2 {
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+    color: #2d3748;
+}
+
+/* Bank Card */
+.bank-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    transition: box-shadow 0.2s;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.bank-card:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.bank-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 200px;
+}
+
+.bank-icon {
+    font-size: 1.5rem;
+}
+
+.bank-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.bank-name {
+    font-weight: 600;
+    color: #2d3748;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bank-meta {
+    font-size: 0.8rem;
+    color: #a0aec0;
+}
+
+.bank-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 32px;
+    color: #718096;
+}
+
+.empty-state p {
+    margin-bottom: 16px;
+}
+
+/* ---------- Upload Section ---------- */
+.form-row {
+    margin-bottom: 16px;
+}
+
+.file-label {
+    display: block;
+    padding: 16px;
+    border: 2px dashed #cbd5e0;
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    color: #718096;
+    transition: all 0.2s;
+}
+
+.file-label:hover {
+    border-color: #3182ce;
+    color: #3182ce;
+    background: #ebf8ff;
+}
+
+.mode-select {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+}
+
+.mode-select label {
+    cursor: pointer;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.mode-hint {
+    font-weight: 400;
+    font-size: 0.85rem;
+    color: #a0aec0;
+}
+
+.msg {
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 8px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.msg.error {
+    background: #fff5f5;
+    color: #c53030;
+    border: 1px solid #fed7d7;
+}
+
+.msg.success {
+    background: #f0fff4;
+    color: #276749;
+    border: 1px solid #c6f6d5;
+}
+
+/* ---------- Quiz Page ---------- */
+.quiz-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    text-align: left;
+    background: white;
+    border-radius: 12px;
+    padding: 16px 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    margin-bottom: 20px;
+}
+
+.quiz-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.quiz-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.quiz-info h1 {
+    font-size: 1.1rem;
+    margin: 0;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.badge-practice {
+    background: #ebf8ff;
+    color: #2b6cb0;
+}
+
+.badge-exam {
+    background: #fffaf0;
+    color: #c05621;
+}
+
+.quiz-progress {
+    font-size: 0.9rem;
+    color: #718096;
+    font-weight: 600;
+}
+
+/* Question Area */
+.quiz-main {
+    background: white;
+    border-radius: 12px;
+    padding: 32px 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    min-height: 400px;
+}
+
+.loading {
+    text-align: center;
+    color: #718096;
+    padding: 60px 0;
+    font-size: 1.1rem;
+}
+
+/* Question Card */
+.question-card {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.question-number {
+    font-size: 0.85rem;
+    color: #a0aec0;
+    margin-bottom: 8px;
+}
+
+.question-text {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 24px;
+    line-height: 1.7;
+}
+
+/* Options */
+.options-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.option-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.option-item:hover {
+    border-color: #3182ce;
+    background: #ebf8ff;
+}
+
+.option-item.selected {
+    border-color: #3182ce;
+    background: #ebf8ff;
+}
+
+.option-item.correct-show {
+    border-color: #38a169;
+    background: #f0fff4;
+}
+
+.option-item.wrong-show {
+    border-color: #e53e3e;
+    background: #fff5f5;
+}
+
+.option-radio {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    accent-color: #3182ce;
+}
+
+.option-label {
+    font-weight: 600;
+    color: #4a5568;
+    min-width: 20px;
+}
+
+.option-text {
+    color: #2d3748;
+}
+
+/* Practice Mode Hint */
+.practice-hint {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.practice-hint.correct {
+    background: #f0fff4;
+    color: #276749;
+    border: 1px solid #c6f6d5;
+}
+
+.practice-hint.wrong {
+    background: #fff5f5;
+    color: #c53030;
+    border: 1px solid #fed7d7;
+}
+
+/* Navigation */
+.quiz-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 24px;
+    padding-top: 20px;
+}
+
+.quiz-nav.hidden {
+    display: none;
+}
+
+#question-indicator {
+    font-size: 0.9rem;
+    color: #718096;
+    min-width: 60px;
+    text-align: center;
+}
+
+/* ---------- Result Page ---------- */
+.result-summary {
+    background: white;
+    border-radius: 12px;
+    padding: 32px 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+.result-summary.loading {
+    opacity: 0.5;
+}
+
+.result-score {
+    font-size: 4rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.result-score.excellent { color: #38a169; }
+.result-score.good { color: #3182ce; }
+.result-score.fair { color: #dd6b20; }
+.result-score.poor { color: #e53e3e; }
+
+.result-meta {
+    color: #718096;
+    font-size: 1rem;
+    margin-bottom: 16px;
+}
+
+.result-bar-bg {
+    width: 100%;
+    height: 10px;
+    background: #e2e8f0;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.result-bar-fill {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.6s ease;
+}
+
+.result-bar-fill.excellent { background: #38a169; }
+.result-bar-fill.good { background: #3182ce; }
+.result-bar-fill.fair { background: #dd6b20; }
+.result-bar-fill.poor { background: #e53e3e; }
+
+.result-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.detail-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.detail-card.correct {
+    border-left: 4px solid #38a169;
+}
+
+.detail-card.wrong {
+    border-left: 4px solid #e53e3e;
+}
+
+.detail-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.detail-header .correct-icon { color: #38a169; }
+.detail-header .wrong-icon { color: #e53e3e; }
+
+.detail-question {
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #2d3748;
+}
+
+.detail-answers {
+    font-size: 0.9rem;
+}
+
+.detail-answers .user-ans {
+    color: #e53e3e;
+}
+
+.detail-answers .correct-ans {
+    color: #38a169;
+    font-weight: 600;
+}
+
+.result-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* ---------- Error Page ---------- */
+.error-page {
+    text-align: center;
+    padding: 40px 0;
+}
+
+.error-message {
+    background: #fff5f5;
+    border: 1px solid #fed7d7;
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 24px;
+    color: #c53030;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 640px) {
+    header h1 {
+        font-size: 1.5rem;
+    }
+
+    .bank-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .bank-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .quiz-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .quiz-header-left {
+        flex-wrap: wrap;
+    }
+
+    .quiz-main {
+        padding: 20px 16px;
+    }
+
+    .question-text {
+        font-size: 1.05rem;
+    }
+
+    .option-item {
+        padding: 12px 14px;
+    }
+
+    .result-score {
+        font-size: 3rem;
+    }
+}

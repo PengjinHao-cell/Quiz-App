@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>刷题 - {{ bank_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="quiz-header">
+            <div class="quiz-header-left">
+                <a href="{{ url_for('index') }}" class="btn btn-back">← 返回题库列表</a>
+                <div class="quiz-info">
+                    <h1>{{ bank_name }}</h1>
+                    <span class="badge badge-{{ mode }}">{% if mode == 'exam' %}📝 考试模式{% else %}✏️ 练习模式{% endif %}</span>
+                </div>
+            </div>
+            <div class="quiz-progress" id="quiz-progress">
+                <span id="progress-text">0 / {{ total }}</span>
+            </div>
+        </header>
+
+        <main class="quiz-main">
+            <div id="question-container">
+                <div class="loading">加载题目中...</div>
+            </div>
+
+            <div id="quiz-navigation" class="quiz-nav hidden">
+                <button id="btn-prev" class="btn btn-secondary" disabled>◀ 上一题</button>
+                <span id="question-indicator"></span>
+                <button id="btn-next" class="btn btn-secondary">下一题 ▶</button>
+                <button id="btn-submit" class="btn btn-primary hidden">📩 交卷</button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 将后端数据传递到前端
+        const QUIZ_CONFIG = {
+            bankId: "{{ bank_id }}",
+            bankName: "{{ bank_name }}",
+            total: {{ total }},
+            mode: "{{ mode }}"
+        };
+    </script>
+    <script src="{{ url_for('static', filename='quiz.js') }}"></script>
+</body>
+</html>

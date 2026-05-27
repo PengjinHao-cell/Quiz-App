@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>答题结果</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="quiz-header">
+            <a href="{{ url_for('index') }}" class="btn btn-back">← 返回题库列表</a>
+            <h1>📊 答题结果</h1>
+        </header>
+
+        <main>
+            <div id="result-summary" class="result-summary loading">
+                正在加载结果...
+            </div>
+
+            <div id="result-details" class="result-details">
+                <!-- 动态填充 -->
+            </div>
+
+            <div class="result-actions">
+                <a href="{{ url_for('index') }}" class="btn btn-primary">返回题库列表</a>
+                <button class="btn btn-secondary" onclick="window.history.back()">返回刷题页</button>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const RESULT_BANK_ID = "{{ bank_id }}";
+    </script>
+    <script src="{{ url_for('static', filename='result.js') }}"></script>
+</body>
+</html>
