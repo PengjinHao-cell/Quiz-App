@@ -1,20 +1,25 @@
 """
 题库文件解析模块
 支持 PDF 和 DOCX 格式的文件，提取题目（文本、选项、正确答案）
+使用状态机处理多行题目和跨页分割
 """
-
 import re
-import docx
-import io
+import hashlib
+
 try:
-    import PyPDF2
+    import docx
 except ImportError:
-    PyPDF2 = None
+    docx = None
 
 try:
     import fitz  # pymupdf
 except ImportError:
     fitz = None
+
+try:
+    import PyPDF2
+except ImportError:
+    PyPDF2 = None
 
 
 def parse_file(file_path: str, filename: str) -> list:
@@ -44,7 +49,6 @@ def _extract_pdf(file_path: str) -> str:
     """从 PDF 提取纯文本"""
     text = ""
 
-    # 优先使用 pymupdf（效果更好）
     if fitz is not None:
         try:
             doc = fitz.open(file_path)
@@ -56,7 +60,6 @@ def _extract_pdf(file_path: str) -> str:
         except Exception:
             pass
 
-    # 备用：PyPDF2
     if PyPDF2 is not None:
         try:
             with open(file_path, "rb") as f:
@@ -78,144 +81,226 @@ def _extract_pdf(file_path: str) -> str:
 
 def _extract_docx(file_path: str) -> str:
     """从 DOCX 提取纯文本"""
+    if docx is None:
+        raise RuntimeError("python-docx 未安装")
     doc = docx.Document(file_path)
     paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
     return "\n".join(paragraphs)
 
 
+def _normalize_text(text: str) -> str:
+    """统一处理文本中的各种空白和特殊字符"""
+    # 替换全角空格为半角
+    text = text.replace('\u3000', ' ')
+    # 规范化换行
+    text = text.replace('\r\n', '\n').replace('\r', '\n')
+    return text
+
+
+def _hash_question_text(text: str) -> str:
+    """计算题目文本的哈希，用于去重"""
+    # 去除空白后计算 MD5
+    cleaned = re.sub(r'\s+', '', text)
+    return hashlib.md5(cleaned.encode('utf-8')).hexdigest()
+
+
 def _parse_questions(text: str) -> list:
     """
-    从纯文本中解析出题目
-    支持多种常见格式：
+    从纯文本中解析出题目，使用状态机方法处理多行题目。
     
-    格式1（编号+换行）：
-        1. 题目内容
-        A. 选项A
-        B. 选项B
-        C. 选项C  
-        D. 选项D
-        答案：A
-
-    格式2（紧凑型）：
-        1. 题目内容
-        A. 选项A  B. 选项B  C. 选项C  D. 选项D
-        正确答案: A
-
-    格式3（分隔区）：
-        单选题
-        1. 题目内容
-        A、选项A
-        B、选项B
-        答案:A
+    PDF 格式特点：
+    - 题目以 "N、" 开头（数字+中文顿号）
+    - 选项以 "A、" "B、" "C、" "D、" "E、" 开头
+    - 答案单独一行："答案：A"
+    - 题目可能跨越多行（选项行之间插入的普通文本行也属于题目文本）
+    - 页分割可能出现在任何位置
     """
     if not text or not text.strip():
         return []
 
-    questions = []
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    text = _normalize_text(text)
 
-    i = 0
-    while i < len(lines):
-        line = lines[i]
+    # 将文本按行分割，但保留有效的非空行
+    raw_lines = text.splitlines()
 
-        # 检测题目起始行（匹配 "1." "1、" "1)" 等编号）
-        question_match = re.match(
-            r'^(?:（?\d+）?|[（(]\s*\d+\s*[）)]|第[一二三四五六七八九十\d]+题|[一二三四五六七八九十]+[、.]|\d+[\.\、\)）])\s*(.+)',
-            line
-        )
+    # 第一步：预处理——移除页分割标记和纯空白行，合并被截断的行
+    lines = []
+    for line in raw_lines:
+        line = line.strip()
+        if not line or line == '---PAGE---':
+            continue
+        lines.append(line)
 
-        if not question_match and i > 0:
-            # 可能存在编号后直接跟文本或被分割的情况
-            question_match = re.match(
-                r'^(?:（?\d+）?|[（(]\s*\d+\s*[）)]|第[一二三四五六七八九十\d]+题|[一二三四五六七八九十]+[、.]|\d+[\.\、\)）])\s*(.+)',
-                line
-            )
+    # 第二步：找到所有题目起始位置（以 "数字、" 开头的行）
+    # 注意：标题行如 "1、" 也可能是选项列表中的序号，需要排除
+    question_start_pattern = re.compile(
+        r'^(\d+)\s*[、,，.]\s*(.+)'
+    )
 
-        if question_match:
-            question_text = question_match.group(1).strip() if question_match.lastindex else line
-            options = {}
-            answer = None
+    # 选项行模式
+    option_pattern = re.compile(
+        r'^([A-H])\s*[、\.\)）\s]\s*(.+)'
+    )
 
-            # 向后扫描选项和答案
-            j = i + 1
-            while j < len(lines):
-                next_line = lines[j]
-                j += 1
+    # 答案行模式
+    answer_pattern = re.compile(
+        r'^(?:答案|正确答案|参考答案|Answer)\s*[：:是为\s]*\s*([A-H])',
+        re.IGNORECASE
+    )
 
-                # 检测是否是下一题（结束条件）
-                if re.match(
-                    r'^(?:（?\d+）?|[（(]\s*\d+\s*[）)]|第[一二三四五六七八九十\d]+题|[一二三四五六七八九十]+[、.]|\d+[\.\、\)）])',
-                    next_line
-                ):
-                    j -= 1  # 回退，让外层循环处理
-                    break
+    # 分类/标题过滤模式
+    filter_pattern = re.compile(
+        r'^(试题类型|题型|第[一二三四五六七八九十\d]+章|第[一二三四五六七八九十\d]+节|'
+        r'[一二三四五六七八九十]+[、.]\s*(单选题|多选题|判断题|简答题|填空题))'
+    )
 
-                # 检测选项 (A. B. C. D. 或 A) B) 或 A、B、)
-                option_match = re.match(
-                    r'^([A-Ha-h])\s*[\.\、\）\))\s]\s*(.+)',
-                    next_line
-                )
-                if option_match:
-                    label = option_match.group(1).upper()
-                    value = option_match.group(2).strip()
-                    options[label] = value
-                    continue
+    # 识别题号开头，收集所有可能的题目起始行
+    question_starts = []
+    for i, line in enumerate(lines):
+        m = question_start_pattern.match(line)
+        if m:
+            qnum = int(m.group(1))
+            # 过滤掉可能的假阳性（如选项内的数字列表）
+            # 如果行太长或包含括号选项标记，可能是假起始
+            rest = m.group(2)
+            # 跳过分类标题
+            if filter_pattern.match(rest):
+                continue
+            # 如果"题目编号"很大（>500），可能是误解
+            if qnum > 500:
+                continue
+            question_starts.append((i, qnum, rest))
 
-                # 检测答案行
-                answer_match = re.match(
-                    r'^(?:答案|正确答案|参考答案|Answer)\s*[：:是为\s]*\s*([A-Ha-h])',
-                    next_line,
-                    re.IGNORECASE
-                )
-                if answer_match:
-                    answer = answer_match.group(1).upper()
-                    continue
+    # 如果没有找到题目，返回空
+    if not question_starts:
+        return []
 
-                # 如果同一行有多个选项（紧凑格式）
-                multi_option = re.findall(
-                    r'([A-Ha-h])\s*[\.\、\）\)]\s*([^A-H]+?)(?=\s*[A-Ha-h]\s*[\.\、\）\)]|$)',
-                    next_line
-                )
-                if multi_option:
-                    for label, value in multi_option:
-                        options[label.upper()] = value.strip()
-                    # 不再继续往后扫描选项（防止混淆）
-                    continue
+    # 第三步：处理每道题（从起始行到下一题起始行之间）
+    # 使用从后往前的序号重新分配，确保去重后序号连续
+    raw_questions = []
 
-                # 非以上格式的行作为题目文本补充
-                # 但优先检查是否是答案
-                if not answer and not options:
-                    ans2 = re.match(
-                        r'^(?:答案|正确答案|参考答案|Answer)\s*[：:是为\s]*\s*([A-Ha-h])',
-                        next_line,
-                        re.IGNORECASE
-                    )
-                    if ans2:
-                        answer = ans2.group(1).upper()
-                        continue
+    for idx, (start_idx, qnum, first_line_text) in enumerate(question_starts):
+        # 确定本题结束位置
+        if idx + 1 < len(question_starts):
+            end_idx = question_starts[idx + 1][0]
+        else:
+            end_idx = len(lines)
 
-            # 清理题目文本（去除残留的编号前缀符号如 、）
-            question_text = re.sub(r'^[、,，]\s*', '', question_text.strip())
+        # 收集本题所有行
+        question_lines = [first_line_text]  # 第一行文本（不含编号）
+        current_options = {}
+        current_answer = None
+        current_text_lines = [first_line_text]
 
-            # 过滤掉非题目标题行（如"试题类型"、"题型"等分类标签）
-            if re.match(r'^(试题类型|题型|第[一二三四五六七八九十\d]+章|第[一二三四五六七八九十\d]+节)', question_text):
-                i = j
+        # 遍历中间行
+        accumulating_text = True  # 初始阶段在积累题目文本
+        for j in range(start_idx + 1, end_idx):
+            line = lines[j]
+
+            # 检查答案行
+            ans_m = answer_pattern.match(line)
+            if ans_m:
+                current_answer = ans_m.group(1).upper()
+                accumulating_text = False
                 continue
 
-            # 仅当有题目文本且有选项时保存
-            if question_text and options:
-                questions.append({
-                    "id": len(questions) + 1,
-                    "text": question_text,
-                    "options": options,
-                    "answer": answer or "",
-                })
+            # 检查选项行
+            opt_m = option_pattern.match(line)
+            if opt_m:
+                label = opt_m.group(1).upper()
+                value = opt_m.group(2).strip()
+                if label not in current_options:
+                    current_options[label] = value
+                else:
+                    # 重复选项标签，可能是多行题目文本的延续（误识别）
+                    # 保守处理：视为题目文本
+                    current_text_lines.append(line)
+                accumulating_text = False
+                continue
 
-            i = j
-        else:
-            i += 1
+            # 尝试同一行多选项（紧凑格式）
+            multi_opts = re.findall(
+                r'([A-H])\s*[、\.\)）]\s*([^A-H]+?)(?=\s*[A-H]\s*[、\.\)）]|$)',
+                line
+            )
+            if len(multi_opts) >= 2:
+                for label, value in multi_opts:
+                    lbl = label.upper()
+                    if lbl not in current_options:
+                        current_options[lbl] = value.strip()
+                accumulating_text = False
+                continue
 
-    return questions
+            # 普通文本行：如果还在积累文本阶段或没有选项，则追加到题目文本
+            if accumulating_text or not current_options:
+                current_text_lines.append(line)
+            else:
+                # 已有选项了，非选项非答案的文本行可能是题目文本的延续（PDF 换行）
+                # 检查是否像答案行或下一个题号
+                if not answer_pattern.match(line) and not question_start_pattern.match(line):
+                    # 如果它看起来不像新题也不像选项，加入题目文本
+                    if not re.match(r'^[A-H]\s*[、\.\)）]', line):
+                        current_text_lines.append(line)
+
+        # 合并题目文本
+        question_text = ''.join(current_text_lines).strip()
+        # 清理多余空格
+        question_text = re.sub(r'\s+', '', question_text) if _is_chinese_heavy(question_text) else re.sub(r'\s+', ' ', question_text)
+        # 去除开头的顿号/逗号
+        question_text = re.sub(r'^[、,，]\s*', '', question_text)
+        # 去除尾部的 "解析：XXX" 或 "解析:XXX" 注释
+        question_text = re.sub(r'\s*解析[：:].*$', '', question_text)
+        # 去除尾部的 "D多选题:" 等标记
+        question_text = re.sub(r'\s*[A-H]\s*[多单选]选题[：:].*$', '', question_text)
+        question_text = question_text.strip()
+
+        # 跳过纯解析的假题目（题目文本太短的）
+        if len(question_text) < 6:
+            continue
+
+        # 过滤掉分类标题
+        if filter_pattern.match(question_text):
+            continue
+
+        # 仅当有题目文本且有至少 2 个选项时保存
+        if question_text and len(current_options) >= 2:
+            raw_questions.append({
+                "text": question_text,
+                "options": current_options,
+                "answer": current_answer or "",
+            })
+
+    # 第四步：去重（基于题目文本的 MD5）
+    seen_hashes = set()
+    deduped = []
+    for q in raw_questions:
+        h = _hash_question_text(q["text"])
+        if h not in seen_hashes:
+            seen_hashes.add(h)
+            deduped.append(q)
+
+    # 第五步：如果去重后数量合理（< 1000），使用去重结果
+    final_questions = deduped if len(deduped) > 0 else raw_questions
+
+    # 第六步：规范化——给每道题重新分配 ID
+    result = []
+    for i, q in enumerate(final_questions):
+        result.append({
+            "id": i + 1,
+            "text": q["text"],
+            "options": q["options"],
+            "answer": q["answer"],
+        })
+
+    return result
+
+
+def _is_chinese_heavy(text: str) -> bool:
+    """判断文本是否以中文为主"""
+    if not text:
+        return False
+    chinese_chars = len(re.findall(r'[\u4e00-\u9fff]', text))
+    return chinese_chars > len(text) * 0.3
 
 
 def create_sample_questions() -> list:

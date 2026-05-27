@@ -9,3 +9,14 @@ venv/
 *.egg-info/
 dist/
 build/
+
+# User data
+uploads/
+data/
+
+# Debug scripts
+check_quality.py
+check_bad.py
+dump_raw.py
+test_parser.py
+raw_text.txt

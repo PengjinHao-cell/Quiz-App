@@ -4,7 +4,8 @@
  * - 选项选择
  * - 上一题 / 下一题导航
  * - 练习模式即时反馈
- * - 考试模式交卷提交
+ * - 考试模式：选择后自动前进 + 交卷提交
+ * - 答题卡侧边栏
  */
 
 let questions = [];
@@ -23,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     config = QUIZ_CONFIG;
     loadQuestions();
+    initAnswerSheet();
 });
 
 // ---------- 加载题目 ----------
@@ -57,6 +59,10 @@ function loadQuestions() {
 
             // 渲染第一题
             showQuestion(0);
+
+            // 渲染答题卡
+            renderAnswerSheet();
+            document.getElementById("answer-sheet").classList.remove("hidden");
         })
         .catch((err) => {
             document.getElementById("question-container").innerHTML =
@@ -122,6 +128,9 @@ function showQuestion(index) {
 
     // 更新进度
     updateProgress();
+
+    // 更新答题卡高亮
+    updateSheetHighlight();
 }
 
 // ---------- 选择选项 ----------
@@ -144,7 +153,25 @@ function selectOption(questionId, letter) {
             }
         });
         updateProgress();
+
+        // 考试模式：选择后自动跳到下一题
+        const nextIndex = currentIndex + 1;
+        if (nextIndex < questions.length) {
+            setTimeout(() => {
+                showQuestion(nextIndex);
+            }, 300);
+        } else {
+            // 最后一题已答完，高亮交卷按钮
+            const submitBtn = document.getElementById("btn-submit");
+            if (submitBtn) {
+                submitBtn.style.animation = "pulse 0.8s ease 3";
+            }
+        }
     }
+
+    // 更新答题卡
+    renderAnswerSheet();
+    updateSheetHighlight();
 }
 
 // ---------- 导航 ----------
@@ -187,10 +214,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (currentIndex < questions.length - 1) {
                     showQuestion(currentIndex + 1);
                 }
-                // 最后一题时提示交卷
-                if (config.mode === "exam" && currentIndex === questions.length - 2) {
-                    // 下一题是最后一题，在进入最后题后特殊处理
-                }
             });
 
             if (submitBtn) {
@@ -210,6 +233,63 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }, 100);
 });
+
+// ---------- 答题卡侧边栏 ----------
+
+function initAnswerSheet() {
+    // 收起/展开答题卡
+    const bindSheet = setInterval(() => {
+        const toggleBtn = document.getElementById("btn-sheet-toggle");
+        const expandBtn = document.getElementById("btn-sheet-expand");
+        if (toggleBtn) {
+            clearInterval(bindSheet);
+            toggleBtn.addEventListener("click", () => {
+                document.getElementById("answer-sheet").classList.add("hidden");
+                expandBtn.classList.remove("hidden");
+            });
+            expandBtn.addEventListener("click", () => {
+                document.getElementById("answer-sheet").classList.remove("hidden");
+                expandBtn.classList.add("hidden");
+            });
+        }
+    }, 100);
+}
+
+function renderAnswerSheet() {
+    const grid = document.getElementById("sheet-grid");
+    const total = questions.length;
+    document.getElementById("sheet-total").textContent = total;
+    document.getElementById("sheet-answered-count").textContent =
+        Object.values(userAnswers).filter((a) => a !== "").length;
+
+    let html = "";
+    for (let i = 0; i < total; i++) {
+        const q = questions[i];
+        const isAnswered = userAnswers[q.id] !== "";
+        const isCurrent = (i === currentIndex);
+        let cls = "sheet-num";
+        if (isCurrent) cls += " current";
+        if (isAnswered) cls += " answered";
+
+        html += `<span class="${cls}" onclick="showQuestion(${i})" title="第${i + 1}题">${i + 1}</span>`;
+    }
+    grid.innerHTML = html;
+}
+
+function updateSheetHighlight() {
+    const items = document.querySelectorAll(".sheet-num");
+    items.forEach((el, i) => {
+        const q = questions[i];
+        const isAnswered = userAnswers[q.id] !== "";
+        const isCurrent = (i === currentIndex);
+        el.className = "sheet-num";
+        if (isCurrent) el.classList.add("current");
+        if (isAnswered) el.classList.add("answered");
+    });
+
+    document.getElementById("sheet-answered-count").textContent =
+        Object.values(userAnswers).filter((a) => a !== "").length;
+}
 
 // ---------- 提交考试 ----------
 
