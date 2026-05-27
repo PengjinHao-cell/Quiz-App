@@ -610,6 +610,96 @@ def init_sample():
     return jsonify({"success": True, "bank_id": "__sample__"})
 
 
+# =========================== 背单词 ===========================
+
+VOCAB_PATH = os.path.join(DATA_FOLDER, "vocab_cet6.json")
+
+def load_vocab() -> dict:
+    """加载词汇数据"""
+    if not os.path.exists(VOCAB_PATH):
+        return {"words": []}
+    with open(VOCAB_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def generate_vocab_question(word_item: dict, all_words: list, count: int = 3) -> dict:
+    """基于一个单词生成选择题：给出英文，4选1中文释义"""
+    correct = word_item["meaning"]
+    # 从其他词中随机取 count 个不同释义作为干扰项
+    others = [w for w in all_words if w["word"] != word_item["word"]]
+    random.shuffle(others)
+    distractors = [w["meaning"] for w in others[:count]]
+
+    # 合并并打乱选项
+    choices = [correct] + distractors
+    random.shuffle(choices)
+
+    # 找到正确答案对应的字母
+    letters = "ABCD"
+    opt_map = {}
+    for i, c in enumerate(choices):
+        opt_map[letters[i]] = c
+
+    answer_letter = ""
+    for k, v in opt_map.items():
+        if v == correct:
+            answer_letter = k
+            break
+
+    return {
+        "word": word_item["word"],
+        "phonetic": word_item.get("phonetic", ""),
+        "example": word_item.get("example", ""),
+        "translation": word_item.get("translation", ""),
+        "options": opt_map,
+        "answer": answer_letter,
+    }
+
+
+@app.route("/vocab")
+def vocab_page():
+    """词汇学习页面"""
+    vocab = load_vocab()
+    total = len(vocab.get("words", []))
+    return render_template("vocab.html", total_words=total)
+
+
+@app.route("/api/vocab/words")
+def api_vocab_words():
+    """获取 N 个随机词汇题（参数: count）"""
+    count = int(request.args.get("count", "10"))
+    count = max(1, min(count, 50))
+
+    vocab = load_vocab()
+    all_words = vocab.get("words", [])
+    if not all_words:
+        return jsonify({"error": "词汇数据为空", "questions": []}), 200
+
+    selected = random.sample(all_words, min(count, len(all_words)))
+    questions = []
+    for w in selected:
+        q = generate_vocab_question(w, all_words)
+        if q:
+            questions.append(q)
+
+    return jsonify({
+        "total": len(questions),
+        "questions": questions,
+    })
+
+
+@app.route("/api/vocab/batch", methods=["POST"])
+def api_vocab_batch():
+    """批量生成更多词汇（用 AI 扩展词库）"""
+    try:
+        # 调用 AI 生成 30 个新词
+        from app import parse_with_llm  # noqa - 复用 AI 调用
+    except:
+        pass
+    
+    return jsonify({"error": "此功能开发中"}), 501
+
+
 # =========================== 启动 ===========================
 
 if __name__ == "__main__":

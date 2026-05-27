@@ -21,6 +21,7 @@ data/*
 .env
 
 # Temp / debug scripts
+generate_vocab.py
 init_bank.py
 rebuild_bank.py
 check_*.py

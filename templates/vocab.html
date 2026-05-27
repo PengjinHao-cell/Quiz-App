@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>背单词 - 刷题通</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .vocab-header { display: flex; align-items: center; gap: 16px; background: white; border-radius: 12px; padding: 16px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
+        .vocab-header-left { display: flex; align-items: center; gap: 12px; }
+        .vocab-header h1 { font-size: 1.1rem; margin: 0; }
+        .vocab-progress { margin-left: auto; font-size: 0.9rem; color: #718096; font-weight: 600; }
+        .vocab-card { background: white; border-radius: 12px; padding: 40px 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); min-height: 400px; text-align: center; }
+        .vocab-word { font-size: 2.2rem; font-weight: 800; color: #2d3748; margin-bottom: 6px; letter-spacing: 0.5px; }
+        .vocab-phonetic { font-size: 1rem; color: #a0aec0; margin-bottom: 32px; font-family: 'Times New Roman', serif; }
+        .vocab-example { font-size: 0.9rem; color: #718096; font-style: italic; margin-bottom: 4px; line-height: 1.6; max-width: 500px; margin-left: auto; margin-right: auto; }
+        .vocab-trans { font-size: 0.85rem; color: #a0aec0; margin-bottom: 28px; }
+        .vocab-options { display: flex; flex-direction: column; gap: 10px; max-width: 480px; margin: 0 auto; }
+        .vocab-opt { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 10px; cursor: pointer; transition: all 0.2s; text-align: left; font-size: 1rem; }
+        .vocab-opt:hover { border-color: #3182ce; background: #ebf8ff; }
+        .vocab-opt.selected { border-color: #3182ce; background: #ebf8ff; }
+        .vocab-opt.correct { border-color: #38a169; background: #f0fff4; }
+        .vocab-opt.wrong { border-color: #e53e3e; background: #fff5f5; }
+        .vocab-opt-letter { font-weight: 700; color: #4a5568; min-width: 24px; }
+        .vocab-feedback { margin-top: 20px; padding: 14px 20px; border-radius: 10px; font-size: 0.95rem; max-width: 480px; margin-left: auto; margin-right: auto; }
+        .vocab-feedback.correct { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+        .vocab-feedback.wrong { background: #fff5f5; color: #c53030; border: 1px solid #fed7d7; }
+        .vocab-nav { display: flex; justify-content: center; gap: 16px; margin-top: 24px; }
+        .vocab-empty { text-align: center; padding: 60px 0; color: #718096; }
+        .vocab-empty p { margin-bottom: 16px; }
+        .vocab-count-select { padding: 6px 12px; border: 1px solid #cbd5e0; border-radius: 8px; font-size: 0.9rem; margin-right: 12px; }
+        .vocab-controls { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="vocab-header">
+            <div class="vocab-header-left">
+                <a href="{{ url_for('app_main') }}" class="btn btn-back">← 返回主页</a>
+                <h1>📖 背单词</h1>
+                <span class="badge badge-practice">CET-6 高频词汇</span>
+            </div>
+            <div class="vocab-progress" id="vocab-progress">0 / 0</div>
+        </header>
+
+        <div class="vocab-controls">
+            <label>每次：
+                <select id="vocab-count" class="vocab-count-select">
+                    <option value="5">5 词</option>
+                    <option value="10" selected>10 词</option>
+                    <option value="20">20 词</option>
+                    <option value="30">30 词</option>
+                </select>
+            </label>
+            <button class="btn btn-primary" onclick="startVocab()">🔄 开始/刷新</button>
+            <span style="font-size:0.8rem;color:#a0aec0;" id="vocab-total-hint">共 {{ total_words }} 词</span>
+        </div>
+
+        <main class="vocab-card" id="vocab-card">
+            <div class="vocab-empty" id="vocab-start-hint">
+                <p>📖 点击上方「开始」按钮</p>
+                <p style="font-size:0.85rem;">系统会从 CET-6 高频词汇中随机选题</p>
+                <p style="font-size:0.85rem;">给出英文单词，选择正确的中文释义</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='utils.js') }}"></script>
+    <script>
+        let words = [];
+        let currentIndex = 0;
+        let answered = false;
+
+        function startVocab() {
+            const count = document.getElementById("vocab-count").value;
+            document.getElementById("vocab-start-hint").style.display = "none";
+            document.getElementById("vocab-card").innerHTML = '<div class="loading">加载词汇中...</div>';
+
+            fetch(`/api/vocab/words?count=${count}`)
+                .then(res => res.json())
+                .then(data => {
+                    words = data.questions || [];
+                    if (words.length === 0) {
+                        document.getElementById("vocab-card").innerHTML = '<div class="vocab-empty"><p>😅 词汇库为空，请先上传词汇数据</p></div>';
+                        return;
+                    }
+                    currentIndex = 0;
+                    answered = false;
+                    showWord(0);
+                })
+                .catch(err => {
+                    document.getElementById("vocab-card").innerHTML = `<div class="vocab-empty"><p>❌ 加载失败：${err.message}</p></div>`;
+                });
+        }
+
+        function showWord(index) {
+            if (index < 0 || index >= words.length) return;
+            currentIndex = index;
+            answered = false;
+
+            const w = words[index];
+            const opts = Object.entries(w.options || {});
+            document.getElementById("vocab-progress").textContent = `${index + 1} / ${words.length}`;
+
+            let html = `
+                <div class="vocab-word">${escapeHTML(w.word)}</div>
+                <div class="vocab-phonetic">${escapeHTML(w.phonetic)}</div>
+            `;
+
+            if (w.example) {
+                html += `<div class="vocab-example">${escapeHTML(w.example)}</div>`;
+            }
+            if (w.translation) {
+                html += `<div class="vocab-trans">${escapeHTML(w.translation)}</div>`;
+            }
+
+            html += `<div class="vocab-options">`;
+            opts.forEach(([letter, text]) => {
+                html += `
+                    <div class="vocab-opt" onclick="selectVocabOpt('${letter}')">
+                        <span class="vocab-opt-letter">${letter}.</span>
+                        <span>${escapeHTML(text)}</span>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+            html += `<div id="vocab-feedback"></div>`;
+
+            const navHtml = `
+                <div class="vocab-nav">
+                    <button class="btn btn-secondary" onclick="showWord(currentIndex - 1)" ${currentIndex === 0 ? 'disabled' : ''}>◀ 上一词</button>
+                    <button class="btn btn-secondary" onclick="showWord(currentIndex + 1)" ${currentIndex === words.length - 1 ? 'disabled' : ''}>下一词 ▶</button>
+                </div>
+            `;
+
+            document.getElementById("vocab-card").innerHTML = html + navHtml;
+        }
+
+        function selectVocabOpt(letter) {
+            if (answered) return;
+            answered = true;
+
+            const w = words[currentIndex];
+            const isCorrect = letter === w.answer;
+
+            // 标记选项
+            const opts = document.querySelectorAll(".vocab-opt");
+            opts.forEach(opt => {
+                const l = opt.querySelector(".vocab-opt-letter").textContent.replace(".", "");
+                if (l === w.answer) opt.classList.add("correct");
+                if (l === letter && !isCorrect) opt.classList.add("wrong");
+                opt.style.cursor = "default";
+                opt.onclick = null;
+            });
+
+            // 反馈
+            const feedback = document.getElementById("vocab-feedback");
+            if (isCorrect) {
+                feedback.innerHTML = `<div class="vocab-feedback correct">✅ 正确！</div>`;
+            } else {
+                feedback.innerHTML = `<div class="vocab-feedback wrong">❌ 错误！正确答案：<strong>${w.answer}. ${escapeHTML(w.options[w.answer])}</strong></div>`;
+            }
+
+            // 自动跳下一词
+            setTimeout(() => {
+                if (currentIndex < words.length - 1) {
+                    showWord(currentIndex + 1);
+                }
+            }, 1200);
+        }
+    </script>
+</body>
+</html>
