@@ -101,7 +101,7 @@ function renderResult(data, quizMode, bankName) {
                 <div class="detail-question">${escapeHTML(text)}</div>
                 <div class="detail-options">${optionsHTML}</div>
                 <div class="detail-answers" style="margin-top: 8px;">
-                    你的答案：<span class="user-ans">${user_answer || "未作答"}</span>
+                    你的答案：<span class="${is_correct ? 'correct-ans' : 'user-ans'}">${user_answer || "未作答"}</span>
                     &nbsp;|&nbsp;
                     正确答案：<span class="correct-ans">${correct_answer || "无"}</span>
                 </div>
