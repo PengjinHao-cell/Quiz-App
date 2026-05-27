@@ -12,7 +12,15 @@ build/
 
 # User data
 uploads/
-data/
+
+# Only commit demo data, ignore real question banks
+data/*
+!data/demo.json
+
+# Dev scripts (not needed for production)
+rebuild_bank.py
+test_bank_api.py
+init_bank.py
 
 # Debug scripts
 check_quality.py
