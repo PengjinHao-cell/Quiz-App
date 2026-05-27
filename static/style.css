@@ -498,10 +498,47 @@ header h1 {
     color: #c05621;
 }
 
+.quiz-header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
 .quiz-progress {
     font-size: 0.9rem;
     color: #718096;
     font-weight: 600;
+}
+
+/* Exam Timer */
+.exam-timer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 14px;
+    border-radius: 8px;
+    background: #f7fafc;
+    border: 2px solid #e2e8f0;
+    font-size: 1rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #2d3748;
+    transition: all 0.3s ease;
+}
+
+.exam-timer.hidden {
+    display: none;
+}
+
+.exam-timer.timer-warning {
+    border-color: #fc8181;
+    background: #fff5f5;
+    animation: timerPulse 1s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(229, 62, 62, 0); }
 }
 
 /* Question Area */
@@ -958,6 +995,11 @@ header h1 {
 
     .quiz-header-left {
         flex-wrap: wrap;
+    }
+
+    .quiz-header-right {
+        width: 100%;
+        justify-content: flex-start;
     }
 
     .quiz-main {

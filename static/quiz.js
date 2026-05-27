@@ -13,6 +13,17 @@ let userAnswers = {};   // { questionId: "A" } or "AB" for multi
 let currentIndex = 0;
 let config = {};
 
+// 考试倒计时（默认每题 1.5 分钟，最短 10 分钟，最长 60 分钟）
+let examTimer = null;
+let timeRemaining = 0;
+
+function calcExamDuration(totalQuestions) {
+    const perQuestion = 90; // 秒
+    const minTime = 10 * 60; // 最少 10 分钟
+    const maxTime = 60 * 60; // 最多 60 分钟
+    return Math.max(minTime, Math.min(maxTime, totalQuestions * perQuestion));
+}
+
 // ---------- 初始化 ----------
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -24,7 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     config = QUIZ_CONFIG;
     loadQuestions();
-    initAnswerSheet();
 });
 
 // ---------- 加载题目 ----------
@@ -52,10 +62,15 @@ function loadQuestions() {
             // 显示导航栏
             document.getElementById("quiz-navigation").classList.remove("hidden");
 
-            // 如果是考试模式，显示交卷按钮
+            // 如果是考试模式，显示交卷按钮并启动倒计时
             if (config.mode === "exam") {
                 document.getElementById("btn-submit").classList.remove("hidden");
+                startExamTimer(questions.length);
             }
+
+            // 绑定事件（数据已就绪，DOM 已存在）
+            bindNavigation();
+            initAnswerSheet();
 
             // 渲染第一题
             showQuestion(0);
@@ -219,9 +234,9 @@ function selectOption(questionId, letter) {
         userAnswers[questionId] = letter;
     }
 
-    // 练习模式：立即刷新显示答案反馈
+    // 练习模式：只更新提示和选项样式，不重渲染整张卡片
     if (config.mode === "practice") {
-        showQuestion(currentIndex);
+        updatePracticeFeedback(currentIndex);
     } else {
         // 考试模式：仅更新选中样式
         const items = document.querySelectorAll(".option-item");
@@ -274,6 +289,86 @@ function selectOption(questionId, letter) {
     updateSheetHighlight();
 }
 
+// ---------- 练习模式反馈（原地更新，不重渲染） ----------
+
+function updatePracticeFeedback(index) {
+    const q = questions[index];
+    if (!q) return;
+
+    const container = document.getElementById("question-container");
+    const items = container.querySelectorAll(".option-item");
+    const qtype = q.type || "single";
+    const currentAnswer = userAnswers[q.id];
+
+    // 更新选项选中样式
+    items.forEach((item) => {
+        const input = item.querySelector("input");
+        if (!input) return;
+        const letter = input.value;
+        let shouldSelect = false;
+        if (qtype === "multi") {
+            shouldSelect = Array.isArray(currentAnswer) && currentAnswer.includes(letter);
+        } else {
+            shouldSelect = currentAnswer === letter;
+        }
+        item.classList.toggle("selected", shouldSelect);
+        input.checked = shouldSelect;
+    });
+
+    // 构建提示 HTML
+    let hintHTML = "";
+    if (qtype === "multi") {
+        const userArr = Array.isArray(currentAnswer) ? currentAnswer : [];
+        const correctLen = q.answer ? q.answer.replace(/\s/g, "").length : 0;
+        if (userArr.length > 0 && userArr.length < correctLen) {
+            hintHTML = `
+                <div class="practice-hint info">
+                    ✅ 已选 <strong>${userArr.length}</strong> 个选项，正确答案共 <strong>${correctLen}</strong> 个，请继续选择
+                </div>
+            `;
+        } else if (userArr.length >= correctLen && q.answer) {
+            const sortedUser = [...userArr].sort().join("");
+            const sortedCorrect = [...q.answer.toUpperCase().replace(/\s/g, "")].sort().join("");
+            hintHTML = `
+                <div class="practice-hint ${sortedUser === sortedCorrect ? "correct" : "wrong"}">
+                    ${sortedUser === sortedCorrect
+                        ? "✅ 回答正确！"
+                        : `❌ 回答错误！正确答案是 <strong>${q.answer}</strong>`}
+                </div>
+            `;
+        }
+    } else {
+        if (currentAnswer && q.answer) {
+            const isCorrect = String(currentAnswer).toUpperCase() === q.answer.toUpperCase();
+            hintHTML = `
+                <div class="practice-hint ${isCorrect ? "correct" : "wrong"}">
+                    ${isCorrect
+                        ? "✅ 回答正确！"
+                        : `❌ 回答错误！正确答案是 <strong>${q.answer}</strong>`}
+                </div>
+            `;
+        }
+    }
+
+    // 替换或插入提示
+    const existingHint = container.querySelector(".practice-hint");
+    if (hintHTML) {
+        if (existingHint) {
+            existingHint.outerHTML = hintHTML;
+        } else {
+            const optionsList = container.querySelector(".options-list");
+            if (optionsList) {
+                optionsList.insertAdjacentHTML("afterend", hintHTML);
+            }
+        }
+    } else if (existingHint) {
+        existingHint.remove();
+    }
+
+    updateProgress();
+    updateSheetHighlight();
+}
+
 // ---------- 导航 ----------
 
 function updateNavigation() {
@@ -297,72 +392,57 @@ function updateProgress() {
 
 // ---------- 上一题 / 下一题 ----------
 
-document.addEventListener("DOMContentLoaded", () => {
-    // 延迟绑定（因为按钮在 loadQuestions 后才可见）
-    const bindNav = setInterval(() => {
-        const prevBtn = document.getElementById("btn-prev");
-        const nextBtn = document.getElementById("btn-next");
-        const submitBtn = document.getElementById("btn-submit");
+function bindNavigation() {
+    const prevBtn = document.getElementById("btn-prev");
+    const nextBtn = document.getElementById("btn-next");
+    const submitBtn = document.getElementById("btn-submit");
 
-        if (prevBtn && nextBtn) {
-            clearInterval(bindNav);
+    prevBtn.addEventListener("click", () => {
+        if (currentIndex > 0) showQuestion(currentIndex - 1);
+    });
 
-            prevBtn.addEventListener("click", () => {
-                if (currentIndex > 0) {
-                    showQuestion(currentIndex - 1);
-                }
-            });
+    nextBtn.addEventListener("click", () => {
+        if (currentIndex < questions.length - 1) showQuestion(currentIndex + 1);
+    });
 
-            nextBtn.addEventListener("click", () => {
-                if (currentIndex < questions.length - 1) {
-                    showQuestion(currentIndex + 1);
-                }
-            });
+    if (submitBtn) {
+        submitBtn.addEventListener("click", submitExam);
+    }
 
-            if (submitBtn) {
-                submitBtn.addEventListener("click", submitExam);
+    // 键盘快捷键（事件委托，全局生效）
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+            e.preventDefault();
+            if (currentIndex > 0) showQuestion(currentIndex - 1);
+        } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+            e.preventDefault();
+            if (currentIndex < questions.length - 1) showQuestion(currentIndex + 1);
+        } else if (/^[a-h]$/i.test(e.key)) {
+            e.preventDefault();
+            const letter = e.key.toUpperCase();
+            const q = questions[currentIndex];
+            if (q && q.options && q.options[letter]) {
+                selectOption(q.id, letter);
             }
-
-            // 键盘快捷键
-            document.addEventListener("keydown", (e) => {
-                if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                    e.preventDefault();
-                    if (currentIndex > 0) showQuestion(currentIndex - 1);
-                } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                    e.preventDefault();
-                    if (currentIndex < questions.length - 1) showQuestion(currentIndex + 1);
-                } else if (e.key >= "a" && e.key <= "h") {
-                    e.preventDefault();
-                    const letter = e.key.toUpperCase();
-                    const q = questions[currentIndex];
-                    if (q && q.options && q.options[letter]) {
-                        selectOption(q.id, letter);
-                    }
-                }
-            });
         }
-    }, 100);
-});
+    });
+}
 
 // ---------- 答题卡侧边栏 ----------
 
 function initAnswerSheet() {
-    // 收起/展开答题卡
-    const bindSheet = setInterval(() => {
-        const toggleBtn = document.getElementById("btn-sheet-toggle");
-        const expandBtn = document.getElementById("btn-sheet-expand");
-        if (toggleBtn) {
-            clearInterval(bindSheet);
-            toggleBtn.addEventListener("click", () => {
-                document.getElementById("answer-sheet").classList.add("hidden");
-                expandBtn.classList.remove("hidden");
-            });
-            expandBtn.addEventListener("click", () => {
-                document.getElementById("answer-sheet").classList.remove("hidden");
-                expandBtn.classList.add("hidden");
-            });
-        }
-    }, 100);
+    const toggleBtn = document.getElementById("btn-sheet-toggle");
+    const expandBtn = document.getElementById("btn-sheet-expand");
+
+    toggleBtn.addEventListener("click", () => {
+        document.getElementById("answer-sheet").classList.add("hidden");
+        expandBtn.classList.remove("hidden");
+    });
+
+    expandBtn.addEventListener("click", () => {
+        document.getElementById("answer-sheet").classList.remove("hidden");
+        expandBtn.classList.add("hidden");
+    });
 }
 
 function renderAnswerSheet() {
@@ -415,9 +495,51 @@ function updateSheetHighlight() {
         }).length;
 }
 
+// ---------- 考试倒计时 ----------
+
+function startExamTimer(totalQuestions) {
+    timeRemaining = calcExamDuration(totalQuestions);
+    updateTimerDisplay();
+    document.getElementById("exam-timer").classList.remove("hidden");
+
+    examTimer = setInterval(() => {
+        timeRemaining--;
+        updateTimerDisplay();
+
+        if (timeRemaining <= 0) {
+            clearInterval(examTimer);
+            examTimer = null;
+            alert("⏰ 时间到！正在自动交卷...");
+            submitExam();
+        }
+    }, 1000);
+}
+
+function updateTimerDisplay() {
+    const minutes = Math.floor(timeRemaining / 60);
+    const seconds = timeRemaining % 60;
+    const display = document.getElementById("timer-display");
+    display.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+    // 少于 5 分钟时变红闪烁
+    const timerEl = document.getElementById("exam-timer");
+    if (timeRemaining <= 300) {
+        display.style.color = "#e53e3e";
+        timerEl.classList.add("timer-warning");
+    } else {
+        display.style.color = "";
+        timerEl.classList.remove("timer-warning");
+    }
+}
+
 // ---------- 提交考试 ----------
 
 function submitExam() {
+    // 停止倒计时
+    if (examTimer) {
+        clearInterval(examTimer);
+        examTimer = null;
+    }
     const answered = Object.values(userAnswers).filter((a) => {
         if (Array.isArray(a)) return a.length > 0;
         return a !== "";
@@ -469,10 +591,3 @@ function submitExam() {
         });
 }
 
-// ---------- 辅助函数 ----------
-
-function escapeHTML(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
-}

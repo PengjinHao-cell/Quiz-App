@@ -16,8 +16,13 @@
                     <span class="badge badge-{{ mode }}">{% if mode == 'exam' %}📝 考试模式{% else %}✏️ 练习模式{% endif %}</span>
                 </div>
             </div>
-            <div class="quiz-progress" id="quiz-progress">
-                <span id="progress-text">0 / {{ total }}</span>
+            <div class="quiz-header-right">
+                <div id="exam-timer" class="exam-timer hidden">
+                    ⏱️ <span id="timer-display">00:00</span>
+                </div>
+                <div class="quiz-progress" id="quiz-progress">
+                    <span id="progress-text">0 / {{ total }}</span>
+                </div>
             </div>
         </header>
 
@@ -66,6 +71,7 @@
             count: "{{ count }}"
         };
     </script>
+    <script src="{{ url_for('static', filename='utils.js') }}"></script>
     <script src="{{ url_for('static', filename='quiz.js') }}"></script>
 </body>
 </html>

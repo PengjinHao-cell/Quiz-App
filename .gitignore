@@ -13,20 +13,19 @@ build/
 # User data
 uploads/
 
-# Only commit demo data, ignore real question banks
+# Ignore uploaded bank data, but commit curated question banks
 data/*
-!data/demo.json
+!data/party_bank.json
+!data/*.json
 
-# Dev scripts (not needed for production)
-rebuild_bank.py
-test_bank_api.py
+# Dev / temp scripts (not for production)
 init_bank.py
-
-# Debug scripts
-check_quality.py
-check_bad.py
+rebuild_bank.py
+check_*.py
+test_*.py
 dump_raw.py
-test_parser.py
 fix_types.py
-test_api.py
 raw_text.txt
+parse_party.py
+analyze_*.py
+try_parse.py

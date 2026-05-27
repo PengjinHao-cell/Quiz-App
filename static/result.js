@@ -143,8 +143,3 @@ function renderResult(data, quizMode, bankName) {
     detailsContainer.innerHTML = html;
 }
 
-function escapeHTML(str) {
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
-}
