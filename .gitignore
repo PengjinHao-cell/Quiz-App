@@ -15,6 +15,7 @@ build/
 
 # User uploads
 uploads/
+instance/
 
 # Debug / dev-only scripts (not needed at runtime)
 test_*.py
