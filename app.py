@@ -95,45 +95,30 @@ def _init_default_admin():
 
 # ---------- 数据库配置 ----------
 # Railway PostgreSQL 自动注入 DATABASE_URL
-# 自动检测可用驱动：psycopg2-binary > pg8000
+# 强制使用 pg8000 驱动（纯 Python，无系统依赖，SSL 可控）
+import ssl as _ssl
+
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'quiz_app.db')}")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-# 检测可用 PostgreSQL 驱动
-_DB_DRIVER = None
 if DATABASE_URL.startswith("postgresql://"):
-    # 先试 psycopg2（最快，需系统 libpq）
-    for _driver_name, _driver_pkg in [("psycopg2", "psycopg2-binary"), ("pg8000", "pg8000")]:
-        try:
-            __import__(_driver_name)
-            _DB_DRIVER = _driver_name
-            print(f"🗄️  使用数据库驱动: {_driver_pkg}")
-            break
-        except ImportError:
-            continue
-    if not _DB_DRIVER:
-        print("⚠️  未安装 PostgreSQL 驱动，尝试安装: pip install psycopg2-binary pg8000")
-        print("   将使用 SQLite 降级运行（注册/登录功能不可用）")
-
-    # Railway PostgreSQL 要求 SSL 连接
-    if "sslmode" not in DATABASE_URL:
-        if _DB_DRIVER == "pg8000":
-            # pg8000 的 SSL 参数通过连接属性设置
-            pass  # pg8000 默认自动协商 SSL
-        else:
-            DATABASE_URL += "&sslmode=require" if "?" in DATABASE_URL else "?sslmode=require"
-
-app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
-
-# PostgreSQL 连接池
-if DATABASE_URL.startswith("postgresql://") and _DB_DRIVER:
+    # 强制使用 pg8000 驱动，在 URL 中声明
+    if "+pg8000" not in DATABASE_URL:
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+pg8000://", 1)
+    # Railway PostgreSQL 要求 TLSv1.2+，配置 SSL 上下文
+    _ssl_ctx = _ssl.create_default_context()
+    _ssl_ctx.minimum_version = _ssl.TLSVersion.TLSv1_2
+    print("🗄️  使用数据库驱动: pg8000 (SSL: TLSv1.2+)")
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "connect_args": {"ssl_context": _ssl_ctx},
         "pool_size": 5,
         "max_overflow": 10,
         "pool_pre_ping": True,
         "pool_recycle": 3600,
     }
+
+app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 
 # 打印数据库连接信息（隐藏密码）
 if "@" in DATABASE_URL:
@@ -145,8 +130,8 @@ else:
     _db_url_display = DATABASE_URL
 print(f"🗄️  数据库: {_db_url_display}")
 
-# 裸连测试：不经过 SQLAlchemy，直接测 TCP/SSL 通不通
-if DATABASE_URL.startswith("postgresql://"):
+# 裸连测试
+if DATABASE_URL.startswith("postgresql"):
     try:
         import socket as _sock
         _host = DATABASE_URL.split("@")[1].split(":")[0]
