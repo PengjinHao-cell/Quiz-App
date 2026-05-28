@@ -692,16 +692,13 @@ function startExamTimer(totalQuestions) {
     const timerEl = document.getElementById("exam-timer");
     let note = "";
     if (timeRemaining === 0) {
-        note = "不限时";
-        timerEl.innerHTML = `⏱️ <span id="timer-display">--:--</span> <small style="color:#718096;font-size:0.75rem;">不限时</small>`;
+        timerEl.innerHTML = `⏱️ <span id="timer-display">--:--</span> <small style="color:#718096;font-size:0.7rem;">不限时</small>`;
         timerEl.classList.add("hidden");
         return;
-    } else if (config.duration === "auto") {
-        note = `共 ${totalMin} 分钟（每题90秒）`;
-    } else {
-        note = `共 ${totalMin} 分钟`;
     }
-    timerEl.innerHTML = `⏱️ <span id="timer-display">00:00</span> <small style="color:#718096;font-size:0.7rem;font-weight:400;">${note}</small>`;
+    // 时长显示精简，避免换行
+    const shortNote = config.duration === "auto" ? `共${totalMin}分` : `共${totalMin}分`;
+    timerEl.innerHTML = `⏱️ <span id="timer-display">00:00</span> <small style="color:#718096;font-size:0.65rem;font-weight:400;white-space:nowrap;">${shortNote}</small>`;
     timerEl.classList.remove("hidden");
 
     updateTimerDisplay();
