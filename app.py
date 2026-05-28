@@ -4,6 +4,7 @@
 - 持久化存储：原始文件 + 解析后的 JSON 数据
 - 考试模式 / 练习模式
 - 题库列表管理
+- 用户系统（注册/登录）
 """
 
 import os
@@ -14,14 +15,40 @@ import random
 import datetime
 import urllib.request
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask_login import LoginManager, current_user
 from werkzeug.utils import secure_filename
 from parser import parse_file, create_sample_questions
+from models import db, User
+from auth import auth_bp
 
 app = Flask(__name__)
 DEFAULT_SECRET = "quiz-app-secret-key-change-in-production"
 app.secret_key = os.environ.get("SECRET_KEY", DEFAULT_SECRET)
 if app.secret_key == DEFAULT_SECRET:
     print("⚠️  警告: 使用默认 SECRET_KEY，生产环境请设置环境变量 SECRET_KEY")
+
+# ---------- 数据库配置 ----------
+DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///quiz_app.db")
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db.init_app(app)
+
+login_manager = LoginManager()
+login_manager.login_view = "auth.login"
+login_manager.init_app(app)
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+app.register_blueprint(auth_bp)
+
+with app.app_context():
+    db.create_all()
 
 # ---------- 配置 ----------
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))

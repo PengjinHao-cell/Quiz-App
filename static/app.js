@@ -447,6 +447,23 @@ function collapseSection(el, callback) {
     }, 300);
 }
 
+// ---------- 用户菜单 ----------
+
+function toggleUserDropdown() {
+    const dd = document.getElementById("user-dropdown");
+    if (!dd) return;
+    dd.style.display = dd.style.display === "none" ? "block" : "none";
+}
+
+// 点击其他地方关闭下拉
+document.addEventListener("click", function(e) {
+    const menu = document.getElementById("user-menu");
+    const dd = document.getElementById("user-dropdown");
+    if (menu && dd && !menu.contains(e.target)) {
+        dd.style.display = "none";
+    }
+});
+
 // ---------- 公告横幅 ----------
 
 const ANNOUNCEMENT_KEY = "quiz_announcement_dismissed";
