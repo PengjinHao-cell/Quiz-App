@@ -300,7 +300,8 @@ def welcome():
 def app_main():
     """主应用页 - 题库列表"""
     banks = load_bank_list()
-    return render_template("index.html", banks=banks)
+    is_guest = request.args.get("guest", "0") == "1"
+    return render_template("index.html", banks=banks, is_guest=is_guest)
 
 
 @app.route("/upload", methods=["POST"])
