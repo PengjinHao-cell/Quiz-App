@@ -296,11 +296,21 @@ def welcome():
     return render_template("welcome.html")
 
 
+@app.route("/agreement")
+def agreement():
+    """用户协议"""
+    return render_template("agreement.html")
+
+
 @app.route("/app")
 def app_main():
     """主应用页 - 题库列表"""
-    banks = load_bank_list()
     is_guest = request.args.get("guest", "0") == "1"
+    # 未登录且非访客 → 回欢迎页
+    if not current_user.is_authenticated and not is_guest:
+        return redirect(url_for("welcome"))
+
+    banks = load_bank_list()
     return render_template("index.html", banks=banks, is_guest=is_guest)
 
 
