@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - 刷题通</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .auth-wrap { max-width: 400px; margin: 60px auto; padding: 32px; background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); text-align: center; }
+        .auth-wrap h1 { font-size: 1.5rem; margin-bottom: 8px; color: #2d3748; }
+        .auth-wrap p { color: #718096; font-size: 0.85rem; margin-bottom: 24px; line-height: 1.5; }
+        .auth-field { width: 100%; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; margin-bottom: 14px; box-sizing: border-box; transition: border-color 0.2s; }
+        .auth-field:focus { outline: none; border-color: #3182ce; }
+        .auth-btn { width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .auth-btn.primary { background: #3182ce; color: #fff; }
+        .auth-btn.primary:hover { background: #2b6cb0; }
+        .auth-btn.primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .auth-link { display: block; margin-top: 16px; font-size: 0.85rem; color: #718096; }
+        .auth-link a { color: #3182ce; text-decoration: none; }
+        .auth-link a:hover { text-decoration: underline; }
+        .auth-error { color: #e53e3e; font-size: 0.85rem; margin-bottom: 12px; min-height: 1.2em; }
+        .auth-hint { font-size: 0.8rem; color: #a0aec0; text-align: left; margin: -10px 0 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="auth-wrap">
+            <h1>📝 注册</h1>
+            <p>创建你的刷题通账号<br>注册后数据将保存到云端，换设备不丢失</p>
+            <div class="auth-error" id="auth-error"></div>
+            <input type="text" class="auth-field" id="username" placeholder="用户名（字母数字）" autocomplete="username" autofocus>
+            <input type="email" class="auth-field" id="email" placeholder="邮箱（选填，用于找回密码）" autocomplete="email">
+            <input type="password" class="auth-field" id="password" placeholder="密码（≥6位，含字母+数字+特殊字符）" autocomplete="new-password">
+            <div class="auth-hint">密码必须包含字母、数字和特殊字符，至少6位</div>
+            <button class="auth-btn primary" id="register-btn" onclick="handleRegister()">注册</button>
+            <div class="auth-link">
+                已有账号？<a href="{{ url_for('auth.login') }}">去登录</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function handleRegister() {
+            const btn = document.getElementById("register-btn");
+            const errEl = document.getElementById("auth-error");
+            const username = document.getElementById("username").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+
+            errEl.textContent = "";
+            if (!username) { errEl.textContent = "请填写用户名"; return; }
+            if (!password) { errEl.textContent = "请填写密码"; return; }
+
+            btn.disabled = true;
+            btn.textContent = "注册中...";
+
+            fetch("/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password, email }),
+            })
+                .then(async (res) => {
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "注册失败");
+                    return data;
+                })
+                .then((data) => {
+                    window.location.href = "/app";
+                })
+                .catch((err) => {
+                    errEl.textContent = err.message;
+                    btn.disabled = false;
+                    btn.textContent = "注册";
+                });
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") handleRegister();
+        });
+    </script>
+</body>
+</html>

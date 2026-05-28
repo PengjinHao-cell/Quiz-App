@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 刷题通</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .auth-wrap { max-width: 400px; margin: 60px auto; padding: 32px; background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); text-align: center; }
+        .auth-wrap h1 { font-size: 1.5rem; margin-bottom: 8px; color: #2d3748; }
+        .auth-wrap p { color: #718096; font-size: 0.9rem; margin-bottom: 24px; }
+        .auth-field { width: 100%; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 0.95rem; margin-bottom: 14px; box-sizing: border-box; transition: border-color 0.2s; }
+        .auth-field:focus { outline: none; border-color: #3182ce; }
+        .auth-btn { width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .auth-btn.primary { background: #3182ce; color: #fff; }
+        .auth-btn.primary:hover { background: #2b6cb0; }
+        .auth-btn.primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .auth-link { display: block; margin-top: 16px; font-size: 0.85rem; color: #718096; }
+        .auth-link a { color: #3182ce; text-decoration: none; }
+        .auth-link a:hover { text-decoration: underline; }
+        .auth-error { color: #e53e3e; font-size: 0.85rem; margin-bottom: 12px; min-height: 1.2em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="auth-wrap">
+            <h1>🔐 登录</h1>
+            <p>欢迎回来！</p>
+            <div class="auth-error" id="auth-error"></div>
+            <input type="text" class="auth-field" id="username" placeholder="用户名" autocomplete="username" autofocus>
+            <input type="password" class="auth-field" id="password" placeholder="密码" autocomplete="current-password">
+            <button class="auth-btn primary" id="login-btn" onclick="handleLogin()">登录</button>
+            <div class="auth-link">
+                还没有账号？<a href="{{ url_for('auth.register') }}">去注册</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function handleLogin() {
+            const btn = document.getElementById("login-btn");
+            const errEl = document.getElementById("auth-error");
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value;
+
+            errEl.textContent = "";
+            if (!username || !password) { errEl.textContent = "请填写用户名和密码"; return; }
+
+            btn.disabled = true;
+            btn.textContent = "登录中...";
+
+            fetch("/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password }),
+            })
+                .then(async (res) => {
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "登录失败");
+                    return data;
+                })
+                .then((data) => {
+                    window.location.href = "/app";
+                })
+                .catch((err) => {
+                    errEl.textContent = err.message;
+                    btn.disabled = false;
+                    btn.textContent = "登录";
+                });
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") handleLogin();
+        });
+    </script>
+</body>
+</html>

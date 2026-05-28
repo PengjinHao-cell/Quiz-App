@@ -1,4 +1,6 @@
 flask>=3.0
+flask-sqlalchemy>=3.1
+flask-login>=0.6
 python-docx>=1.0
 PyPDF2>=3.0
 pymupdf>=1.24

@@ -20,9 +20,34 @@
     </div>
 
     <div class="container">
-        <header>
-<h1>📝 刷题通</h1>
-            <p class="subtitle">上传题库文件（PDF / DOCX），开始刷题练习</p>
+        <header style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+                <h1 style="margin:0;text-align:left;">📝 刷题通</h1>
+                <p class="subtitle" style="margin:4px 0 0;text-align:left;">上传题库文件，开始刷题练习</p>
+            </div>
+            <div class="user-menu" id="user-menu">
+                {% if current_user.is_authenticated %}
+                <div class="user-avatar" onclick="toggleUserDropdown()">
+                    <span class="avatar-letter">{{ current_user.username[0] | upper }}</span>
+                    <span class="avatar-name">{{ current_user.username }}</span>
+                    <span class="avatar-arrow">▾</span>
+                </div>
+                <div class="user-dropdown" id="user-dropdown" style="display:none;">
+                    <div class="dropdown-header">{{ current_user.username }}</div>
+                    <a class="dropdown-item" href="#">📊 学习统计</a>
+                    <a class="dropdown-item" href="#">⭐ 收藏本</a>
+                    <a class="dropdown-item" href="#">📕 错题本</a>
+                    <a class="dropdown-item" href="#">📜 学习记录</a>
+                    <a class="dropdown-item" href="#">⚙️ 设置</a>
+                    <a class="dropdown-item" href="#">👤 个人信息</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="{{ url_for('auth.logout') }}" style="color:#e53e3e;">🚪 退出登录</a>
+                </div>
+                {% else %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-sm" style="padding:6px 18px;">登录</a>
+                <a href="{{ url_for('auth.register') }}" class="btn btn-secondary btn-sm" style="padding:6px 18px;margin-left:6px;">注册</a>
+                {% endif %}
+            </div>
         </header>
 
         <!-- 公告横幅（可关闭，localStorage 记忆） -->
