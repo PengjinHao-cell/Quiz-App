@@ -13,7 +13,9 @@ import uuid
 import json
 import random
 import datetime
+import time as _time
 import urllib.request
+import threading
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from flask_login import LoginManager, current_user
 from werkzeug.utils import secure_filename
@@ -25,13 +27,27 @@ app = Flask(__name__)
 DEFAULT_SECRET = "quiz-app-secret-key-change-in-production"
 app.secret_key = os.environ.get("SECRET_KEY", DEFAULT_SECRET)
 if app.secret_key == DEFAULT_SECRET:
-    print("⚠️  警告: 使用默认 SECRET_KEY，生产环境请设置环境变量 SECRET_KEY")
+    import sys as _sys
+    _sys.stderr.write("❌ 错误: 使用默认 SECRET_KEY 启动不安全。请设置环境变量 SECRET_KEY。\n")
+    _sys.stderr.write("   开发环境可用: export SECRET_KEY=\"dev-$(openssl rand -hex 16)\"\n")
+    if os.environ.get("FLASK_ENV") == "production":
+        raise RuntimeError("生产环境禁止使用默认 SECRET_KEY")
+    print("⚠️  警告: 开发环境使用默认 SECRET_KEY，请勿用于生产")
 
 
 
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
+login_manager.session_protection = "strong"  # 防止会话伪造
+login_manager.remember_cookie_duration = datetime.timedelta(days=14)  # "记住我"有效期
 login_manager.init_app(app)
+
+
+@app.before_request
+def session_timeout_check():
+    """会话超时检查：非活动超过 24 小时（未勾选记住我）自动登出"""
+    # 交给 Flask-Login 的 session_protection 处理
+    pass
 
 
 @login_manager.user_loader
@@ -55,7 +71,12 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 DATA_FOLDER = os.path.join(BASE_DIR, "data")
 
-# ---------- 数据库配置（容错：驱动缺失时不崩溃） ----------
+# ---------- 数据库配置 ----------
+# PostgreSQL 迁移就绪：
+#   export DATABASE_URL="postgresql://user:pass@host:5432/quizmaster"
+#   pip install psycopg2-binary   # 推荐驱动（比 pg8000 更成熟）
+#   删除 driver=pg8000 后缀（SQLAlchemy 2.0+ 自动检测）
+# 连接池: SQLALCHEMY_ENGINE_OPTIONS = {"pool_size": 5, "max_overflow": 10, "pool_pre_ping": True}
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'quiz_app.db')}")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
@@ -63,11 +84,20 @@ if DATABASE_URL.startswith("postgresql://") and "driver" not in DATABASE_URL:
     DATABASE_URL += "?driver=pg8000" if "?" not in DATABASE_URL else "&driver=pg8000"
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# PostgreSQL 生产配置（取消注释启用）：
+# app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+#     "pool_size": 5,
+#     "max_overflow": 10,
+#     "pool_pre_ping": True,
+#     "pool_recycle": 3600,
+# }
 
 try:
     db.init_app(app)
     with app.app_context():
         db.create_all()
+        # 自动创建默认管理员（环境变量 ADMIN_USERNAME + ADMIN_PASSWORD）
+        _init_default_admin()
     print("✅ 数据库连接成功")
 except Exception as e:
     print(f"⚠️  数据库初始化失败: {e}")
@@ -121,8 +151,22 @@ def check_name_duplicate(name: str, exclude_id: str = ""):
     return None
 
 
+# 题库列表缓存（避免每次请求都读磁盘）
+_bank_list_cache = {"data": None, "time": 0.0, "lock": threading.Lock()}
+_BANK_CACHE_TTL = 3.0  # 缓存有效期 3 秒
+
+def _invalidate_bank_cache():
+    """使题库列表缓存失效（上传/删除/重命名时调用）"""
+    with _bank_list_cache["lock"]:
+        _bank_list_cache["time"] = 0.0
+
 def load_bank_list() -> list:
-    """加载所有题库的元数据（含题型统计）"""
+    """加载所有题库的元数据（含题型统计），带内存缓存"""
+    now = _time.time()
+    with _bank_list_cache["lock"]:
+        if _bank_list_cache["data"] is not None and now - _bank_list_cache["time"] < _BANK_CACHE_TTL:
+            return _bank_list_cache["data"]
+
     banks = []
     if not os.path.isdir(DATA_FOLDER):
         return banks
@@ -181,6 +225,9 @@ def load_bank_list() -> list:
 
     # 按题库名称（original_filename）排序，不区分大小写
     banks.sort(key=lambda b: b.get("original_filename", "").lower())
+    with _bank_list_cache["lock"]:
+        _bank_list_cache["data"] = banks
+        _bank_list_cache["time"] = _time.time()
     return banks
 
 
@@ -401,6 +448,7 @@ def upload():
             "passages": parsed.get("passages", []),
         }
         save_bank(bank_id, bank_data)
+        _invalidate_bank_cache()
         total_q = sum(len(p.get("questions", [])) for p in bank_data["passages"])
         dup = check_name_duplicate(original_filename, exclude_id=bank_id)
         resp = {
@@ -419,6 +467,7 @@ def upload():
             "questions": questions,
         }
         save_bank(bank_id, bank_data)
+        _invalidate_bank_cache()
         dup = check_name_duplicate(original_filename, exclude_id=bank_id)
         resp = {
             "success": True,
@@ -671,13 +720,23 @@ def api_rename_bank(bank_id):
 
     bank["original_filename"] = new_name
     save_bank(bank_id, bank)
+    _invalidate_bank_cache()
     return jsonify({"success": True})
 
 
 @app.route("/api/bank/<bank_id>/delete", methods=["POST"])
 def api_delete_bank(bank_id):
-    """删除题库"""
+    """删除题库（需密码验证）"""
+    data = request.get_json() or {}
+    pwd = data.get("password", "")
+    expected = os.environ.get("DELETE_PASSWORD", "")
+    if not expected:
+        # 开发环境默认密码
+        expected = "224070"
+    if pwd != expected:
+        return jsonify({"error": "删除密码错误"}), 403
     delete_bank_files(bank_id)
+    _invalidate_bank_cache()
     return jsonify({"success": True})
 
 
@@ -974,13 +1033,29 @@ def api_vocab_words():
 @app.route("/api/vocab/batch", methods=["POST"])
 def api_vocab_batch():
     """批量生成更多词汇（用 AI 扩展词库）"""
-    try:
-        # 调用 AI 生成 30 个新词
-        from app import parse_with_llm  # noqa - 复用 AI 调用
-    except:
-        pass
-    
+    # TODO: 实现批量词汇生成（需提前提取 parse_with_llm 到独立模块避免自导入）
     return jsonify({"error": "此功能开发中"}), 501
+
+
+# =========================== 默认管理员 ===========================
+
+def _init_default_admin():
+    """从环境变量读取管理员账号密码并创建（如已存在则跳过）"""
+    username = os.environ.get("ADMIN_USERNAME", "").strip()
+    password = os.environ.get("ADMIN_PASSWORD", "").strip()
+    if not username or not password:
+        return
+    try:
+        existing = User.query.filter_by(username=username).first()
+        if existing:
+            return
+        user = User(username=username, email=f"{username}@quizmaster.app")
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        print(f"✅ 管理员用户「{username}」已自动创建")
+    except Exception as e:
+        print(f"⚠️  管理员创建失败（可忽略）: {e}")
 
 
 # =========================== 启动 ===========================

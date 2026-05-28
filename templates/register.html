@@ -6,17 +6,6 @@
     <title>{% if lang == 'en' %}Register{% else %}注册{% endif %} - Quiz Master</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        .splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.5s ease; }
-        .splash-screen.splash-fade-out { opacity: 0; pointer-events: none; }
-        .splash-card { text-align: center; animation: splashBounce 0.6s ease-out; }
-        @keyframes splashBounce { 0% { transform: scale(0.7); opacity: 0; } 60% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
-        .splash-icon { font-size: 4rem; margin-bottom: 12px; }
-        .splash-title { font-size: 1.8rem; font-weight: 800; color: #1e3a5f; margin-bottom: 4px; }
-        .splash-subtitle { font-size: 0.9rem; color: #64748b; margin-bottom: 20px; }
-        .splash-bar-bg { width: 200px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden; margin: 0 auto; }
-        .splash-bar-fill { height: 100%; width: 0; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 2px; animation: splashLoad 1.2s ease-in-out forwards; }
-        @keyframes splashLoad { 0% { width: 0; } 50% { width: 70%; } 100% { width: 100%; } }
-
         .auth-wrap { max-width: 400px; margin: 60px auto; padding: 32px; background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); text-align: center; }
         .auth-wrap h1 { font-size: 1.5rem; margin-bottom: 8px; color: #2d3748; }
         .auth-wrap p { color: #718096; font-size: 0.85rem; margin-bottom: 24px; line-height: 1.5; }
@@ -41,17 +30,7 @@
     </style>
 </head>
 <body>
-    <!-- 启动缓冲画面 -->
-    <div id="splash-screen" class="splash-screen">
-        <div class="splash-card">
-            <div class="splash-icon">📝</div>
-            <h1 class="splash-title">刷题通</h1>
-            <p class="splash-subtitle">加载中...</p>
-            <div class="splash-bar-bg">
-                <div class="splash-bar-fill"></div>
-            </div>
-        </div>
-    </div>
+    {% include '_splash.html' %}
 
     <div class="container">
         <div class="auth-wrap">
@@ -64,7 +43,12 @@
                 <input type="text" class="auth-field" id="code" placeholder="{% if lang == 'en' %}Verification Code{% else %}验证码{% endif %}" autocomplete="off" maxlength="6">
                 <button class="code-send-btn" id="send-code-btn" onclick="handleSendCode()">{% if lang == 'en' %}Send Code{% else %}发送验证码{% endif %}</button>
             </div>
-            <input type="password" class="auth-field" id="password" placeholder="{% if lang == 'en' %}Password (6+ chars, letters+numbers+symbols){% else %}密码（≥6位，含字母+数字+特殊字符）{% endif %}" autocomplete="new-password" oninput="checkPasswordMatch()">
+            <input type="password" class="auth-field" id="password" placeholder="{% if lang == 'en' %}Password (6+ chars, letters+numbers+symbols){% else %}密码（≥6位，含字母+数字+特殊字符）{% endif %}" autocomplete="new-password" oninput="checkPasswordMatch();updatePwdStrength()">
+            <!-- 密码强度指示条 -->
+            <div id="pwd-strength-bar" style="height:4px;background:#e2e8f0;border-radius:2px;margin:-8px 0 8px;overflow:hidden;transition:all 0.2s;">
+                <div id="pwd-strength-fill" style="height:100%;width:0;background:#e2e8f0;border-radius:2px;transition:all 0.3s ease;"></div>
+            </div>
+            <div id="pwd-strength-text" style="font-size:0.75rem;min-height:1.2em;margin-bottom:4px;text-align:left;color:#a0aec0;"></div>
             <input type="password" class="auth-field" id="password2" placeholder="{% if lang == 'en' %}Confirm Password{% else %}再次输入密码{% endif %}" autocomplete="new-password" oninput="checkPasswordMatch()" style="margin-bottom:4px;">
             <div id="password-match-hint" style="font-size:0.85rem;min-height:1.5em;margin-bottom:14px;text-align:left;">
                 {% if lang == 'en' %}Enter the same password twice{% else %}请再次输入密码确认{% endif %}
@@ -84,20 +68,37 @@
             <a href="/set-lang/zh" style="display:inline-block;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:0.8rem;{% if lang=='zh' %}background:#3b82f6;color:#fff;{% else %}background:#e2e8f0;color:#94a3b8;{% endif %}margin-right:4px;transition:all 0.2s;">中文</a>
             <a href="/set-lang/en" style="display:inline-block;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:0.8rem;{% if lang=='en' %}background:#3b82f6;color:#fff;{% else %}background:#e2e8f0;color:#94a3b8;{% endif %}transition:all 0.2s;">EN</a>
         </div>
+    <script src="{{ url_for('static', filename='utils.js', v=2) }}"></script>
     <script>
-        // 启动画面淡出
-        document.addEventListener("DOMContentLoaded", () => {
-            setTimeout(() => {
-                const splash = document.getElementById("splash-screen");
-                if (splash) {
-                    splash.classList.add("splash-fade-out");
-                    setTimeout(() => { splash.style.display = "none"; }, 500);
-                }
-            }, 400);
-        });
+        document.addEventListener("DOMContentLoaded", () => setTimeout(dismissSplash, 400));
 
         let codeCooldown = 0;
         const LANG = "{{ lang }}";
+
+        function updatePwdStrength() {
+            const pwd = document.getElementById("password").value;
+            const fill = document.getElementById("pwd-strength-fill");
+            const text = document.getElementById("pwd-strength-text");
+            if (!pwd) { fill.style.width = "0"; fill.style.background = "#e2e8f0"; text.textContent = ""; return; }
+            let score = 0;
+            if (pwd.length >= 6) score++;
+            if (pwd.length >= 10) score++;
+            if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++;
+            if (/\d/.test(pwd)) score++;
+            if (/[^a-zA-Z0-9]/.test(pwd)) score++;
+            const pct = score * 20;
+            fill.style.width = Math.min(pct, 100) + "%";
+            const levels = [
+                { max: 20, color: "#e53e3e", label: LANG==='en'?'Weak':'弱' },
+                { max: 40, color: "#dd6b20", label: LANG==='en'?'Fair':'一般' },
+                { max: 60, color: "#d69e2e", label: LANG==='en'?'Good':'较好' },
+                { max: 80, color: "#38a169", label: LANG==='en'?'Strong':'强' },
+                { max: 100, color: "#38a169", label: LANG==='en'?'Very Strong':'很强' },
+            ];
+            for (const lv of levels) {
+                if (pct <= lv.max) { fill.style.background = lv.color; text.textContent = LANG==='en'?'Password strength: ':'密码强度：' + lv.label; text.style.color = lv.color; break; }
+            }
+        }
 
         function checkPasswordMatch() {
             const p1 = document.getElementById("password").value;

@@ -186,14 +186,27 @@ function selectReadingOption(key, letter) {
     }
 }
 
-function submitReading() {
+async function submitReading() {
     if (submitted) return;
     const totalQ = passages.reduce((sum, p) => sum + p.questions.length, 0);
     const answered = Object.values(userAnswers).filter(a => a !== "").length;
-    if (answered < totalQ && !confirm(`还有 ${totalQ - answered} 题未作答，确定提交评判吗？`)) {
-        return;
+    if (answered < totalQ) {
+        const ok = await showConfirmModal(`还有 ${totalQ - answered} 题未作答`, "确定提交评判吗？");
+        if (!ok) return;
     }
     submitted = true;
+
+    // 计算得分并写入历史记录
+    let correctCount = 0;
+    passages.forEach(p => {
+        p.questions.forEach(q => {
+            const key = getQKey(p.id, q.id);
+            if (userAnswers[key] === q.answer) correctCount++;
+        });
+    });
+    const score = totalQ > 0 ? Math.round(correctCount / totalQ * 100) : 0;
+    saveReadingHistory(correctCount, totalQ, score);
+
     // 禁用选项点击 + 显示评判结果
     renderQuestionNav(currentPassageIdx);
     showQuestion(currentQuestionIdx);
@@ -204,6 +217,30 @@ function submitReading() {
         submitBtn.textContent = "✅ 已评判";
         submitBtn.disabled = true;
     }
+}
+
+/** 阅读理解结果写入 localStorage 历史记录 */
+function saveReadingHistory(correct, total, score) {
+    const record = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        bank_id: READING_CONFIG.bankId,
+        bank_name: READING_CONFIG.bankName || "阅读理解",
+        mode: "reading",
+        score: score,
+        correct: correct,
+        total: total,
+        time: new Date().toLocaleString("zh-CN", { hourCycle: "h23" }),
+    };
+    let history = [];
+    try {
+        const raw = localStorage.getItem("quizHistory");
+        history = raw ? JSON.parse(raw) : [];
+    } catch (_) {
+        history = [];
+    }
+    history.unshift(record);
+    if (history.length > 50) history = history.slice(0, 50);
+    localStorage.setItem("quizHistory", JSON.stringify(history));
 }
 
 function updateReadingProgress() {

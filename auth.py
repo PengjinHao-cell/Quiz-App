@@ -1,6 +1,7 @@
 """
 认证蓝图：注册 / 登录 / 登出 / 邮箱验证
 """
+import time
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 from flask_login import login_user, logout_user, login_required, current_user
 from models import db, User
@@ -10,6 +11,67 @@ from email_utils import (
 )
 
 auth_bp = Blueprint("auth", __name__)
+
+# ---------- 登录限流（内存计数，进程级） ----------
+_LOGIN_ATTEMPTS = {}  # {ip: [timestamp, ...]}
+
+def _check_login_rate_limit(ip: str) -> tuple:
+    """
+    检查 IP 登录频率。
+    返回 (allowed: bool, wait_seconds: int)
+    规则：同一 IP 5 分钟内失败 5 次后，限流 5 分钟。
+    """
+    now = time.time()
+    if ip not in _LOGIN_ATTEMPTS:
+        return True, 0
+    # 清理超过 5 分钟的旧记录
+    _LOGIN_ATTEMPTS[ip] = [t for t in _LOGIN_ATTEMPTS[ip] if now - t < 300]
+    attempts = len(_LOGIN_ATTEMPTS[ip])
+    if attempts >= 5:
+        oldest = _LOGIN_ATTEMPTS[ip][0]
+        wait = int(300 - (now - oldest))
+        return False, max(wait, 1)
+    return True, 0
+
+def _record_login_attempt(ip: str, success: bool):
+    """记录登录尝试"""
+    now = time.time()
+    if success:
+        # 成功后清空该 IP 记录
+        _LOGIN_ATTEMPTS.pop(ip, None)
+    else:
+        if ip not in _LOGIN_ATTEMPTS:
+            _LOGIN_ATTEMPTS[ip] = []
+        _LOGIN_ATTEMPTS[ip].append(now)
+
+# ---------- 验证码限流（每邮箱 3 次） ----------
+_VERIFY_CODE_ATTEMPTS = {}  # {email: [timestamp, ...]}
+
+def _check_code_rate_limit(email: str) -> tuple:
+    """
+    检查邮箱验证码重试频率。
+    返回 (allowed: bool, wait_seconds: int)
+    规则：同一邮箱 10 分钟内错误 3 次后锁定 10 分钟。
+    """
+    now = time.time()
+    if email not in _VERIFY_CODE_ATTEMPTS:
+        return True, 0
+    _VERIFY_CODE_ATTEMPTS[email] = [t for t in _VERIFY_CODE_ATTEMPTS[email] if now - t < 600]
+    if len(_VERIFY_CODE_ATTEMPTS[email]) >= 3:
+        oldest = _VERIFY_CODE_ATTEMPTS[email][0]
+        wait = int(600 - (now - oldest))
+        return False, max(wait, 1)
+    return True, 0
+
+def _record_code_attempt(email: str, success: bool):
+    """记录验证码验证尝试"""
+    now = time.time()
+    if success:
+        _VERIFY_CODE_ATTEMPTS.pop(email, None)
+    else:
+        if email not in _VERIFY_CODE_ATTEMPTS:
+            _VERIFY_CODE_ATTEMPTS[email] = []
+        _VERIFY_CODE_ATTEMPTS[email].append(now)
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])
@@ -47,9 +109,16 @@ def register():
     if not code:
         return jsonify({"error": "请填写验证码"}), 400
 
+    # 验证码重试限流
+    allowed, wait = _check_code_rate_limit(email)
+    if not allowed:
+        return jsonify({"error": f"验证码错误次数过多，请 {wait} 秒后再试"}), 429
+
     # 校验验证码
     if not verify_code(email, code):
+        _record_code_attempt(email, False)
         return jsonify({"error": "验证码错误或已过期"}), 400
+    _record_code_attempt(email, True)
 
     # 用户名唯一
     if User.query.filter_by(username=username).first():
@@ -109,12 +178,21 @@ def login():
     data = request.get_json()
     username = (data.get("username") or "").strip()
     password = data.get("password") or ""
+    remember = data.get("remember", False)
+
+    # 登录限流检查
+    client_ip = request.remote_addr or "unknown"
+    allowed, wait = _check_login_rate_limit(client_ip)
+    if not allowed:
+        return jsonify({"error": f"登录尝试过于频繁，请 {wait} 秒后再试"}), 429
 
     user = User.query.filter_by(username=username).first()
     if not user or not user.check_password(password):
+        _record_login_attempt(client_ip, False)
         return jsonify({"error": "用户名或密码错误"}), 401
 
-    login_user(user, remember=True)
+    _record_login_attempt(client_ip, True)
+    login_user(user, remember=bool(remember))
     return jsonify({"success": True, "username": user.username})
 
 
@@ -137,8 +215,14 @@ def api_reset_password():
     if err:
         return jsonify({"error": err}), 400
 
+    allowed, wait = _check_code_rate_limit(email)
+    if not allowed:
+        return jsonify({"error": f"验证码错误次数过多，请 {wait} 秒后再试"}), 429
+
     if not verify_code(email, code):
+        _record_code_attempt(email, False)
         return jsonify({"error": "验证码错误或已过期"}), 400
+    _record_code_attempt(email, True)
 
     user = User.query.filter_by(email=email).first()
     if not user:
@@ -177,8 +261,13 @@ def api_update_profile():
             return jsonify({"error": "请先绑定邮箱"}), 400
         if not code:
             return jsonify({"error": "请填写验证码"}), 400
+        allowed, wait = _check_code_rate_limit(email)
+        if not allowed:
+            return jsonify({"error": f"验证码错误次数过多，请 {wait} 秒后再试"}), 429
         if not verify_code(email, code):
+            _record_code_attempt(email, False)
             return jsonify({"error": "验证码错误或已过期"}), 400
+        _record_code_attempt(email, True)
         err = User.validate_password(new_password)
         if err:
             return jsonify({"error": err}), 400
