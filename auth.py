@@ -155,13 +155,21 @@ def api_send_code():
     # 生成验证码
     code = generate_code()
 
-    # 先存储验证码（不管邮件发不发得出去，验证码已生成）
+    # 先存储（保证验证码可用）
     store_code(email, code)
 
-    # 后台发送邮件（不阻塞 HTTP 响应）
-    send_verify_email(email, code, email.split("@")[0])
+    # 尝试发送邮件（3 秒超时，不阻塞太久）
+    ok = send_verify_email(email, code, email.split("@")[0])
 
-    return jsonify({"success": True, "message": "验证码已发送，请检查邮箱（如未收到请检查垃圾箱）"})
+    if ok:
+        return jsonify({"success": True, "message": "✅ 验证码已发送到邮箱，5 分钟内有效"})
+    else:
+        # 邮件发送失败 → 直接返回验证码作为保底
+        return jsonify({
+            "success": True,
+            "fallback_code": code,
+            "message": f"⚠️ 邮件发送异常，您的验证码是：{code}（5 分钟内有效）"
+        })
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])

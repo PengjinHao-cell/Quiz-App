@@ -141,8 +141,13 @@
             fetch("/api/send-code", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email}) })
             .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error); return d; })
             .then(d => {
-                err.textContent = LANG==='en'?'Code sent':'验证码已发送';
-                err.style.color = '#38a169';
+                if (d.fallback_code) {
+                    err.innerHTML = LANG==='en'?`Code: <strong>${d.fallback_code}</strong>`:`验证码：<strong style="font-size:1.3rem;letter-spacing:4px;color:#2563eb;">${d.fallback_code}</strong>`;
+                    err.style.color = '#d69e2e';
+                } else {
+                    err.textContent = d.message || (LANG==='en'?'Code sent':'验证码已发送');
+                    err.style.color = '#38a169';
+                }
                 resetCodeCooldown = 90;
                 const t = setInterval(() => { resetCodeCooldown--; btn.textContent = `${resetCodeCooldown}s`; if (resetCodeCooldown<=0) { clearInterval(t); btn.disabled=false; btn.textContent=LANG==='en'?'Send Code':'发送验证码'; } }, 1000);
             })
