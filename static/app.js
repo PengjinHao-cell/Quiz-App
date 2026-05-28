@@ -216,7 +216,7 @@ function updateFileName(input) {
 function startQuiz(bankId, mode) {
     const countEl = document.getElementById(`count-${bankId}`);
     const count = countEl ? countEl.value : "0";
-    const durationEl = document.getElementById(`duration-${bankId}`);
+    const durationEl = document.getElementById("global-duration");
     const duration = durationEl ? durationEl.value : "auto";
     window.location.href = `/quiz/${bankId}?mode=${mode}&count=${count}&duration=${duration}`;
 }

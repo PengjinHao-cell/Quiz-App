@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>刷题 - {{ bank_name }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* 题库名称过长时截断 */
+        .quiz-info h1 {
+            max-width: 280px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 1.1rem;
+        }
+        @media (max-width: 640px) {
+            .quiz-info h1 { max-width: 140px; font-size: 0.95rem; }
+        }
+    </style>
 </head>
 <body>
     <!-- 启动缓冲画面 -->
