@@ -72,25 +72,25 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 DATA_FOLDER = os.path.join(BASE_DIR, "data")
 
 # ---------- 数据库配置 ----------
-# PostgreSQL 迁移就绪：
-#   export DATABASE_URL="postgresql://user:pass@host:5432/quizmaster"
-#   pip install psycopg2-binary   # 推荐驱动（比 pg8000 更成熟）
-#   删除 driver=pg8000 后缀（SQLAlchemy 2.0+ 自动检测）
-# 连接池: SQLALCHEMY_ENGINE_OPTIONS = {"pool_size": 5, "max_overflow": 10, "pool_pre_ping": True}
+# Railway PostgreSQL 自动注入 DATABASE_URL，格式：
+#   postgresql://user:pass@host:5432/dbname
+# SQLAlchemy 2.0+ 自动检测驱动，无需手动指定 driver=pg8000
+# 生产连接池配置见下方注释
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'quiz_app.db')}")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-if DATABASE_URL.startswith("postgresql://") and "driver" not in DATABASE_URL:
-    DATABASE_URL += "?driver=pg8000" if "?" not in DATABASE_URL else "&driver=pg8000"
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-# PostgreSQL 生产配置（取消注释启用）：
+# PostgreSQL 生产连接池（Railway 推荐启用）：
 # app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
 #     "pool_size": 5,
 #     "max_overflow": 10,
 #     "pool_pre_ping": True,
 #     "pool_recycle": 3600,
 # }
+
+# 打印数据库连接信息（隐藏密码）
+_db_url_display = DATABASE_URL.replace(DATABASE_URL.split("@")[0].split("://")[1].split(":")[1] if "@" in DATABASE_URL and "://" in DATABASE_URL else "", "****") if "@" in DATABASE_URL else DATABASE_URL
+print(f"🗄️  数据库: {_db_url_display}")
 
 try:
     db.init_app(app)
@@ -102,6 +102,7 @@ try:
 except Exception as e:
     print(f"⚠️  数据库初始化失败: {e}")
     print("   应用将以无数据库模式运行（注册/登录功能不可用）")
+    print(f"   当前 DATABASE_URL 前缀: {DATABASE_URL.split('://')[0] + '://' if '://' in DATABASE_URL else DATABASE_URL}")
 ALLOWED_EXTENSIONS = {"pdf", "docx", "txt"}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
