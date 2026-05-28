@@ -97,7 +97,10 @@ def send_verify_email(to_email: str, code: str, username: str) -> bool:
             _sys.stderr.write(f"📧 正在发送邮件到 {to_email} (SMTP: {SMTP_HOST}:{SMTP_PORT}, user={SMTP_USER})\n")
             _sys.stderr.flush()
 
-            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=10) as server:
+            # 设置 5 秒超时，防止阻塞 gunicorn 工作线程
+            import socket as _socket
+            _socket.setdefaulttimeout(5)
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=5) as server:
                 server.login(SMTP_USER, SMTP_PASS)
                 server.sendmail(SMTP_USER, [to_email], msg.as_string())
 
@@ -105,14 +108,11 @@ def send_verify_email(to_email: str, code: str, username: str) -> bool:
             _sys.stderr.write(f"✅ 邮件发送成功: {to_email}\n")
         except smtplib.SMTPAuthenticationError:
             print(f"❌ 邮件认证失败: SMTP 用户名或密码错误 (user={SMTP_USER})")
-            print(f"   提示: 确保 SMTP_PASS 是「授权码」而非邮箱登录密码")
-        except (smtplib.SMTPConnectError, smtplib.SMTPException, OSError) as e:
+        except (smtplib.SMTPConnectError, smtplib.SMTPException, OSError, Exception) as e:
             print(f"❌ SMTP 发送失败 ({type(e).__name__}): {e}")
-            print(f"   提示: Railway 云服务器可能被 SMTP 提供商屏蔽，建议更换：")
-            print(f"         - SendGrid: smtp.sendgrid.net:587 (免费 100封/天)")
-            print(f"         - Gmail:    smtp.gmail.com:587 (需 App Password)")
-        except Exception as e:
-            print(f"❌ 邮件发送异常: {type(e).__name__}: {e}")
+            print(f"   提示: 云服务器 IP 被 SMTP 屏蔽，更换 SMTP 可解决：")
+            print(f"         SendGrid: smtp.sendgrid.net:587 (免费)")
+            print(f"         Gmail:    smtp.gmail.com:587 (需 App Password)")
 
     # 后台发送，不阻塞 HTTP 响应
     _threading.Thread(target=_do_send, daemon=True).start()
