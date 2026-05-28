@@ -80,6 +80,9 @@ python3 app.py
 
 | Version | Highlights |
 |---------|-----------|
+| **v0.7.1** | Bank name truncation, duration moved to global settings |
+| **v0.7.0** | Scrollable answer sheet, submit button in top bar, delete password (224070), custom exam duration, announcement banner |
+| **v0.6.0** | Code cleanup: dead code removal, dismissSplash unification, secret key warning, CSS cleanup |
 | **v0.5.0** | Reading mode, highlighter/underline, triple-engine, .txt upload, sort by name, duplicate detection, toast notifications |
 | **v0.4.0** | Vocabulary module (CET-6) |
 | **v0.3.0** | Welcome page, rename, type badges |
@@ -141,6 +144,9 @@ python3 app.py
 
 | 版本 | 内容 |
 |------|------|
+| **v0.7.1** | 题库名称截断、时长设定移至底部全局设置 |
+| **v0.7.0** | 答题卡滚动、交卷按钮顶栏、删除密码、自定义时长、公告横幅 |
+| **v0.6.0** | 代码清理：死代码删除、dismissSplash统一、密钥警告、CSS清理 |
 | **v0.5.0** | 阅读模式、荧光/下划线标注、三引擎识别、.txt上传、名称排序、重复检测、Toast通知 |
 | **v0.4.0** | 背单词模块（CET-6） |
 | **v0.3.0** | 欢迎页、题库重命名、题型标识 |
