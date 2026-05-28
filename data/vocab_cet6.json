@@ -1,0 +1,847 @@
+{
+  "id": "vocab_cet6",
+  "name": "CET-6 六级高频词汇",
+  "total": 120,
+  "words": [
+    {
+      "word": "abrupt",
+      "phonetic": "/əˈbrʌpt/",
+      "meaning": "突然的；唐突的",
+      "example": "The meeting came to an abrupt end when the fire alarm rang.",
+      "translation": "火警响起时，会议突然结束了。"
+    },
+    {
+      "word": "accelerate",
+      "phonetic": "/əkˈseləreɪt/",
+      "meaning": "加速；促进",
+      "example": "The government plans to accelerate the reform of the healthcare system.",
+      "translation": "政府计划加速医疗体系的改革。"
+    },
+    {
+      "word": "accommodate",
+      "phonetic": "/əˈkɒmədeɪt/",
+      "meaning": "容纳；向…提供住处",
+      "example": "The hotel can accommodate up to 500 guests.",
+      "translation": "这家酒店最多可容纳500位客人。"
+    },
+    {
+      "word": "accumulate",
+      "phonetic": "/əˈkjuːmjəleɪt/",
+      "meaning": "积累；积聚",
+      "example": "Dust accumulates quickly if you don't clean the room regularly.",
+      "translation": "如果你不经常打扫房间，灰尘会很快积聚。"
+    },
+    {
+      "word": "acquire",
+      "phonetic": "/əˈkwaɪər/",
+      "meaning": "获得；学到",
+      "example": "She acquired a good knowledge of French during her stay in Paris.",
+      "translation": "她在巴黎期间学到了很好的法语知识。"
+    },
+    {
+      "word": "adapt",
+      "phonetic": "/əˈdæpt/",
+      "meaning": "适应；改编",
+      "example": "It took him a while to adapt to the new environment.",
+      "translation": "他花了一段时间才适应新环境。"
+    },
+    {
+      "word": "adequate",
+      "phonetic": "/ˈædɪkwət/",
+      "meaning": "足够的；适当的",
+      "example": "The supply of food is not adequate for the growing population.",
+      "translation": "食物供应不足以满足不断增长的人口。"
+    },
+    {
+      "word": "adhere",
+      "phonetic": "/ədˈhɪər/",
+      "meaning": "粘附；遵守",
+      "example": "All members must adhere to the rules of the organization.",
+      "translation": "所有成员都必须遵守组织的规定。"
+    },
+    {
+      "word": "adverse",
+      "phonetic": "/ˈædvɜːrs/",
+      "meaning": "不利的；相反的",
+      "example": "The adverse weather conditions delayed the flight.",
+      "translation": "不利的天气条件延误了航班。"
+    },
+    {
+      "word": "advocate",
+      "phonetic": "/ˈædvəkeɪt/",
+      "meaning": "提倡；拥护",
+      "example": "Many experts advocate for stricter environmental regulations.",
+      "translation": "许多专家提倡更严格的环境法规。"
+    },
+    {
+      "word": "affect",
+      "phonetic": "/əˈfekt/",
+      "meaning": "影响；感动",
+      "example": "The economic crisis has affected millions of people worldwide.",
+      "translation": "经济危机影响了全球数百万人。"
+    },
+    {
+      "word": "aggregate",
+      "phonetic": "/ˈæɡrɪɡət/",
+      "meaning": "总计；集合",
+      "example": "The aggregate of all donations reached over one million dollars.",
+      "translation": "所有捐款总额超过一百万美元。"
+    },
+    {
+      "word": "allege",
+      "phonetic": "/əˈledʒ/",
+      "meaning": "断言；指控",
+      "example": "The newspaper alleged that the politician had accepted bribes.",
+      "translation": "报纸断言这位政治家收受了贿赂。"
+    },
+    {
+      "word": "allocate",
+      "phonetic": "/ˈæləkeɪt/",
+      "meaning": "分配；拨出",
+      "example": "The government allocated funds for the construction of new schools.",
+      "translation": "政府拨出资金用于建设新学校。"
+    },
+    {
+      "word": "alternative",
+      "phonetic": "/ɔːlˈtɜːrnətɪv/",
+      "meaning": "替代的；选择",
+      "example": "We need to find an alternative source of energy.",
+      "translation": "我们需要找到一种替代能源。"
+    },
+    {
+      "word": "ambiguous",
+      "phonetic": "/æmˈbɪɡjuəs/",
+      "meaning": "模糊的；模棱两可的",
+      "example": "His statement was ambiguous and left everyone confused.",
+      "translation": "他的陈述模棱两可，让所有人都感到困惑。"
+    },
+    {
+      "word": "amend",
+      "phonetic": "/əˈmend/",
+      "meaning": "修正；改进",
+      "example": "The committee decided to amend the proposal before voting.",
+      "translation": "委员会决定在投票前修正提案。"
+    },
+    {
+      "word": "ample",
+      "phonetic": "/ˈæmpl/",
+      "meaning": "充足的；宽敞的",
+      "example": "There is ample evidence to support his theory.",
+      "translation": "有充足的证据支持他的理论。"
+    },
+    {
+      "word": "anticipate",
+      "phonetic": "/ænˈtɪsɪpeɪt/",
+      "meaning": "预期；期望",
+      "example": "We anticipate that sales will increase by 20% this year.",
+      "translation": "我们预期今年的销售额将增长20%。"
+    },
+    {
+      "word": "apparent",
+      "phonetic": "/əˈpærənt/",
+      "meaning": "明显的；表面上的",
+      "example": "It was apparent that she was not telling the truth.",
+      "translation": "很明显她没有说实话。"
+    },
+    {
+      "word": "appreciate",
+      "phonetic": "/əˈpriːʃieɪt/",
+      "meaning": "欣赏；感激",
+      "example": "I really appreciate your help with this project.",
+      "translation": "我非常感激你在这个项目上的帮助。"
+    },
+    {
+      "word": "approach",
+      "phonetic": "/əˈproʊtʃ/",
+      "meaning": "接近；方法",
+      "example": "We need to adopt a new approach to solve this problem.",
+      "translation": "我们需要采用一种新方法来解决这个问题。"
+    },
+    {
+      "word": "appropriate",
+      "phonetic": "/əˈproʊpriət/",
+      "meaning": "适当的；拨出",
+      "example": "It is not appropriate to wear casual clothes to a formal meeting.",
+      "translation": "在正式会议上穿休闲装是不合适的。"
+    },
+    {
+      "word": "assess",
+      "phonetic": "/əˈses/",
+      "meaning": "评估；评定",
+      "example": "The teacher will assess the students' performance at the end of the term.",
+      "translation": "老师将在学期末评估学生的表现。"
+    },
+    {
+      "word": "assign",
+      "phonetic": "/əˈsaɪn/",
+      "meaning": "分配；指派",
+      "example": "The manager assigned the task to the most experienced employee.",
+      "translation": "经理把这项任务分配给了最有经验的员工。"
+    },
+    {
+      "word": "associate",
+      "phonetic": "/əˈsoʊʃieɪt/",
+      "meaning": "联系；联想",
+      "example": "People often associate the color red with danger.",
+      "translation": "人们常常把红色与危险联系在一起。"
+    },
+    {
+      "word": "assume",
+      "phonetic": "/əˈsuːm/",
+      "meaning": "假设；承担",
+      "example": "I assume that you have already read the report.",
+      "translation": "我假设你已经读过报告了。"
+    },
+    {
+      "word": "attain",
+      "phonetic": "/əˈteɪn/",
+      "meaning": "达到；获得",
+      "example": "She worked hard to attain her goal of becoming a doctor.",
+      "translation": "她努力工作以实现成为医生的目标。"
+    },
+    {
+      "word": "attribute",
+      "phonetic": "/əˈtrɪbjuːt/",
+      "meaning": "归因于；属性",
+      "example": "He attributed his success to hard work and determination.",
+      "translation": "他把自己的成功归因于努力和决心。"
+    },
+    {
+      "word": "authentic",
+      "phonetic": "/ɔːˈθentɪk/",
+      "meaning": "真正的；可信的",
+      "example": "The museum displays authentic artifacts from ancient Egypt.",
+      "translation": "博物馆展示了来自古埃及的真正文物。"
+    },
+    {
+      "word": "contemplate",
+      "phonetic": "/ˈkɒntəmpleɪt/",
+      "meaning": "沉思；考虑",
+      "example": "She sat by the window, contemplating her next move.",
+      "translation": "她坐在窗边，沉思着下一步行动。"
+    },
+    {
+      "word": "deteriorate",
+      "phonetic": "/dɪˈtɪəriəreɪt/",
+      "meaning": "恶化；退化",
+      "example": "The patient's condition began to deteriorate rapidly.",
+      "translation": "病人的状况开始迅速恶化。"
+    },
+    {
+      "word": "elaborate",
+      "phonetic": "/ɪˈlæbərət/",
+      "meaning": "精心制作；详细阐述",
+      "example": "Could you elaborate on your proposal?",
+      "translation": "你能详细阐述一下你的提议吗？"
+    },
+    {
+      "word": "fluctuate",
+      "phonetic": "/ˈflʌktʃueɪt/",
+      "meaning": "波动；起伏",
+      "example": "Stock prices fluctuate daily based on market conditions.",
+      "translation": "股票价格根据市场状况每天波动。"
+    },
+    {
+      "word": "genuine",
+      "phonetic": "/ˈdʒenjuɪn/",
+      "meaning": "真正的；真诚的",
+      "example": "She showed genuine concern for her friend's well-being.",
+      "translation": "她对朋友的福祉表现出真诚的关心。"
+    },
+    {
+      "word": "hierarchy",
+      "phonetic": "/ˈhaɪərɑːki/",
+      "meaning": "等级制度；层级",
+      "example": "The company has a strict hierarchy of authority.",
+      "translation": "这家公司有严格的权力等级制度。"
+    },
+    {
+      "word": "illuminate",
+      "phonetic": "/ɪˈluːmɪneɪt/",
+      "meaning": "照亮；阐明",
+      "example": "The professor's lecture illuminated the complex theory.",
+      "translation": "教授的讲座阐明了这个复杂的理论。"
+    },
+    {
+      "word": "jeopardize",
+      "phonetic": "/ˈdʒepədaɪz/",
+      "meaning": "危及；损害",
+      "example": "His reckless behavior could jeopardize the entire project.",
+      "translation": "他的鲁莽行为可能危及整个项目。"
+    },
+    {
+      "word": "legitimate",
+      "phonetic": "/lɪˈdʒɪtɪmət/",
+      "meaning": "合法的；正当的",
+      "example": "The company has a legitimate claim to the property.",
+      "translation": "这家公司对该财产拥有合法的所有权。"
+    },
+    {
+      "word": "manifest",
+      "phonetic": "/ˈmænɪfest/",
+      "meaning": "显现；表明",
+      "example": "The symptoms manifest themselves in different ways.",
+      "translation": "这些症状以不同的方式显现出来。"
+    },
+    {
+      "word": "negligible",
+      "phonetic": "/ˈneɡlɪdʒəbl/",
+      "meaning": "可忽略不计的；微不足道的",
+      "example": "The difference in cost is negligible.",
+      "translation": "成本上的差异微不足道。"
+    },
+    {
+      "word": "obsolete",
+      "phonetic": "/ˈɒbsəliːt/",
+      "meaning": "过时的；废弃的",
+      "example": "Old technology quickly becomes obsolete.",
+      "translation": "旧技术很快就过时了。"
+    },
+    {
+      "word": "paradox",
+      "phonetic": "/ˈpærədɒks/",
+      "meaning": "悖论；矛盾",
+      "example": "It's a paradox that the more you give, the more you receive.",
+      "translation": "你给予越多，得到越多，这是一个悖论。"
+    },
+    {
+      "word": "quantify",
+      "phonetic": "/ˈkwɒntɪfaɪ/",
+      "meaning": "量化；测量",
+      "example": "It's difficult to quantify the impact of the policy.",
+      "translation": "很难量化这项政策的影响。"
+    },
+    {
+      "word": "redundant",
+      "phonetic": "/rɪˈdʌndənt/",
+      "meaning": "多余的；冗余的",
+      "example": "The paragraph contains redundant information.",
+      "translation": "这段包含多余的信息。"
+    },
+    {
+      "word": "scrutiny",
+      "phonetic": "/ˈskruːtəni/",
+      "meaning": "仔细审查；监督",
+      "example": "The proposal came under intense scrutiny.",
+      "translation": "该提案受到了严格的审查。"
+    },
+    {
+      "word": "tangible",
+      "phonetic": "/ˈtændʒəbl/",
+      "meaning": "有形的；实际的",
+      "example": "We need tangible evidence to support the claim.",
+      "translation": "我们需要有形的证据来支持这一说法。"
+    },
+    {
+      "word": "undermine",
+      "phonetic": "/ˌʌndəˈmaɪn/",
+      "meaning": "削弱；破坏",
+      "example": "Constant criticism can undermine a person's confidence.",
+      "translation": "不断的批评会削弱一个人的自信心。"
+    },
+    {
+      "word": "versatile",
+      "phonetic": "/ˈvɜːsətaɪl/",
+      "meaning": "多才多艺的；多功能的",
+      "example": "She is a versatile musician who plays several instruments.",
+      "translation": "她是一位多才多艺的音乐家，能演奏多种乐器。"
+    },
+    {
+      "word": "warrant",
+      "phonetic": "/ˈwɒrənt/",
+      "meaning": "保证；授权",
+      "example": "The situation does not warrant such extreme measures.",
+      "translation": "这种情况并不保证采取如此极端的措施。"
+    },
+    {
+      "word": "yield",
+      "phonetic": "/jiːld/",
+      "meaning": "产出；屈服",
+      "example": "The farm yields a large amount of crops each year.",
+      "translation": "这个农场每年产出大量农作物。"
+    },
+    {
+      "word": "zeal",
+      "phonetic": "/ziːl/",
+      "meaning": "热情；热忱",
+      "example": "She pursued her goals with great zeal.",
+      "translation": "她以极大的热情追求自己的目标。"
+    },
+    {
+      "word": "benevolent",
+      "phonetic": "/bəˈnevələnt/",
+      "meaning": "仁慈的；慈善的",
+      "example": "The benevolent donor funded the new library.",
+      "translation": "这位仁慈的捐助者资助了新图书馆。"
+    },
+    {
+      "word": "coincide",
+      "phonetic": "/ˌkəʊɪnˈsaɪd/",
+      "meaning": "同时发生；巧合",
+      "example": "Our holidays coincide this year.",
+      "translation": "今年我们的假期正好重合。"
+    },
+    {
+      "word": "diverse",
+      "phonetic": "/daɪˈvɜːs/",
+      "meaning": "多样的；不同的",
+      "example": "The city has a diverse population.",
+      "translation": "这座城市拥有多样化的人口。"
+    },
+    {
+      "word": "empirical",
+      "phonetic": "/ɪmˈpɪrɪkl/",
+      "meaning": "经验主义的；实证的",
+      "example": "The theory is based on empirical evidence.",
+      "translation": "这个理论基于实证证据。"
+    },
+    {
+      "word": "foster",
+      "phonetic": "/ˈfɒstə/",
+      "meaning": "培养；促进",
+      "example": "The program aims to foster creativity in children.",
+      "translation": "该项目旨在培养儿童的创造力。"
+    },
+    {
+      "word": "grasp",
+      "phonetic": "/ɡrɑːsp/",
+      "meaning": "理解；抓住",
+      "example": "It took a while to grasp the concept.",
+      "translation": "花了一些时间才理解这个概念。"
+    },
+    {
+      "word": "hypothesis",
+      "phonetic": "/haɪˈpɒθəsɪs/",
+      "meaning": "假设；假说",
+      "example": "The scientist tested her hypothesis through experiments.",
+      "translation": "科学家通过实验检验了她的假设。"
+    },
+    {
+      "word": "plausible",
+      "phonetic": "/ˈplɔːzəbl/",
+      "meaning": "貌似可信的",
+      "example": "His explanation sounded plausible, but I still had doubts.",
+      "translation": "他的解释听起来貌似可信，但我仍有疑虑。"
+    },
+    {
+      "word": "alleviate",
+      "phonetic": "/əˈliːvieɪt/",
+      "meaning": "减轻；缓解",
+      "example": "The medicine helped alleviate her pain temporarily.",
+      "translation": "这种药帮助暂时缓解了她的疼痛。"
+    },
+    {
+      "word": "consolidate",
+      "phonetic": "/kənˈsɒlɪdeɪt/",
+      "meaning": "巩固；合并",
+      "example": "The company plans to consolidate its operations in one location.",
+      "translation": "公司计划将其业务合并到一个地点。"
+    },
+    {
+      "word": "deterrent",
+      "phonetic": "/dɪˈterənt/",
+      "meaning": "威慑因素",
+      "example": "The high cost of living is a major deterrent to moving to the city.",
+      "translation": "高昂的生活成本是搬到城市的主要威慑因素。"
+    },
+    {
+      "word": "inherent",
+      "phonetic": "/ɪnˈhɪərənt/",
+      "meaning": "固有的；内在的",
+      "example": "There are inherent risks in any investment.",
+      "translation": "任何投资都有固有的风险。"
+    },
+    {
+      "word": "manipulate",
+      "phonetic": "/məˈnɪpjuleɪt/",
+      "meaning": "操纵；控制",
+      "example": "The politician tried to manipulate public opinion through the media.",
+      "translation": "这位政客试图通过媒体操纵公众舆论。"
+    },
+    {
+      "word": "perpetual",
+      "phonetic": "/pəˈpetʃuəl/",
+      "meaning": "永久的；持续的",
+      "example": "The region has been in a state of perpetual conflict for decades.",
+      "translation": "该地区几十年来一直处于持续冲突的状态。"
+    },
+    {
+      "word": "reciprocal",
+      "phonetic": "/rɪˈsɪprəkl/",
+      "meaning": "相互的；互惠的",
+      "example": "The two countries signed a reciprocal trade agreement.",
+      "translation": "两国签署了一项互惠贸易协定。"
+    },
+    {
+      "word": "skeptical",
+      "phonetic": "/ˈskeptɪkl/",
+      "meaning": "怀疑的",
+      "example": "Many scientists remain skeptical about the new theory.",
+      "translation": "许多科学家仍然对新理论持怀疑态度。"
+    },
+    {
+      "word": "transient",
+      "phonetic": "/ˈtrænziənt/",
+      "meaning": "短暂的；临时的",
+      "example": "The beauty of cherry blossoms is transient, lasting only a few days.",
+      "translation": "樱花之美是短暂的，只持续几天。"
+    },
+    {
+      "word": "vulnerable",
+      "phonetic": "/ˈvʌlnərəbl/",
+      "meaning": "脆弱的；易受攻击的",
+      "example": "Children are particularly vulnerable to the effects of pollution.",
+      "translation": "儿童特别容易受到污染的影响。"
+    },
+    {
+      "word": "bias",
+      "phonetic": "/ˈbaɪəs/",
+      "meaning": "偏见；偏向",
+      "example": "The judge was accused of bias in favor of the defendant.",
+      "translation": "法官被指控对被告有偏见。"
+    },
+    {
+      "word": "compensate",
+      "phonetic": "/ˈkɒmpenseɪt/",
+      "meaning": "补偿；弥补",
+      "example": "The company agreed to compensate workers for their overtime.",
+      "translation": "公司同意补偿工人的加班费。"
+    },
+    {
+      "word": "discrepancy",
+      "phonetic": "/dɪsˈkrepənsi/",
+      "meaning": "差异；不一致",
+      "example": "There is a discrepancy between the two reports on the same incident.",
+      "translation": "关于同一事件的两份报告存在差异。"
+    },
+    {
+      "word": "elicit",
+      "phonetic": "/ɪˈlɪsɪt/",
+      "meaning": "引出；诱出",
+      "example": "The teacher's question elicited a thoughtful response from the student.",
+      "translation": "老师的问题引出了学生深思熟虑的回答。"
+    },
+    {
+      "word": "hamper",
+      "phonetic": "/ˈhæmpə/",
+      "meaning": "阻碍；妨碍",
+      "example": "Heavy rain hampered the rescue efforts.",
+      "translation": "大雨阻碍了救援工作。"
+    },
+    {
+      "word": "lucrative",
+      "phonetic": "/ˈluːkrətɪv/",
+      "meaning": "有利可图的；赚钱的",
+      "example": "She decided to pursue a lucrative career in finance.",
+      "translation": "她决定从事金融行业，追求一份有利可图的职业。"
+    },
+    {
+      "word": "reconcile",
+      "phonetic": "/ˈrekənsaɪl/",
+      "meaning": "调和；使和解",
+      "example": "It is difficult to reconcile his words with his actions.",
+      "translation": "很难使他的言行一致。"
+    },
+    {
+      "word": "vivid",
+      "phonetic": "/ˈvɪvɪd/",
+      "meaning": "生动的；鲜明的",
+      "example": "She gave a vivid description of her travels.",
+      "translation": "她生动地描述了她的旅行经历。"
+    },
+    {
+      "word": "allegation",
+      "phonetic": "/ˌælɪˈɡeɪʃən/",
+      "meaning": "指控；断言",
+      "example": "The company denied the allegations of fraud.",
+      "translation": "该公司否认了欺诈的指控。"
+    },
+    {
+      "word": "endorse",
+      "phonetic": "/ɪnˈdɔːs/",
+      "meaning": "支持；背书",
+      "example": "Several celebrities endorsed the new product.",
+      "translation": "几位名人代言了这款新产品。"
+    },
+    {
+      "word": "impair",
+      "phonetic": "/ɪmˈpeə/",
+      "meaning": "损害；削弱",
+      "example": "Lack of sleep can impair your judgment.",
+      "translation": "睡眠不足会损害你的判断力。"
+    },
+    {
+      "word": "jeopardy",
+      "phonetic": "/ˈdʒepədi/",
+      "meaning": "危险；风险",
+      "example": "His reckless actions put the whole team in jeopardy.",
+      "translation": "他的鲁莽行为使整个团队陷入危险。"
+    },
+    {
+      "word": "magnitude",
+      "phonetic": "/ˈmæɡnɪtjuːd/",
+      "meaning": "巨大；重要性",
+      "example": "The magnitude of the problem was not fully understood.",
+      "translation": "问题的严重性尚未被充分认识。"
+    },
+    {
+      "word": "notorious",
+      "phonetic": "/nəʊˈtɔːriəs/",
+      "meaning": "臭名昭著的；声名狼藉的",
+      "example": "The area is notorious for its high crime rate.",
+      "translation": "该地区因高犯罪率而臭名昭著。"
+    },
+    {
+      "word": "overwhelm",
+      "phonetic": "/ˌəʊvəˈwelm/",
+      "meaning": "压倒；使不知所措",
+      "example": "She was overwhelmed by the amount of work.",
+      "translation": "她被工作量压得喘不过气来。"
+    },
+    {
+      "word": "nominal",
+      "phonetic": "/ˈnɒmɪnl/",
+      "meaning": "名义上的；象征性的",
+      "example": "He is only the nominal head of the committee.",
+      "translation": "他只是委员会名义上的负责人。"
+    },
+    {
+      "word": "withhold",
+      "phonetic": "/wɪðˈhəʊld/",
+      "meaning": "扣留；拒绝给予",
+      "example": "The company decided to withhold payment until the work was completed.",
+      "translation": "公司决定在工程完成前扣留付款。"
+    },
+    {
+      "word": "abolish",
+      "phonetic": "/əˈbɒlɪʃ/",
+      "meaning": "废除；废止",
+      "example": "Many countries have abolished the death penalty.",
+      "translation": "许多国家已经废除了死刑。"
+    },
+    {
+      "word": "bureaucracy",
+      "phonetic": "/bjʊəˈrɒkrəsi/",
+      "meaning": "官僚主义；官僚机构",
+      "example": "The project was delayed by excessive bureaucracy.",
+      "translation": "项目因过度的官僚主义而被延误。"
+    },
+    {
+      "word": "catastrophe",
+      "phonetic": "/kəˈtæstrəfi/",
+      "meaning": "灾难；大祸",
+      "example": "The earthquake was a catastrophe that destroyed the entire city.",
+      "translation": "这场地震是一场摧毁了整个城市的灾难。"
+    },
+    {
+      "word": "dilemma",
+      "phonetic": "/dɪˈlemə/",
+      "meaning": "困境；两难",
+      "example": "She faced a dilemma between staying with her family or pursuing her career.",
+      "translation": "她面临着留在家人身边还是追求事业的困境。"
+    },
+    {
+      "word": "fragile",
+      "phonetic": "/ˈfrædʒaɪl/",
+      "meaning": "脆弱的；易碎的",
+      "example": "The fragile ecosystem is threatened by pollution.",
+      "translation": "脆弱的生态系统受到污染的威胁。"
+    },
+    {
+      "word": "intricate",
+      "phonetic": "/ˈɪntrɪkət/",
+      "meaning": "复杂的；精巧的",
+      "example": "The watch has an intricate mechanism inside.",
+      "translation": "这块手表内部有精巧的机制。"
+    },
+    {
+      "word": "hinder",
+      "phonetic": "/ˈhɪndər/",
+      "meaning": "阻碍；妨碍",
+      "example": "Bad weather hindered the rescue efforts.",
+      "translation": "恶劣天气阻碍了救援工作。"
+    },
+    {
+      "word": "magnify",
+      "phonetic": "/ˈmæɡnɪfaɪ/",
+      "meaning": "放大；夸大",
+      "example": "The microscope can magnify objects up to 1000 times.",
+      "translation": "显微镜可以将物体放大到1000倍。"
+    },
+    {
+      "word": "obscure",
+      "phonetic": "/əbˈskjʊər/",
+      "meaning": "模糊的；使难理解",
+      "example": "The meaning of the poem remains obscure to many readers.",
+      "translation": "这首诗的含义对许多读者来说仍然模糊不清。"
+    },
+    {
+      "word": "abide",
+      "phonetic": "/əˈbaɪd/",
+      "meaning": "遵守；容忍",
+      "example": "All participants must abide by the rules.",
+      "translation": "所有参与者必须遵守规则。"
+    },
+    {
+      "word": "endure",
+      "phonetic": "/ɪnˈdjʊər/",
+      "meaning": "忍受；持久",
+      "example": "The soldiers had to endure harsh conditions.",
+      "translation": "士兵们不得不忍受恶劣的条件。"
+    },
+    {
+      "word": "fascinate",
+      "phonetic": "/ˈfæsɪneɪt/",
+      "meaning": "使着迷；吸引",
+      "example": "The ancient ruins fascinated the archaeologists from around the world.",
+      "translation": "这些古代遗址让来自世界各地的考古学家着迷。"
+    },
+    {
+      "word": "luminous",
+      "phonetic": "/ˈluːmɪnəs/",
+      "meaning": "发光的；明亮的",
+      "example": "The luminous stars guided the travelers through the dark forest.",
+      "translation": "明亮的星星引导着旅行者穿过黑暗的森林。"
+    },
+    {
+      "word": "obstacle",
+      "phonetic": "/ˈɒbstəkl/",
+      "meaning": "障碍；阻碍",
+      "example": "Lack of funding remains a major obstacle to the research project.",
+      "translation": "缺乏资金仍然是这个研究项目的主要障碍。"
+    },
+    {
+      "word": "radical",
+      "phonetic": "/ˈrædɪkl/",
+      "meaning": "根本的；激进的",
+      "example": "The company underwent a radical transformation to adapt to the market.",
+      "translation": "公司经历了根本性的变革以适应市场。"
+    },
+    {
+      "word": "tentative",
+      "phonetic": "/ˈtentətɪv/",
+      "meaning": "试探性的；暂时的",
+      "example": "They reached a tentative agreement to end the strike.",
+      "translation": "他们达成了结束罢工的试探性协议。"
+    },
+    {
+      "word": "withstand",
+      "phonetic": "/wɪðˈstænd/",
+      "meaning": "承受；抵抗",
+      "example": "The building was designed to withstand earthquakes of magnitude 8.",
+      "translation": "这座建筑被设计成能承受8级地震。"
+    },
+    {
+      "word": "explicit",
+      "phonetic": "/ɪkˈsplɪsɪt/",
+      "meaning": "明确的；清楚的",
+      "example": "The instructions were explicit about the safety procedures.",
+      "translation": "这些说明对安全程序有明确的规定。"
+    },
+    {
+      "word": "inevitable",
+      "phonetic": "/ɪnˈevɪtəbl/",
+      "meaning": "不可避免的",
+      "example": "Change is inevitable in any organization.",
+      "translation": "变化在任何组织中都是不可避免的。"
+    },
+    {
+      "word": "reluctant",
+      "phonetic": "/rɪˈlʌktənt/",
+      "meaning": "不情愿的；勉强的",
+      "example": "He was reluctant to admit his mistake.",
+      "translation": "他不情愿承认自己的错误。"
+    },
+    {
+      "word": "disseminate",
+      "phonetic": "/dɪˈsemɪneɪt/",
+      "meaning": "传播；散布",
+      "example": "The organization aims to disseminate information about climate change.",
+      "translation": "该组织旨在传播有关气候变化的信息。"
+    },
+    {
+      "word": "prevalent",
+      "phonetic": "/ˈprevələnt/",
+      "meaning": "普遍的；流行的",
+      "example": "This disease is more prevalent in rural areas.",
+      "translation": "这种疾病在农村地区更为普遍。"
+    },
+    {
+      "word": "paradigm",
+      "phonetic": "/ˈpærədaɪm/",
+      "meaning": "范例；模式",
+      "example": "This discovery represents a paradigm shift in scientific thinking.",
+      "translation": "这一发现代表了科学思维的范式转变。"
+    },
+    {
+      "word": "subordinate",
+      "phonetic": "/səˈbɔːdɪnət/",
+      "meaning": "从属的；下属",
+      "example": "He was always subordinate to his boss in decision-making.",
+      "translation": "在做决策时，他总是从属于他的老板。"
+    },
+    {
+      "word": "perpetuate",
+      "phonetic": "/pəˈpetʃueɪt/",
+      "meaning": "使永久；延续",
+      "example": "The media often perpetuates stereotypes about different cultures.",
+      "translation": "媒体常常延续对不同文化的刻板印象。"
+    },
+    {
+      "word": "indigenous",
+      "phonetic": "/ɪnˈdɪdʒənəs/",
+      "meaning": "本土的；土著的",
+      "example": "The indigenous people have lived here for centuries.",
+      "translation": "土著人民在这里生活了几个世纪。"
+    },
+    {
+      "word": "exacerbate",
+      "phonetic": "/ɪɡˈzæsəbeɪt/",
+      "meaning": "加剧；恶化",
+      "example": "The drought exacerbated the food shortage in the region.",
+      "translation": "干旱加剧了该地区的粮食短缺。"
+    },
+    {
+      "word": "transcend",
+      "phonetic": "/trænˈsend/",
+      "meaning": "超越；胜过",
+      "example": "Great art transcends cultural boundaries.",
+      "translation": "伟大的艺术超越了文化界限。"
+    },
+    {
+      "word": "conspicuous",
+      "phonetic": "/kənˈspɪkjuəs/",
+      "meaning": "显眼的；引人注目的",
+      "example": "Her red dress was conspicuous in the crowd.",
+      "translation": "她的红裙子在人群中很显眼。"
+    },
+    {
+      "word": "deter",
+      "phonetic": "/dɪˈtɜːr/",
+      "meaning": "阻止；威慑",
+      "example": "The high cost did not deter them from pursuing the project.",
+      "translation": "高昂的成本并没有阻止他们推进这个项目。"
+    },
+    {
+      "word": "prolific",
+      "phonetic": "/prəˈlɪfɪk/",
+      "meaning": "多产的；丰富的",
+      "example": "She is a prolific author with over 50 novels.",
+      "translation": "她是一位多产的作家，著有50多部小说。"
+    },
+    {
+      "word": "substantiate",
+      "phonetic": "/səbˈstænʃieɪt/",
+      "meaning": "证实；证明",
+      "example": "The scientist provided data to substantiate her hypothesis.",
+      "translation": "科学家提供了数据来证实她的假设。"
+    },
+    {
+      "word": "grieve",
+      "phonetic": "/ɡriːv/",
+      "meaning": "悲伤；哀悼",
+      "example": "The community grieved for the victims of the natural disaster.",
+      "translation": "社区为自然灾害的受害者感到悲伤。"
+    }
+  ]
+}

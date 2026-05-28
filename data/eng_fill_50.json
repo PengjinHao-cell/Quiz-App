@@ -1,0 +1,357 @@
+{
+  "id": "eng_fill_50",
+  "original_filename": "英文缺词填空50题",
+  "upload_time": "2026-05-28 10:35:00",
+  "questions": [
+    {
+      "id": 1,
+      "type": "fill",
+      "text": "The ____ of the story was very unexpected. (end/conclusion)",
+      "options": {},
+      "answer": "end"
+    },
+    {
+      "id": 2,
+      "type": "fill",
+      "text": "She ____ to school every day. (goes/come)",
+      "options": {},
+      "answer": "goes"
+    },
+    {
+      "id": 3,
+      "type": "fill",
+      "text": "I have ____ seen such a beautiful sunset. (never/ever)",
+      "options": {},
+      "answer": "never"
+    },
+    {
+      "id": 4,
+      "type": "fill",
+      "text": "He is ____ in mathematics than his brother. (better/good)",
+      "options": {},
+      "answer": "better"
+    },
+    {
+      "id": 5,
+      "type": "fill",
+      "text": "Please ____ the door before you leave. (close/open)",
+      "options": {},
+      "answer": "close"
+    },
+    {
+      "id": 6,
+      "type": "fill",
+      "text": "The children are ____ in the garden now. (playing/play)",
+      "options": {},
+      "answer": "playing"
+    },
+    {
+      "id": 7,
+      "type": "fill",
+      "text": "She ____ English for five years. (studies/has)",
+      "options": {},
+      "answer": "has"
+    },
+    {
+      "id": 8,
+      "type": "fill",
+      "text": "This is the ____ film I have ever watched. (best/good)",
+      "options": {},
+      "answer": "best"
+    },
+    {
+      "id": 9,
+      "type": "fill",
+      "text": "We need to ____ early tomorrow morning. (leave/arrive)",
+      "options": {},
+      "answer": "leave"
+    },
+    {
+      "id": 10,
+      "type": "fill",
+      "text": "The sky is ____; it might rain soon. (cloudy/clear)",
+      "options": {},
+      "answer": "cloudy"
+    },
+    {
+      "id": 11,
+      "type": "fill",
+      "text": "He ____ his keys somewhere in the house. (lost/found)",
+      "options": {},
+      "answer": "lost"
+    },
+    {
+      "id": 12,
+      "type": "fill",
+      "text": "Can you ____ me the salt, please? (pass/give)",
+      "options": {},
+      "answer": "pass"
+    },
+    {
+      "id": 13,
+      "type": "fill",
+      "text": "She is ____ in learning Chinese. (interested/interesting)",
+      "options": {},
+      "answer": "interested"
+    },
+    {
+      "id": 14,
+      "type": "fill",
+      "text": "They ____ each other since childhood. (know/have)",
+      "options": {},
+      "answer": "have"
+    },
+    {
+      "id": 15,
+      "type": "fill",
+      "text": "The book ____ on the table belongs to me. (lying/lay)",
+      "options": {},
+      "answer": "lying"
+    },
+    {
+      "id": 16,
+      "type": "fill",
+      "text": "I ____ like to have a cup of coffee. (would/should)",
+      "options": {},
+      "answer": "would"
+    },
+    {
+      "id": 17,
+      "type": "fill",
+      "text": "He drove so ____ that we all felt scared. (fast/fastly)",
+      "options": {},
+      "answer": "fast"
+    },
+    {
+      "id": 18,
+      "type": "fill",
+      "text": "The teacher asked us to ____ the text carefully. (read/write)",
+      "options": {},
+      "answer": "read"
+    },
+    {
+      "id": 19,
+      "type": "fill",
+      "text": "Spring is the ____ season of the year. (first/warmest)",
+      "options": {},
+      "answer": "first"
+    },
+    {
+      "id": 20,
+      "type": "fill",
+      "text": "She ____ a song when I entered the room. (sang/was)",
+      "options": {},
+      "answer": "was"
+    },
+    {
+      "id": 21,
+      "type": "fill",
+      "text": "There ____ many students in the library. (are/is)",
+      "options": {},
+      "answer": "are"
+    },
+    {
+      "id": 22,
+      "type": "fill",
+      "text": "He is the ____ person I have ever met. (kindest/kind)",
+      "options": {},
+      "answer": "kindest"
+    },
+    {
+      "id": 23,
+      "type": "fill",
+      "text": "I ____ my homework before dinner last night. (finished/have)",
+      "options": {},
+      "answer": "finished"
+    },
+    {
+      "id": 24,
+      "type": "fill",
+      "text": "The train ____ at 6 PM every evening. (arrives/arrive)",
+      "options": {},
+      "answer": "arrives"
+    },
+    {
+      "id": 25,
+      "type": "fill",
+      "text": "She looked ____ at the strange noise. (around/back)",
+      "options": {},
+      "answer": "around"
+    },
+    {
+      "id": 26,
+      "type": "fill",
+      "text": "We should ____ attention in class. (pay/give)",
+      "options": {},
+      "answer": "pay"
+    },
+    {
+      "id": 27,
+      "type": "fill",
+      "text": "The ____ of the mountain was covered with snow. (top/side)",
+      "options": {},
+      "answer": "top"
+    },
+    {
+      "id": 28,
+      "type": "fill",
+      "text": "He ____ to be a doctor when he grows up. (wants/hopes)",
+      "options": {},
+      "answer": "wants"
+    },
+    {
+      "id": 29,
+      "type": "fill",
+      "text": "I have ____ been to Beijing before. (never/ever)",
+      "options": {},
+      "answer": "never"
+    },
+    {
+      "id": 30,
+      "type": "fill",
+      "text": "The cat is ____ under the table. (hiding/hidden)",
+      "options": {},
+      "answer": "hiding"
+    },
+    {
+      "id": 31,
+      "type": "fill",
+      "text": "She speaks English as ____ as a native speaker. (well/good)",
+      "options": {},
+      "answer": "well"
+    },
+    {
+      "id": 32,
+      "type": "fill",
+      "text": "We ____ going to the park tomorrow. (are/is)",
+      "options": {},
+      "answer": "are"
+    },
+    {
+      "id": 33,
+      "type": "fill",
+      "text": "He ____ me a beautiful gift on my birthday. (gave/gives)",
+      "options": {},
+      "answer": "gave"
+    },
+    {
+      "id": 34,
+      "type": "fill",
+      "text": "The ____ of the building is very modern. (design/paint)",
+      "options": {},
+      "answer": "design"
+    },
+    {
+      "id": 35,
+      "type": "fill",
+      "text": "I ____ agree with your opinion. (totally/complete)",
+      "options": {},
+      "answer": "totally"
+    },
+    {
+      "id": 36,
+      "type": "fill",
+      "text": "She ____ her mother very much. (misses/likes)",
+      "options": {},
+      "answer": "misses"
+    },
+    {
+      "id": 37,
+      "type": "fill",
+      "text": "The baby has been ____ for an hour. (crying/cry)",
+      "options": {},
+      "answer": "crying"
+    },
+    {
+      "id": 38,
+      "type": "fill",
+      "text": "We ____ finish the project by Friday. (must/can)",
+      "options": {},
+      "answer": "must"
+    },
+    {
+      "id": 39,
+      "type": "fill",
+      "text": "He is ____ of heights. (afraid/scared)",
+      "options": {},
+      "answer": "afraid"
+    },
+    {
+      "id": 40,
+      "type": "fill",
+      "text": "The museum is ____ from 9 AM to 5 PM. (open/close)",
+      "options": {},
+      "answer": "open"
+    },
+    {
+      "id": 41,
+      "type": "fill",
+      "text": "I ____ her since we were in primary school. (know/have)",
+      "options": {},
+      "answer": "have"
+    },
+    {
+      "id": 42,
+      "type": "fill",
+      "text": "She put the keys ____ the drawer. (inside/above)",
+      "options": {},
+      "answer": "inside"
+    },
+    {
+      "id": 43,
+      "type": "fill",
+      "text": "The ____ of the river is very clear. (water/sand)",
+      "options": {},
+      "answer": "water"
+    },
+    {
+      "id": 44,
+      "type": "fill",
+      "text": "He ____ a lot of progress in English this year. (made/has)",
+      "options": {},
+      "answer": "made"
+    },
+    {
+      "id": 45,
+      "type": "fill",
+      "text": "The movie was so ____ that I fell asleep. (boring/bored)",
+      "options": {},
+      "answer": "boring"
+    },
+    {
+      "id": 46,
+      "type": "fill",
+      "text": "She ____ me to her birthday party yesterday. (invited/invites)",
+      "options": {},
+      "answer": "invited"
+    },
+    {
+      "id": 47,
+      "type": "fill",
+      "text": "I ____ rather stay at home tonight. (would/should)",
+      "options": {},
+      "answer": "would"
+    },
+    {
+      "id": 48,
+      "type": "fill",
+      "text": "The students ____ quietly in the classroom. (sat/sit)",
+      "options": {},
+      "answer": "sat"
+    },
+    {
+      "id": 49,
+      "type": "fill",
+      "text": "He is the ____ runner in the school team. (fastest/fast)",
+      "options": {},
+      "answer": "fastest"
+    },
+    {
+      "id": 50,
+      "type": "fill",
+      "text": "We ____ each other for ten years now. (know/have)",
+      "options": {},
+      "answer": "have"
+    }
+  ]
+}

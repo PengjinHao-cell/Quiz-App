@@ -1,0 +1,76 @@
+{
+  "id": "eng_reading_001",
+  "original_filename": "CET-6 阅读理解（数字极简主义）",
+  "upload_time": "2026-05-28 12:00:00",
+  "type": "reading",
+  "passages": [
+    {
+      "id": 1,
+      "title": "Digital Minimalism",
+      "text": "In recent years, the concept of \"digital minimalism\" has gained considerable traction among technology critics and mental health advocates. Coined by computer scientist Cal Newport, digital minimalism refers to a philosophy of technology use in which you focus your online time on a small number of carefully selected and optimized activities that strongly support things you value, and then happily miss out on everything else.\n\nThe philosophy emerges as a direct response to what Newport calls \"digital clutter\" — the overwhelming accumulation of apps, notifications, social media platforms, and online services that fragment our attention and diminish our capacity for deep work. Research has shown that the average knowledge worker switches between tasks every three minutes, with each interruption requiring approximately 23 minutes to regain full focus.\n\nProponents of digital minimalism argue that the solution is not technological abstinence but rather intentional and purposeful engagement. They draw a parallel with the slow food movement: just as slow food advocates do not propose eliminating all convenience foods but rather encourage mindful eating, digital minimalists do not reject technology wholesale but advocate for deliberate consumption.\n\nHowever, critics contend that digital minimalism is a privilege afforded primarily to those in positions of economic and social security. For many individuals, particularly those in low-wage jobs or developing economies, extensive use of digital platforms is not a choice but a necessity for economic participation. Furthermore, they argue that the framework places undue responsibility on individuals while ignoring the systemic design choices that make digital platforms so addictive in the first place.\n\nDespite these criticisms, the underlying premise of digital minimalism — that we should be intentional about our relationship with technology — has resonated widely. Studies indicate that individuals who practice conscious technology consumption report higher levels of life satisfaction. The challenge lies not in the philosophy itself but in the practical difficulty of implementing it within a technological ecosystem designed to capture and monetize human attention.",
+      "questions": [
+        {
+          "id": 1,
+          "text": "According to the passage, digital minimalism is best defined as",
+          "options": {
+            "A": "completely abandoning all digital tools and online platforms",
+            "B": "using technology in a carefully selected and intentional manner",
+            "C": "reducing screen time to less than one hour per day",
+            "D": "rejecting all forms of social media permanently"
+          },
+          "answer": "B",
+          "type": "single"
+        },
+        {
+          "id": 2,
+          "text": "The term \"digital clutter\" in the passage refers to",
+          "options": {
+            "A": "the physical mess caused by too many electronic devices",
+            "B": "the overwhelming amount of digital content that fragments our attention",
+            "C": "outdated files and programs stored on personal computers",
+            "D": "the addiction to online entertainment and social media"
+          },
+          "answer": "B",
+          "type": "single"
+        },
+        {
+          "id": 3,
+          "text": "The author mentions the slow food movement to illustrate that digital minimalism",
+          "options": {
+            "A": "rejects modern technology completely",
+            "B": "advocates mindful use rather than total rejection",
+            "C": "is similar to a dietary philosophy",
+            "D": "opposes the fast pace of digital life"
+          },
+          "answer": "B",
+          "type": "single"
+        },
+        {
+          "id": 4,
+          "text": "What is the main criticism of digital minimalism mentioned in the passage?",
+          "options": {
+            "A": "It is too complex for most people to practice",
+            "B": "It overlooks economic inequality and systemic design issues",
+            "C": "It lacks scientific evidence for its effectiveness",
+            "D": "It only applies to social media usage"
+          },
+          "answer": "B",
+          "type": "single"
+        },
+        {
+          "id": 5,
+          "text": "What does the passage suggest is the main challenge for digital minimalism?",
+          "options": {
+            "A": "Lack of public interest in the philosophy",
+            "B": "Practical implementation in an attention-driven ecosystem",
+            "C": "Insufficient research supporting its benefits",
+            "D": "Resistance from major technology companies"
+          },
+          "answer": "B",
+          "type": "single"
+        }
+      ]
+    }
+  ],
+  "language": "en"
+}
