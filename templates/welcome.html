@@ -16,6 +16,8 @@
         .welcome-btn { display: inline-block; padding: 14px 56px; border: 2px solid rgba(255,255,255,0.8); border-radius: 50px; color: #fff; font-size: 1.2rem; font-weight: 600; text-decoration: none; transition: all 0.3s ease; background: transparent; cursor: pointer; letter-spacing: 2px; }
         .welcome-btn:hover { background: #fff; color: #667eea; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
         .welcome-footer { margin-top: 48px; font-size: 0.75rem; color: rgba(255,255,255,0.35); }
+        .welcome-guest { color: rgba(255,255,255,0.5); text-decoration: none; font-size: 0.85rem; transition: color 0.2s; }
+        .welcome-guest:hover { color: rgba(255,255,255,0.85); }
     </style>
 </head>
 <body>
@@ -25,6 +27,9 @@
         <p class="welcome-sub">轻量级智能刷题平台</p>
         <p class="welcome-desc">上传题库 · AI 解析 · 练习模式 · 考试模式<br>错题本 · 收藏 · 学习统计 · 全部免费</p>
         <a href="{{ url_for('app_main') }}" class="welcome-btn">🚀 进入</a>
+        <div style="margin-top:16px;">
+            <a href="{{ url_for('app_main') }}?guest=1" class="welcome-guest">👤 访客模式（无需注册）</a>
+        </div>
         <div class="welcome-footer">Quiz Master v0.7.1</div>
     </div>
 </body>

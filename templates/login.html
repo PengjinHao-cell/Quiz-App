@@ -15,6 +15,8 @@
         .auth-btn.primary { background: #3182ce; color: #fff; }
         .auth-btn.primary:hover { background: #2b6cb0; }
         .auth-btn.primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .auth-btn.guest { background: #f3f4f6; color: #6b7280; }
+        .auth-btn.guest:hover { background: #e5e7eb; }
         .auth-link { display: block; margin-top: 16px; font-size: 0.85rem; color: #718096; }
         .auth-link a { color: #3182ce; text-decoration: none; }
         .auth-link a:hover { text-decoration: underline; }
@@ -32,6 +34,10 @@
             <button class="auth-btn primary" id="login-btn" onclick="handleLogin()">登录</button>
             <div class="auth-link">
                 还没有账号？<a href="{{ url_for('auth.register') }}">去注册</a>
+            </div>
+            <div style="margin-top:24px;padding-top:20px;border-top:1px solid #e2e8f0;">
+                <a href="/app?guest=1" class="auth-btn guest" style="display:block;text-decoration:none;box-sizing:border-box;">👤 访客模式</a>
+                <div style="font-size:0.75rem;color:#a0aec0;margin-top:8px;text-align:center;">无需注册，答题数据公开可见</div>
             </div>
         </div>
     </div>
