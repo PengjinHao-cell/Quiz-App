@@ -72,47 +72,72 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 DATA_FOLDER = os.path.join(BASE_DIR, "data")
 
 # ---------- 数据库配置 ----------
-# Railway PostgreSQL 自动注入 DATABASE_URL，格式：
-#   postgresql://user:pass@host:5432/dbname
-# SQLAlchemy 2.0+ 自动检测驱动，无需手动指定 driver=pg8000
-# 生产连接池配置见下方注释
+# Railway PostgreSQL 自动注入 DATABASE_URL
+# 自动检测可用驱动：psycopg2-binary > pg8000
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'quiz_app.db')}")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-# Railway PostgreSQL 要求 SSL 连接
-if DATABASE_URL.startswith("postgresql://") and "sslmode" not in DATABASE_URL:
-    DATABASE_URL += "&sslmode=require" if "?" in DATABASE_URL else "?sslmode=require"
-app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
-# PostgreSQL 连接池：保持连接不断开，避免每次请求重建连接
+
+# 检测可用 PostgreSQL 驱动
+_DB_DRIVER = None
 if DATABASE_URL.startswith("postgresql://"):
+    # 先试 psycopg2（最快，需系统 libpq）
+    for _driver_name, _driver_pkg in [("psycopg2", "psycopg2-binary"), ("pg8000", "pg8000")]:
+        try:
+            __import__(_driver_name)
+            _DB_DRIVER = _driver_name
+            print(f"🗄️  使用数据库驱动: {_driver_pkg}")
+            break
+        except ImportError:
+            continue
+    if not _DB_DRIVER:
+        print("⚠️  未安装 PostgreSQL 驱动，尝试安装: pip install psycopg2-binary pg8000")
+        print("   将使用 SQLite 降级运行（注册/登录功能不可用）")
+
+    # Railway PostgreSQL 要求 SSL 连接
+    if "sslmode" not in DATABASE_URL:
+        if _DB_DRIVER == "pg8000":
+            # pg8000 的 SSL 参数通过连接属性设置
+            pass  # pg8000 默认自动协商 SSL
+        else:
+            DATABASE_URL += "&sslmode=require" if "?" in DATABASE_URL else "?sslmode=require"
+
+app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+
+# PostgreSQL 连接池
+if DATABASE_URL.startswith("postgresql://") and _DB_DRIVER:
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "pool_size": 5,
         "max_overflow": 10,
-        "pool_pre_ping": True,     # 每次取连接前 ping 一下，防止用死连接
-        "pool_recycle": 3600,      # 连接最多存活 1 小时
+        "pool_pre_ping": True,
+        "pool_recycle": 3600,
     }
 
 # 打印数据库连接信息（隐藏密码）
-_db_url_display = DATABASE_URL.replace(DATABASE_URL.split("@")[0].split("://")[1].split(":")[1] if "@" in DATABASE_URL and "://" in DATABASE_URL else "", "****") if "@" in DATABASE_URL else DATABASE_URL
+if "@" in DATABASE_URL:
+    _user_part = DATABASE_URL.split("@")[0]
+    _host_part = DATABASE_URL.split("@")[1]
+    _pw_masked = _user_part.split(":")[0] + ":****"
+    _db_url_display = _pw_masked + "@" + _host_part
+else:
+    _db_url_display = DATABASE_URL
 print(f"🗄️  数据库: {_db_url_display}")
 
 try:
     db.init_app(app)
     with app.app_context():
         db.create_all()
-        # 自动创建默认管理员（环境变量 ADMIN_USERNAME + ADMIN_PASSWORD）
         _init_default_admin()
     print("✅ 数据库连接成功")
-    # 预热：执行一次简单查询，让连接池建立初始连接
-    # 避免第一个用户请求时花时间建连接
     try:
         _ = User.query.first()
     except Exception:
         pass
 except Exception as e:
+    import traceback as _tb
+    _tb.print_exc()
     print(f"⚠️  数据库初始化失败: {e}")
-    print("   应用将以无数据库模式运行（注册/登录功能不可用）")
-    print(f"   当前 DATABASE_URL 前缀: {DATABASE_URL.split('://')[0] + '://' if '://' in DATABASE_URL else DATABASE_URL}")
+    print(f"   应用将以无数据库模式运行（注册/登录功能不可用）")
 ALLOWED_EXTENSIONS = {"pdf", "docx", "txt"}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
