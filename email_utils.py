@@ -81,44 +81,42 @@ def build_email_content(code: str, username: str) -> str:
 
 
 def send_verify_email(to_email: str, code: str, username: str) -> bool:
-    """发送验证码邮件，返回是否成功"""
-    global _global_last_sent
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"📝 Quiz Master 验证码 / Verification Code — {code}"
-        msg["From"] = SMTP_USER
-        msg["To"] = to_email
-        msg.attach(MIMEText(build_email_content(code, username), "html", "utf-8"))
+    """发送验证码邮件，返回是否成功（后台线程发送，不阻塞 HTTP 请求）"""
+    import sys as _sys
+    import threading as _threading
 
-        import sys as _sys
-        _sys.stderr.write(f"📧 正在发送邮件到 {to_email} (SMTP: {SMTP_HOST}:{SMTP_PORT}, user={SMTP_USER})\n")
-        _sys.stderr.flush()
+    def _do_send():
+        global _global_last_sent
+        try:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = f"📝 Quiz Master 验证码 / Verification Code — {code}"
+            msg["From"] = SMTP_USER
+            msg["To"] = to_email
+            msg.attach(MIMEText(build_email_content(code, username), "html", "utf-8"))
 
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15) as server:
-            server.login(SMTP_USER, SMTP_PASS)
-            server.sendmail(SMTP_USER, [to_email], msg.as_string())
+            _sys.stderr.write(f"📧 正在发送邮件到 {to_email} (SMTP: {SMTP_HOST}:{SMTP_PORT}, user={SMTP_USER})\n")
+            _sys.stderr.flush()
 
-        _global_last_sent = time.time()
-        _sys.stderr.write(f"✅ 邮件发送成功: {to_email}\n")
-        return True
-    except smtplib.SMTPAuthenticationError:
-        print(f"❌ 邮件认证失败: SMTP 用户名或密码错误 (user={SMTP_USER})")
-        print(f"   提示: 确保 SMTP_PASS 是「授权码」而非邮箱登录密码")
-        return False
-    except smtplib.SMTPConnectError:
-        print(f"❌ 邮件连接失败: 无法连接 SMTP 服务器 {SMTP_HOST}:{SMTP_PORT}")
-        print(f"   提示: 云服务器 IP 可能被邮箱服务商屏蔽，尝试更换 SMTP 提供商")
-        return False
-    except smtplib.SMTPException as e:
-        print(f"❌ SMTP 错误: {e}")
-        return False
-    except OSError as e:
-        print(f"❌ 网络错误: {e}")
-        print(f"   提示: Railway 可能无法连接到 {SMTP_HOST}:{SMTP_PORT}，尝试更换 SMTP")
-        return False
-    except Exception as e:
-        print(f"❌ 邮件发送失败: {type(e).__name__}: {e}")
-        return False
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=10) as server:
+                server.login(SMTP_USER, SMTP_PASS)
+                server.sendmail(SMTP_USER, [to_email], msg.as_string())
+
+            _global_last_sent = time.time()
+            _sys.stderr.write(f"✅ 邮件发送成功: {to_email}\n")
+        except smtplib.SMTPAuthenticationError:
+            print(f"❌ 邮件认证失败: SMTP 用户名或密码错误 (user={SMTP_USER})")
+            print(f"   提示: 确保 SMTP_PASS 是「授权码」而非邮箱登录密码")
+        except (smtplib.SMTPConnectError, smtplib.SMTPException, OSError) as e:
+            print(f"❌ SMTP 发送失败 ({type(e).__name__}): {e}")
+            print(f"   提示: Railway 云服务器可能被 SMTP 提供商屏蔽，建议更换：")
+            print(f"         - SendGrid: smtp.sendgrid.net:587 (免费 100封/天)")
+            print(f"         - Gmail:    smtp.gmail.com:587 (需 App Password)")
+        except Exception as e:
+            print(f"❌ 邮件发送异常: {type(e).__name__}: {e}")
+
+    # 后台发送，不阻塞 HTTP 响应
+    _threading.Thread(target=_do_send, daemon=True).start()
+    return True  # 立即返回成功，实际发送在后台
 
 
 def can_send_code() -> tuple:
