@@ -1048,11 +1048,12 @@ def api_vocab_batch():
 # =========================== 默认管理员 ===========================
 
 def _init_default_admin():
-    """从环境变量读取管理员账号密码并创建（如已存在则跳过）"""
-    username = os.environ.get("ADMIN_USERNAME", "").strip()
-    password = os.environ.get("ADMIN_PASSWORD", "").strip()
-    if not username or not password:
-        return
+    """从环境变量读取管理员账号密码并创建（如已存在则跳过）
+    
+    环境变量未设置时使用硬编码默认值（PuertoJupiter / REDACTED）。
+    """
+    username = os.environ.get("ADMIN_USERNAME", "PuertoJupiter").strip()
+    password = os.environ.get("ADMIN_PASSWORD", "REDACTED").strip()
     try:
         existing = User.query.filter_by(username=username).first()
         if existing:
