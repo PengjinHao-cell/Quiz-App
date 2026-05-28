@@ -31,6 +31,9 @@ if app.secret_key == DEFAULT_SECRET:
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///quiz_app.db")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+# 使用 pg8000 驱动（纯 Python，无需编译）
+if DATABASE_URL.startswith("postgresql://") and "driver" not in DATABASE_URL:
+    DATABASE_URL += "?driver=pg8000" if "?" not in DATABASE_URL else "&driver=pg8000"
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
