@@ -1,3 +1,248 @@
+<div align="center">
+
+# 📝 Quiz Master v0.5.0
+
+**A lightweight, feature-rich quiz web application with AI-powered parsing, reading comprehension mode, and smart annotation tools.**
+
+[![Python](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.0-green)](https://flask.palletsprojects.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+
+[English](#english) · [简体中文](#简体中文) · [繁體中文](#繁體中文)
+
+---
+
+<p id="english" align="center">
+  <strong>🇬🇧 English</strong>
+</p>
+
+**Quiz Master** is a web-based quiz platform that supports uploading **PDF / DOCX / TXT** files and **AI-powered text parsing**. It features **Practice, Exam, Reading Comprehension, and Vocabulary** modes, along with **highlight annotations, wrong answer review, favorites, and learning statistics**.
+
+> *"Turn any study material into an interactive quiz in seconds."*
+
+---
+
+## ✨ Features
+
+### 📤 Import
+| Method | Description |
+|--------|-------------|
+| 📄 **File Upload** | PDF / DOCX / TXT — auto-parses questions, options, and answers |
+| ✏️ **AI Text Paste** | Paste any question text → **DeepSeek AI** auto-formats it |
+| 📚 **Built-in Banks** | Python sample questions included out-of-the-box |
+| 📖 **Vocabulary** | CET-6高频词汇 (120+ words) — English word → Chinese definition |
+
+### 🧠 Smart Detection
+- 🤖 **Triple-Engine Recognition** — Auto-detects format on upload:
+  - **Reading Engine** — Detects long passages + comprehension questions (CN/EN)
+  - **Party Format Engine** — Handles special formats like "试题类型X选题题目分值2"
+  - **Standard Engine** — Processes "1. Question\nA. Option\nAnswer: A" format
+
+### 📚 Bank Management
+- ✏️ **Rename** — Hover over the bank name, click ✏️ to rename
+- 🏷️ **Type Badges** — Each bank shows question type distribution (single/multi/judge/reading)
+- 🔤 **Sort by Name** — Banks listed alphabetically
+- 🔁 **Duplicate Detection** — Warns on upload, rejects on rename
+- 🗑️ **Delete** — One-click delete with animation + toast notification
+
+### 🧠 Quiz Modes
+- ✏️ **Practice Mode** — Instant feedback after each answer, auto-removes from wrong book upon correct
+- 📝 **Exam Mode** — Simulates real exam, unified submission for scoring
+- ⏱️ **Countdown Timer** — Smart timing (90s per question), 5-min warning, auto-submit
+- 🔀 **Shuffled Options** — Random option order each practice session
+- 📋 **Answer Sheet** — Sidebar showing answered/unanswered status, click to jump
+- ⌨️ **Keyboard Shortcuts** — `← →` navigate, `A~H` select options
+
+### 📖 Reading Comprehension
+- 📖 **Dual-Panel Layout** — Article on the left, questions on the right
+- 🖍 **Highlighter** — Yellow highlight with fade-in/out animation (Practice/Exam/Reading)
+- ＿ **Underline** — Red underline with left-to-right draw animation (Reading only)
+- 📄 **Passage Count** — Displays passage count instead of question count for reading banks
+- 📩 **Submit Button** — Moved to top bar for clean UI
+
+### 📊 Learning Tools
+- 📕 **Wrong Answer Book** — Auto-collects wrong answers, grouped by bank, auto-removes on correct, one-click retry
+- ⭐ **Favorites** — Mark good/hard questions during practice, review in a dedicated list
+- 📈 **Statistics** — Summary cards + trend chart + accuracy by bank + mode comparison + 7-day activity
+- 📜 **History** — Archived answer records with visualized score levels
+- 📤 **Share Results** — One-click copy results to clipboard
+
+### 🎨 UX Enhancements
+- 🎨 **Welcome Page** — Gradient background + floating animation + entry button
+- 🎬 **Splash Screen** — Elastic animation + flowing progress bar
+- 🔍 **Search Questions** — Search by keyword in question text or options, results highlighted
+- 💬 **Toast Notifications** — Global floating notifications for all operations (3.5s auto-dismiss)
+- 📱 **Responsive Design** — Works on desktop and mobile
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Backend** | Python 3 + Flask |
+| **Frontend** | Vanilla HTML/CSS/JavaScript (zero framework) |
+| **Parsing** | PyPDF2 / pymupdf / python-docx |
+| **AI** | DeepSeek API (optional, for text paste parsing) |
+| **Storage** | Local filesystem (JSON) + browser localStorage |
+
+---
+
+## 🚀 Quick Start
+
+### 1. Install Dependencies
+
+```bash
+cd quiz-app
+pip install -r requirements.txt
+```
+
+### 2. (Optional) Configure AI API Key
+
+For **AI text parsing**, create a `.env` file:
+
+```bash
+echo 'DEEPSEEK_API_KEY=sk-your-key-here' > .env
+```
+
+> All features work without AI parsing.
+
+### 3. Start the App
+
+```bash
+python3 app.py
+```
+
+Open **http://localhost:5050**
+
+> To change port: `export PORT=xxxx`
+
+---
+
+## 📁 Directory Structure
+
+```
+quiz-app/
+├── app.py                  # Flask main app
+├── parser.py               # Triple-engine parser (PDF/DOCX/TXT)
+├── parse_party.py          # Party format parser
+├── requirements.txt        # Python dependencies
+├── .env                    # API Key (gitignored)
+├── data/                   # Question bank JSON files
+├── uploads/                # Uploaded files
+├── templates/              # HTML templates
+├── static/                 # CSS/JS files
+└── Dockerfile              # Docker deployment config
+```
+
+---
+
+## 📖 Usage
+
+### Upload Questions
+
+**Method 1: File Upload**
+1. Click the **Upload File** tab
+2. Select **PDF / DOCX / TXT** file
+3. Choose Practice or Exam mode
+4. Click upload — auto-redirects to quiz or reading page
+
+**Method 2: Paste Text**
+1. Click the **Paste Text** tab
+2. Paste question text
+3. Click **AI Parse**
+4. Wait 10-30 seconds for auto-formatting
+
+### Practice & Exam
+
+- Click **Practice** or **Exam** on any bank card
+- Practice: instant feedback after each answer
+- Exam: submit all at once for scoring
+- **Highlighter**: select question text → toolbar → 🖍 Highlight
+
+### Reading Comprehension
+
+- Click **📖 Reading Mode** to enter dual-panel view
+- **Highlighter**: select text → 🖍
+- **Underline**: select text → ＿ (left-to-right draw animation)
+- Click annotated text to remove
+- Annotations auto-save to browser (survive refresh)
+
+### Learning Tools
+
+- **📊 Statistics** — View at the top of the home page
+- **⭐ Favorites** — Star questions during practice
+- **📕 Wrong Book** — Auto-collected, expand to review
+- **📜 History** — Past score records
+
+---
+
+## 🧩 API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/` | Welcome page |
+| GET | `/app` | Main app page (bank list) |
+| POST | `/upload` | Upload bank file (PDF/DOCX/TXT) |
+| POST | `/api/parse-text` | AI parse text to bank |
+| GET | `/quiz/<bank_id>` | Quiz page (params: `mode`, `count`, `q`) |
+| GET | `/reading/<bank_id>` | Reading comprehension page |
+| GET | `/result/<bank_id>` | Results page |
+| GET | `/api/bank/<bank_id>/questions` | Get questions (params: `mode`, `count`, `q`) |
+| POST | `/api/bank/<bank_id>/submit` | Submit answers |
+| POST | `/api/bank/<bank_id>/rename` | Rename bank |
+| POST | `/api/bank/<bank_id>/delete` | Delete bank |
+| GET | `/api/reading/<bank_id>` | Get reading data |
+| POST | `/api/init-sample` | Init sample bank |
+| GET | `/vocab` | Vocabulary page |
+| GET | `/api/vocab/words` | Get random vocabulary |
+
+---
+
+## 📜 Changelog
+
+### v0.5.0 (Current)
+- 📖 **Reading Comprehension** — Left panel article, right panel questions
+- 🖍 **Highlighter** — Yellow highlight with fade animation (all modes)
+- ＿ **Underline** — Red underline with left-to-right draw animation (reading only)
+- 🤖 **Triple-Engine Recognition** — Reading / Party / Standard auto-detection
+- 📄 **.txt Upload** — Plain text file upload support
+- 🔤 **Sort by Name** — Bank list sorted alphabetically
+- 🔁 **Duplicate Detection** — Warning on upload, rejection on rename
+- 💬 **Toast Notifications** — Global floating notifications
+- 🐛 Fixed multi-option parsing, short question filtering, regex boundary bugs
+
+### v0.4.0
+- 📖 **Vocabulary** — CET-6 words (English → Chinese)
+
+### v0.3.0
+- 🎨 **Welcome Page** — Gradient design with floating animation
+- ✏️ **Rename** — Hover to edit bank name
+- 🏷️ **Type Badges** — Question type distribution display
+
+### v0.2.0
+- ✨ **AI Text Parsing** — Paste text, auto-format
+- 🔀 **Shuffled Options**
+- 📤 **Share Results**
+- 🔍 **Search Questions**
+
+### v0.1.0
+- ✨ **Wrong Book / Favorites / Statistics / Timer**
+- 🎬 **Splash Screen**
+
+### v0.0.1
+- 📤 PDF/DOCX upload + Practice/Exam modes + Answer Sheet
+
+---
+
+<div align="center">
+  <hr style="width: 50%;">
+</div>
+
+<p id="简体中文" align="center">
+  <strong>🇨🇳 简体中文</strong>
+</p>
+
 # 📝 刷题通 (Quiz Master) v0.5.0
 
 一个功能丰富的轻量级刷题 Web 应用。支持 **PDF / DOCX / TXT** 文件上传与**粘贴文本 AI 智能解析**，内置**练习/考试/阅读/背单词**四大模式，附带**荧光标注、错题本、收藏、学习统计**等完整学习工具。在线体验：https://quiz-app-production-9e7f.up.railway.app 
@@ -11,240 +256,127 @@
 ### 📤 题库导入
 | 方式 | 说明 |
 |------|------|
-| 📄 **上传文件** | 支持 **PDF / DOCX / TXT**，自动解析题目、选项、答案 |
-| ✏️ **粘贴文本** | 任意格式的题目文字 → **DeepSeek AI 自动整理**为标准题库 |
+| 📄 **上传文件** | PDF / DOCX / TXT，自动解析题目、选项、答案 |
+| ✏️ **粘贴文本** | 任意格式题目文字 → **DeepSeek AI 自动整理**为标准题库 |
 | 📚 **内置题库** | 开箱即用的 Python 示例题库 |
-| 📖 **背单词** | CET-6 六级高频词汇（120+ 词），给出英文选中文释义 |
+| 📖 **背单词** | CET-6 高频词汇（120+ 词），英文选中文释义 |
 
-### 🧠 智能识别（新增）
-- 🤖 **三引擎自动识别** — 上传文件后自动判断格式：
-  - **阅读引擎** — 检测长篇正文+选择题（中英文均支持），自动存为阅读模式
-  - **异形格式引擎** — 识别"试题类型X选题题目分值2"等特殊排版格式
-  - **标准引擎** — 处理常规 "1、题目\\nA、选项\\n答案：A" 格式
+### 🧠 智能识别
+- 🤖 **三引擎自动识别** — 上传后自动判断格式：阅读 / 异形格式 / 标准
 
 ### 📚 题库管理
-- ✏️ **重命名题库** — 鼠标悬停题库名，点击 ✏️ 图标即可修改名称
-- 🏷️ **题型标识** — 每个题库卡片上显示题型分布小标签（单选/多选/判断/阅读）
-- 🔤 **按名称排序** — 题库列表按名称自动排序
-- 🔁 **名称重复检测** — 上传同名文件时警告，重命名时拒绝重复
-- 🗑️ **删除题库** — 一键删除，带动画 + Toast 提示
+- ✏️ **重命名** / 🏷️ **题型标识** / 🔤 **按名称排序** / 🔁 **重复检测** / 🗑️ **删除**
 
 ### 🧠 刷题模式
-- ✏️ **练习模式** — 作答后即时反馈对错，答对自动移出错题本
-- 📝 **考试模式** — 模拟真实考试，统一交卷评分
-- ⏱️ **考试倒计时** — 智能计时（每题90秒），5分钟警告变红闪烁，时间到自动交卷
-- 🔀 **选项乱序** — 每次练习选项随机排列，防止背答案位置
-- 📋 **答题卡** — 侧边栏直观查看已答/未答，可点击跳转
-- ⌨️ **键盘快捷键** — `← →` 切换题目，`A~H` 选择选项
+- ✏️ **练习模式** — 即时反馈，答对自动移出错题本
+- 📝 **考试模式** — 统一交卷评分，倒计时自动交卷
+- 🔀 **选项乱序** / 📋 **答题卡** / ⌨️ **快捷键**
 
-### 📖 阅读理解模式（新增）
-- 📖 **独立阅读模式** — 左栏文章 + 右栏题目，分栏沉浸式阅读
-- 🖍 **荧光笔** — 选中文字标黄色高亮，淡入淡出动画（练习/考试/阅读均支持）
-- ＿ **下划线** — 选中文字标红色下划线，从左到右延伸动画（阅读模式专属）
-- 📄 **篇数选择** — 题库卡片显示篇数下拉而非题数
-- 📩 **提交评判** — 按钮移至顶栏，统一交卷评分
+### 📖 阅读理解
+- 📖 **左右分栏** — 左文右题
+- 🖍 **荧光笔** — 黄色高亮，淡入淡出动画
+- ＿ **下划线** — 红色下划线，从左到右延伸动画
+- 📄 **篇数选择** / 📩 **提交评判移至顶栏**
 
 ### 📊 学习工具
-- 📕 **错题本** — 练习/考试中自动收录错题，按题库分组，答对自动移除，一键重练
-- ⭐ **题目收藏** — 刷题时标记好题/难题，单独收藏列表集中复习
-- 📈 **学习统计** — 总览卡片 + 得分趋势图 + 各题库正确率 + 模式对比 + 近7天活跃
-- 📜 **答题记录** — 历史列表存档，得分等级可视化
-- 📤 **分享成绩** — 一键复制成绩文本到剪贴板，分享给朋友
+- 📕 **错题本** / ⭐ **收藏** / 📈 **统计** / 📜 **记录** / 📤 **分享成绩**
 
 ### 🎨 体验优化
-- 🎨 **欢迎页** — 渐变背景 + 浮动动画 + 进入按钮，打开应用仪式感满满
-- 🎬 **启动画面** — 弹性动画 + 流动加载条，告别僵硬加载
-- 🔍 **题库搜索** — 按关键词搜题干/选项，结果高亮显示，一键练习
-- 💬 **浮动 Toast 通知** — 所有操作（上传/改名/删除/清空）右上角弹窗，3.5秒自动消失
-- 📱 **响应式设计** — 适配桌面和移动端
+- 💬 **Toast 通知** / 🎬 **启动画面** / 🔍 **搜题** / 📱 **响应式**
 
 ---
 
 ## 🛠 技术栈
 
-| 层级 | 技术 |
-|------|------|
-| **后端** | Python 3 + Flask |
-| **前端** | 原生 HTML/CSS/JavaScript（零框架依赖） |
-| **文档解析** | PyPDF2 / pymupdf / python-docx |
-| **AI 解析** | DeepSeek API（可选，用于文本粘贴智能整理） |
-| **存储** | 本地文件系统（JSON）+ 浏览器 localStorage |
-
----
+Python 3 + Flask · 原生 HTML/CSS/JS · PyPDF2 / pymupdf / python-docx · DeepSeek API · JSON + localStorage
 
 ## 🚀 快速开始
-
-### 1. 安装依赖
 
 ```bash
 cd quiz-app
 pip install -r requirements.txt
-```
-
-### 2. （可选）配置 AI 解析 Key
-
-如果要用 **粘贴文本 + AI 智能解析** 功能，在项目目录创建 `.env` 文件：
-
-```bash
-echo 'DEEPSEEK_API_KEY=sk-your-key-here' > .env
-```
-
-> 不需要 AI 解析也可以正常使用所有其他功能。
-
-### 3. 启动应用
-
-```bash
 python3 app.py
+# → http://localhost:5050
 ```
-
-浏览器打开 **http://localhost:5050**
-
-> 如果 5050 被占用，可设置环境变量 `PORT=xxxx` 修改端口。
-
----
-
-## 📁 目录结构
-
-```
-quiz-app/
-├── app.py                  # Flask 主应用
-├── parser.py               # PDF/DOCX/TXT 解析模块（三引擎）
-├── parse_party.py          # 异形题库专用解析器
-├── requirements.txt        # Python 依赖
-├── .env                    # API Key（已 gitignore，不上传）
-│
-├── data/                   # 解析后的题库 JSON
-│   └── *.json
-│
-├── uploads/                # 原始上传文件
-│
-├── templates/
-│   ├── welcome.html        # 欢迎页
-│   ├── index.html          # 首页 - 题库列表 + 上传 + 统计
-│   ├── quiz.html           # 刷题页（含荧光标注）
-│   ├── reading.html        # 阅读理解页（含荧光+下划线标注）
-│   ├── result.html         # 成绩页
-│   ├── vocab.html          # 背单词页
-│   └── error.html          # 错误页
-│
-├── static/
-│   ├── style.css           # 样式表
-│   ├── utils.js            # 共享工具函数（错题本/收藏/escapeHTML）
-│   ├── app.js              # 首页逻辑
-│   ├── quiz.js             # 刷题页逻辑
-│   ├── reading.js          # 阅读页逻辑
-│   └── result.js           # 成绩页逻辑
-│
-├── analyze_format.py       # 格式分析工具
-├── analyze_issues.py       # 解析问题排查工具
-├── generate_vocab.py       # 词汇数据生成工具
-├── init_bank.py            # 题库初始化工具
-├── test_llm.py             # AI 解析测试
-└── try_parse.py            # 解析对比测试
-```
-
----
 
 ## 📖 使用方法
 
-### 上传题库
-
-**方式一：上传文件**
-1. 点击「上传文件」标签
-2. 选择 **PDF / DOCX / TXT** 文件
-3. 选择练习模式或考试模式
-4. 点击上传，自动解析后跳转到刷题页（阅读题自动跳转阅读模式）
-
-**方式二：粘贴文本**
-1. 点击「粘贴文本」标签
-2. 将题目文字粘贴到文本框（支持各种格式）
-3. 点击「AI 智能解析」
-4. 等待 10~30 秒，AI 自动整理为标准题库
-
-### 刷题
-
-- 选择题库卡片上的 **练习模式** 或 **考试模式**
-- 练习模式每选一题即时反馈对错
-- 考试模式全部答完统一交卷
-- 用侧边栏答题卡快速跳转
-- **荧光标注**：选中题干文字 → 弹出工具条 → 🖍 标荧光
-
-### 阅读理解
-
-- 点击 **阅读模式** 进入左右分栏阅读
-- 左栏阅读文章，右栏答题
-- **荧光标注**：选中文字 → 🖍 标荧光
-- **下划线标注**：选中文字 → ＿ 标下划线（从左到右延伸动画）
-- 点击已标注文字可移除标注
-- 标注自动保存到浏览器，刷新不丢失
-
-### 管理学习数据
-
-- 首页顶部查看 **学习统计**
-- **⭐ 题目收藏** — 刷题时点题目右上角星标
-- **📕 错题本** — 自动收录，可展开查看详情
-- **📜 答题记录** — 历史成绩存档
+**上传文件**：PDF/DOCX/TXT → 自动解析 → 跳转刷题页
+**粘贴文本**：粘贴题目 → AI 解析 → 自动入库
+**荧光标注**：选中文字 → 🖍 标荧光（所有模式）
+**下划线标注**：选中文字 → ＿ 标下划线（阅读模式）
 
 ---
 
-## 🧩 API 接口
+<div align="center">
+  <hr style="width: 50%;">
+</div>
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/` | 欢迎页 |
-| GET | `/app` | 主应用页（题库列表） |
-| POST | `/upload` | 上传题库文件（PDF/DOCX/TXT） |
-| POST | `/api/parse-text` | AI 解析文本为题库 |
-| GET | `/quiz/<bank_id>` | 刷题页面（参数：`mode`, `count`, `q`） |
-| GET | `/reading/<bank_id>` | 阅读理解页面 |
-| GET | `/result/<bank_id>` | 成绩页面 |
-| GET | `/api/bank/<bank_id>/questions` | 获取题目（参数：`mode`, `count`, `q`） |
-| POST | `/api/bank/<bank_id>/submit` | 提交答案 |
-| POST | `/api/bank/<bank_id>/rename` | 重命名题库 |
-| POST | `/api/bank/<bank_id>/delete` | 删除题库 |
-| GET | `/api/reading/<bank_id>` | 获取阅读理解数据 |
-| POST | `/api/init-sample` | 初始化示例题库 |
-| GET | `/vocab` | 背单词页面 |
-| GET | `/api/vocab/words` | 获取随机词汇题 |
+<p id="繁體中文" align="center">
+  <strong>🇭🇰 繁體中文</strong>
+</p>
+
+# 📝 刷題通 (Quiz Master) v0.5.0
+
+功能豐富的輕量級刷題 Web 應用。支援 **PDF / DOCX / TXT** 檔案上傳與**貼上文字 AI 智能解析**，內建**練習/考試/閱讀/背單字**四大模式，附帶**螢光標註、錯題本、收藏、學習統計**等完整學習工具。
 
 ---
 
-## 📜 更新日志
+## ✨ 功能特色
 
-### v0.5.0（当前）
-- 📖 **阅读理解模式** — 左栏文章 + 右栏题目，独立沉浸式阅读体验
-- 🖍 **荧光标注** — 选中文字标黄色高亮（练习/考试/阅读均支持），淡入淡出动画
-- ＿ **下划线标注** — 选中文字标红色下划线，从左到右延伸动画（阅读模式专属）
-- 🤖 **三引擎智能识别** — 阅读/异形格式/标准格式自动判断
-- 📄 **.txt 文件上传** — 纯文本文件直接上传解析
-- 🔤 **按名称排序** — 题库列表按名称自动排序
-- 🔁 **名称重复检测** — 上传警告 + 改名拒绝
-- 💬 **浮动 Toast 通知** — 全局操作提示，3.5秒自动消失
-- 🎨 **提交评判移至顶栏** — 阅读模式 UI 优化，不再遮挡内容
-- 🐛 修复同行多选项解析、短题目过滤、多选项跨词截断等 Bug
+### 📤 題庫匯入
+| 方式 | 說明 |
+|------|------|
+| 📄 **上傳檔案** | PDF / DOCX / TXT，自動解析題目、選項、答案 |
+| ✏️ **貼上文字** | 任意格式題目文字 → **DeepSeek AI 自動整理**為標準題庫 |
+| 📚 **內建題庫** | 開箱即用的 Python 範例題庫 |
+| 📖 **背單字** | CET-6 高頻詞彙（120+ 詞），英文選中文釋義 |
 
-### v0.4.0
-- 📖 **背单词**：CET-6 六级高频词汇模块，给出英文选中文释义
+### 🧠 智能識別
+- 🤖 **三引擎自動識別** — 上傳後自動判斷格式：閱讀 / 異形格式 / 標準
 
-### v0.3.0
-- 🎨 **欢迎页**：全新渐变风格欢迎界面，进入按钮进入主应用
-- ✏️ **题库重命名**：悬停题库名出现 ✏️ 图标，点击即可修改
-- 🏷️ **题型标识**：每个题库卡片显示题型分布小标签
+### 📚 題庫管理
+- ✏️ **重新命名** / 🏷️ **題型標籤** / 🔤 **依名稱排序** / 🔁 **重複檢測** / 🗑️ **刪除**
 
-### v0.2.0
-- ✨ AI 智能解析：粘贴文本自动整理为题
-- 🔀 选项乱序：每次练习排列不同
-- 📤 分享成绩：一键复制文本分享
-- 🔍 题库搜索：关键词搜题 + 高亮
+### 🧠 刷題模式
+- ✏️ **練習模式** — 即時反饋，答對自動移除錯題本
+- 📝 **考試模式** — 統一交卷評分，倒數計時自動交卷
+- 🔀 **選項亂序** / 📋 **答題卡** / ⌨️ **快捷鍵**
 
-### v0.1.0
-- ✨ 错题本：自动收录 + 按题库分组 + 重练
-- ⭐ 题目收藏：刷题标记 + 首页复习
-- 📊 学习统计：总览 + 趋势图 + 正确率
-- ⏱️ 考试倒计时 + 5分钟警告 + 自动交卷
-- 🎬 启动缓冲画面
+### 📖 閱讀理解
+- 📖 **左右分欄** — 左文右題
+- 🖍 **螢光筆** — 黃色高亮，淡入淡出動畫
+- ＿ **底線** — 紅色底線，從左到右延伸動畫
+- 📄 **篇數選擇** / 📩 **提交評判移至頂欄**
 
-### v0.0.1
-- 📤 PDF/DOCX 上传解析
-- ✏️ 练习模式 / 📝 考试模式
-- 📋 答题卡 / ⌨️ 快捷键
+### 📊 學習工具
+- 📕 **錯題本** / ⭐ **收藏** / 📈 **統計** / 📜 **記錄** / 📤 **分享成績**
+
+### 🎨 體驗優化
+- 💬 **Toast 通知** / 🎬 **啟動畫面** / 🔍 **搜題** / 📱 **響應式設計**
+
+---
+
+## 🛠 技術棧
+
+Python 3 + Flask · 原生 HTML/CSS/JS · PyPDF2 / pymupdf / python-docx · DeepSeek API · JSON + localStorage
+
+## 🚀 快速開始
+
+```bash
+cd quiz-app
+pip install -r requirements.txt
+python3 app.py
+# → http://localhost:5050
+```
+
+---
+
+<div align="center">
+  <hr style="width: 50%;">
+  <p>
+    <a href="https://github.com/PengjinHao-cell/Quiz-App">GitHub</a> ·
+    <a href="https://quiz-app-production-9e7f.up.railway.app">Live Demo</a>
+  </p>
+  <p>Made with ❤️</p>
+</div>
