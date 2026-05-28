@@ -155,15 +155,13 @@ def api_send_code():
     # 生成验证码
     code = generate_code()
 
-    # 发送邮件
-    ok = send_verify_email(email, code, email.split("@")[0])
-    if not ok:
-        return jsonify({"error": "验证码发送失败，请检查邮箱地址"}), 500
-
-    # 存储验证码
+    # 先存储验证码（不管邮件发不发得出去，验证码已生成）
     store_code(email, code)
 
-    return jsonify({"success": True, "message": "验证码已发送，5 分钟内有效"})
+    # 后台发送邮件（不阻塞 HTTP 响应）
+    send_verify_email(email, code, email.split("@")[0])
+
+    return jsonify({"success": True, "message": "验证码已发送，请检查邮箱（如未收到请检查垃圾箱）"})
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
