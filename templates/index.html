@@ -156,16 +156,6 @@
                                     <option value="0" selected>全部({{ n }})</option>
                                 </select>
                             </label>
-                            <label class="count-label" style="font-size:0.8rem;">时长：
-                                <select class="count-select" id="duration-{{ bank.id }}" style="font-size:0.8rem;">
-                                    <option value="auto">智能(每题90s)</option>
-                                    <option value="15">15分钟</option>
-                                    <option value="30">30分钟</option>
-                                    <option value="45">45分钟</option>
-                                    <option value="60">60分钟</option>
-                                    <option value="0">不限时</option>
-                                </select>
-                            </label>
                             <a href="#" class="btn btn-primary" onclick="startQuiz('{{ bank.id }}', 'practice')">练习模式</a>
                             <a href="#" class="btn btn-exam" onclick="startQuiz('{{ bank.id }}', 'exam')">考试模式</a>
                             {% endif %}
@@ -242,6 +232,23 @@
                     </button>
                 </div>
                 <div id="ai-parse-msg" class="msg"></div>
+            </div>
+        </section>
+
+        <!-- ⚙️ 全局设置（考试时长） -->
+        <section class="bank-section" id="settings-section">
+            <h2>⚙️ 设置</h2>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 0;flex-wrap:wrap;">
+                <span style="font-size:0.9rem;color:#4a5568;">📝 考试模式默认时长：</span>
+                <select id="global-duration" class="count-select" style="font-size:0.9rem;">
+                    <option value="auto">智能（每题90秒）</option>
+                    <option value="15">15分钟</option>
+                    <option value="30" selected>30分钟</option>
+                    <option value="45">45分钟</option>
+                    <option value="60">60分钟</option>
+                    <option value="0">不限时</option>
+                </select>
+                <span style="font-size:0.75rem;color:#a0aec0;">后续个人账号功能上线后，此设置将移至右上角</span>
             </div>
         </section>
     </div>
