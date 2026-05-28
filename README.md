@@ -195,5 +195,5 @@ python3 app.py
 <p align="center">
   <a href="https://github.com/PengjinHao-cell/Quiz-App">📦 GitHub</a> ·
   <a href="https://quiz-app-production-9e7f.up.railway.app">🌐 Live Demo</a><br>
-  <sub>Made with ❤️ · © 2026 Quiz Master</sub>
+  <sub>Made with ❤️ by PengjinHao · © 2026 Quiz Master</sub>
 </p>
