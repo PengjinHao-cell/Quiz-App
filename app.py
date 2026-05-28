@@ -123,6 +123,18 @@ else:
     _db_url_display = DATABASE_URL
 print(f"🗄️  数据库: {_db_url_display}")
 
+# 裸连测试：不经过 SQLAlchemy，直接测 TCP/SSL 通不通
+if DATABASE_URL.startswith("postgresql://"):
+    try:
+        import socket as _sock
+        _host = DATABASE_URL.split("@")[1].split(":")[0]
+        _port = int(DATABASE_URL.split("@")[1].split(":")[1].split("/")[0].split("?")[0])
+        _s = _sock.create_connection((_host, _port), timeout=5)
+        print(f"🌐  TCP 连接到 {_host}:{_port} ✅")
+        _s.close()
+    except Exception as _e:
+        print(f"🌐  TCP 连接到数据库失败: {_e}")
+
 try:
     db.init_app(app)
     with app.app_context():
