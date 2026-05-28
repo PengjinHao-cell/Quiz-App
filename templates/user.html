@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if lang == 'en' %}User Center{% else %}用户中心{% endif %} - 刷题通</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.5s ease; }
+        .splash-screen.splash-fade-out { opacity: 0; pointer-events: none; }
+        .splash-card { text-align: center; animation: splashBounce 0.6s ease-out; }
+        @keyframes splashBounce { 0% { transform: scale(0.7); opacity: 0; } 60% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
+        .splash-icon { font-size: 4rem; margin-bottom: 12px; }
+        .splash-title { font-size: 1.8rem; font-weight: 800; color: #1e3a5f; margin-bottom: 4px; }
+        .splash-subtitle { font-size: 0.9rem; color: #64748b; margin-bottom: 20px; }
+        .splash-bar-bg { width: 200px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden; margin: 0 auto; }
+        .splash-bar-fill { height: 100%; width: 0; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 2px; animation: splashLoad 1.2s ease-in-out forwards; }
+        @keyframes splashLoad { 0% { width: 0; } 50% { width: 70%; } 100% { width: 100%; } }
+        .user-layout { display: flex; gap: 24px; align-items: flex-start; min-height: 70vh; }
+        .user-sidebar { width: 200px; flex-shrink: 0; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 12px 0; position: sticky; top: 24px; }
+        .user-sidebar-item { display: flex; align-items: center; gap: 10px; padding: 12px 20px; font-size: 0.9rem; color: #4a5568; text-decoration: none; transition: all 0.15s; cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
+        .user-sidebar-item:hover { background: #f7fafc; color: #2d3748; }
+        .user-sidebar-item.active { background: #ebf8ff; color: #3182ce; font-weight: 600; border-right: 3px solid #3182ce; }
+        .user-sidebar-divider { height: 1px; background: #e2e8f0; margin: 8px 16px; }
+        .user-content { flex: 1; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 28px; min-height: 60vh; }
+        .user-content h2 { font-size: 1.2rem; color: #2d3748; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #3182ce; }
+        /* 设置项 */
+        .settings-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; flex-wrap: wrap; }
+        .settings-row label { font-size: 0.9rem; color: #4a5568; font-weight: 500; min-width: 5em; }
+        .settings-row select { padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 0.9rem; }
+        .settings-hint { font-size: 0.75rem; color: #a0aec0; }
+        @media (max-width: 768px) { .user-layout { flex-direction: column; } .user-sidebar { width: 100%; position: static; display: flex; overflow-x: auto; } .user-sidebar-item { white-space: nowrap; padding: 10px 16px; } }
+    </style>
+</head>
+<body>
+    <!-- 启动缓冲画面 -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-card">
+            <div class="splash-icon">👤</div>
+            <h1 class="splash-title">{% if lang == 'en' %}User Center{% else %}用户中心{% endif %}</h1>
+            <p class="splash-subtitle">{% if lang == 'en' %}Loading...{% else %}加载中...{% endif %}</p>
+            <div class="splash-bar-bg">
+                <div class="splash-bar-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header class="quiz-header">
+            <div class="quiz-header-left">
+                <a href="{{ url_for('app_main') }}" class="btn btn-back">← {% if lang == 'en' %}Home{% else %}返回主页{% endif %}</a>
+                <div class="quiz-info">
+                    <h1>{% if lang == 'en' %}User Center{% else %}用户中心{% endif %}</h1>
+                </div>
+            </div>
+        </header>
+
+        {% if not current_user.is_authenticated %}
+        <div style="text-align:center;padding:60px 20px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+            <div style="font-size:3rem;margin-bottom:12px;">🔒</div>
+            <h2 style="color:#2d3748;margin-bottom:8px;">{% if lang == 'en' %}Login Required{% else %}需要登录{% endif %}</h2>
+            <p style="color:#718096;margin-bottom:20px;">{% if lang == 'en' %}Please log in to view your personal data.{% else %}请登录后查看个人数据。{% endif %}</p>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary" style="padding:10px 32px;">{% if lang == 'en' %}Go to Login{% else %}去登录{% endif %}</a>
+        </div>
+        {% else %}
+
+        <div class="user-layout">
+            <!-- 左侧边栏 -->
+            <nav class="user-sidebar" id="user-sidebar">
+                <a class="user-sidebar-item active" href="#stats" onclick="switchTab('stats')">📊 <span>{% if lang == 'en' %}Statistics{% else %}学习统计{% endif %}</span></a>
+                <a class="user-sidebar-item" href="#favorites" onclick="switchTab('favorites')">⭐ <span>{% if lang == 'en' %}Favorites{% else %}收藏本{% endif %}</span></a>
+                <a class="user-sidebar-item" href="#wrongbook" onclick="switchTab('wrongbook')">📕 <span>{% if lang == 'en' %}Wrong Book{% else %}错题本{% endif %}</span></a>
+                <a class="user-sidebar-item" href="#history" onclick="switchTab('history')">📜 <span>{% if lang == 'en' %}History{% else %}学习记录{% endif %}</span></a>
+                <div class="user-sidebar-divider"></div>
+                <a class="user-sidebar-item" href="#settings" onclick="switchTab('settings')">⚙️ <span>{% if lang == 'en' %}Settings{% else %}设置{% endif %}</span></a>
+            </nav>
+
+            <!-- 右侧内容区 -->
+            <main class="user-content" id="user-content">
+                <div class="loading">{% if lang == 'en' %}Loading...{% else %}加载中...{% endif %}</div>
+            </main>
+        </div>
+        {% endif %}
+    </div>
+
+    <script src="{{ url_for('static', filename='utils.js', v=3) }}"></script>
+    <script>
+        // 全局错误捕获
+        window.onerror = function(msg, url, line) {
+            document.body.innerHTML += '<div style="position:fixed;bottom:0;left:0;right:0;background:#fef2f2;color:#991b1b;padding:12px;font-size:0.8rem;z-index:99999;border-top:2px solid #ef4444;">JS Error: ' + msg + ' (line ' + line + ')</div>';
+        };
+        const USER_LANG = "{{ lang }}";
+        const _T = {
+            stats: { zh: "学习统计", en: "Statistics" },
+            favorites: { zh: "收藏本", en: "Favorites" },
+            wrongbook: { zh: "错题本", en: "Wrong Book" },
+            history: { zh: "学习记录", en: "History" },
+            settings: { zh: "设置", en: "Settings" },
+            loading: { zh: "加载中...", en: "Loading..." },
+            noData: { zh: "暂无数据", en: "No data" },
+            clearAll: { zh: "清空全部", en: "Clear All" },
+            delete: { zh: "删除", en: "Delete" },
+            examDuration: { zh: "考试模式默认时长", en: "Exam Default Duration" },
+            language: { zh: "界面语言", en: "Language" },
+            langZh: { zh: "中文", en: "Chinese" },
+            langEn: { zh: "英文", en: "English" },
+            save: { zh: "保存", en: "Save" },
+        };
+        function t(key) { return _T[key] ? (_T[key][USER_LANG] || _T[key]["zh"]) : key; }
+
+        // 切换标签页
+        function switchTab(tab) {
+            document.querySelectorAll(".user-sidebar-item").forEach(el => el.classList.remove("active"));
+            document.querySelector(`.user-sidebar-item[href="#${tab}"]`).classList.add("active");
+            history.replaceState(null, "", `#${tab}`);
+            renderTab(tab);
+        }
+
+        function renderTab(tab) {
+            const container = document.getElementById("user-content");
+            if (tab === "stats") renderStats(container);
+            else if (tab === "favorites") renderFavorites(container);
+            else if (tab === "wrongbook") renderWrongBook(container);
+            else if (tab === "history") renderHistory(container);
+            else if (tab === "settings") renderSettings(container);
+        }
+
+        // ---------- 学习统计 ----------
+        function renderStats(container) {
+            container.innerHTML = `<h2>📊 ${t("stats")}</h2><div id="stats-content">${t("loading")}</div>`;
+            const div = container.querySelector("#stats-content");
+            try {
+                const history = JSON.parse(localStorage.getItem("quizHistory") || "[]");
+                if (history.length === 0) { div.innerHTML = `<p style="color:#a0aec0;">${t("noData")}</p>`; return; }
+                let totalQ = 0, correctQ = 0;
+                history.forEach(h => { totalQ += h.total || 0; correctQ += h.correct || 0; });
+                const rate = totalQ > 0 ? Math.round(correctQ / totalQ * 100) : 0;
+                const days = [...new Set(history.map(h => h.time ? h.time.slice(0, 10) : ""))].filter(Boolean).length;
+                let html = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px;">
+                    <div style="background:#ebf8ff;padding:16px;border-radius:10px;text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#3182ce;">${history.length}</div><div style="font-size:0.8rem;color:#64748b;">${USER_LANG==='en'?'Practices':'练习次数'}</div></div>
+                    <div style="background:#f0fff4;padding:16px;border-radius:10px;text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#38a169;">${totalQ}</div><div style="font-size:0.8rem;color:#64748b;">${USER_LANG==='en'?'Questions':'总题数'}</div></div>
+                    <div style="background:#fffbeb;padding:16px;border-radius:10px;text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#d69e2e;">${rate}%</div><div style="font-size:0.8rem;color:#64748b;">${USER_LANG==='en'?'Accuracy':'正确率'}</div></div>
+                    <div style="background:#f3f4f6;padding:16px;border-radius:10px;text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#6b7280;">${days}</div><div style="font-size:0.8rem;color:#64748b;">${USER_LANG==='en'?'Days Active':'活跃天数'}</div></div>
+                </div>`;
+                html += `<h3 style="font-size:0.95rem;color:#4a5568;margin-bottom:8px;">${USER_LANG==='en'?'Recent Records':'最近记录'}</h3><div style="max-height:300px;overflow-y:auto;">`;
+                history.slice(-10).reverse().forEach(h => {
+                    const d = h.time || "";
+                    const r = h.total > 0 ? Math.round(h.correct / h.total * 100) : 0;
+                    let grade = r >= 80 ? "🟢" : r >= 50 ? "🟡" : "🔴";
+                    html += `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:0.85rem;color:#64748b;"><span>${grade} ${d}</span><span>${h.correct}/${h.total} (${r}%)</span></div>`;
+                });
+                html += `</div>`;
+                div.innerHTML = html;
+            } catch(e) { div.innerHTML = `<p style="color:#a0aec0;">${t("noData")}</p>`; }
+        }
+
+        // ---------- 收藏本 ----------
+        function renderFavorites(container) {
+            const favs = getFavorites();
+            const groups = groupFavorites();
+            const total = Object.values(favs).length;
+            let html = `<h2>⭐ ${t("favorites")}</h2><p style="color:#94a3b8;font-size:0.85rem;margin-bottom:16px;">${USER_LANG==='en'?'Total':'共'} ${total} ${USER_LANG==='en'?'questions':'题'}</p>`;
+            if (total === 0) { html += `<p style="color:#a0aec0;">${t("noData")}</p>`; container.innerHTML = html; return; }
+            html += `<button class="btn btn-small btn-danger-outline" onclick="clearAllFavorites()" style="margin-bottom:12px;">🗑 ${t("clearAll")}</button>`;
+            for (const [gKey, group] of Object.entries(groups)) {
+                html += `<div style="margin-bottom:16px;"><div style="font-weight:600;color:#2d3748;margin-bottom:8px;">📄 ${escapeHTML(group.bank_name)}</div>`;
+                group.questions.forEach(item => {
+                    const key = item.key || `${group.bank_id}_${item.question_id}`;
+                    html += `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 12px;background:#f8fafc;border-radius:8px;margin-bottom:6px;font-size:0.85rem;color:#4a5568;gap:8px;">
+                        <div style="flex:1;min-width:0;"><div style="margin-bottom:4px;">${escapeHTML(item.question_text)}</div><div style="font-size:0.75rem;color:#a0aec0;">${USER_LANG==='en'?'Answer':'答案'}: ${escapeHTML(item.answer || "")}</div></div>
+                        <button onclick="deleteFavoriteItem('${key}')" style="flex-shrink:0;background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.8rem;padding:4px 6px;border-radius:4px;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">✕</button>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+            container.innerHTML = html;
+        }
+        function deleteFavoriteItem(key) {
+            if (!confirm(USER_LANG==='en'?'Remove this favorite?':'确定移除这个收藏吗？')) return;
+            // 找到对应的 DOM 元素并动画删除
+            const buttons = document.querySelectorAll(`[onclick*="'${key}'"]`);
+            buttons.forEach(btn => {
+                const card = btn.closest('[style*="display:flex"]');
+                if (card) {
+                    const h = card.offsetHeight;
+                    card.style.boxSizing = "border-box";
+                    card.style.height = h + "px";
+                    card.style.overflow = "hidden";
+                    card.style.transition = "all 0.3s ease";
+                    void card.offsetHeight;
+                    card.style.height = "0";
+                    card.style.opacity = "0";
+                    card.style.paddingTop = "0";
+                    card.style.paddingBottom = "0";
+                    card.style.marginTop = "0";
+                    card.style.marginBottom = "0";
+                    card.style.borderWidth = "0";
+                    setTimeout(() => { card.remove(); }, 350);
+                }
+            });
+            setTimeout(() => {
+                const book = getFavorites();
+                delete book[key];
+                saveFavorites(book);
+            }, 50);
+        }
+        function clearAllFavorites() {
+            if (!confirm(USER_LANG==='en'?'Clear all favorites?':'确定清空所有收藏吗？')) return;
+            const content = document.getElementById("user-content");
+            content.style.transition = "all 0.3s ease";
+            content.style.opacity = "0";
+            content.style.transform = "translateY(-10px)";
+            setTimeout(() => {
+                localStorage.removeItem(FAVORITE_KEY);
+                content.style.transition = "none";
+                content.style.opacity = "";
+                content.style.transform = "";
+                renderTab("favorites");
+            }, 320);
+        }
+
+        // ---------- 错题本 ----------
+        function renderWrongBook(container) {
+            const groups = groupWrongBook();
+            const total = Object.values(groups).reduce((s, g) => s + g.questions.length, 0);
+            let html = `<h2>📕 ${t("wrongbook")}</h2><p style="color:#94a3b8;font-size:0.85rem;margin-bottom:16px;">${USER_LANG==='en'?'Total':'共'} ${total} ${USER_LANG==='en'?'questions':'道错题'}</p>`;
+            if (total === 0) { html += `<p style="color:#a0aec0;">${t("noData")}</p>`; container.innerHTML = html; return; }
+            html += `<button class="btn btn-small btn-danger-outline" onclick="clearAllWrongBook()" style="margin-bottom:12px;">🗑 ${t("clearAll")}</button>`;
+            for (const [gKey, group] of Object.entries(groups)) {
+                html += `<div style="margin-bottom:16px;"><div style="font-weight:600;color:#2d3748;margin-bottom:8px;">📄 ${escapeHTML(group.bank_name)}</div>`;
+                group.questions.forEach(item => {
+                    const key = item.key || `${group.bank_id}_${item.question_id}`;
+                    html += `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 12px;background:#fff5f5;border-radius:8px;margin-bottom:6px;font-size:0.85rem;gap:8px;">
+                        <div style="flex:1;min-width:0;"><div style="margin-bottom:4px;color:#4a5568;">${escapeHTML(item.question_text)}</div><div style="font-size:0.75rem;"><span style="color:#e53e3e;">${USER_LANG==='en'?'Your answer':'你的答案'}: ${escapeHTML(item.user_wrong_answer)}</span> · <span style="color:#38a169;">${USER_LANG==='en'?'Correct':'正确答案'}: ${escapeHTML(item.correct_answer)}</span> · ${USER_LANG==='en'?'Wrong':'错'} ${item.wrong_count} ${USER_LANG==='en'?'times':'次'}</div></div>
+                        <button onclick="deleteWrongItem('${key}')" style="flex-shrink:0;background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.8rem;padding:4px 6px;border-radius:4px;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">✕</button>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+            container.innerHTML = html;
+        }
+        function deleteWrongItem(key) {
+            if (!confirm(USER_LANG==='en'?'Remove this wrong item?':'确定移除这道错题吗？')) return;
+            const buttons = document.querySelectorAll(`[onclick*="'${key}'"]`);
+            buttons.forEach(btn => {
+                const card = btn.closest('[style*="display:flex"]');
+                if (card) {
+                    const h = card.offsetHeight;
+                    card.style.boxSizing = "border-box";
+                    card.style.height = h + "px";
+                    card.style.overflow = "hidden";
+                    card.style.transition = "all 0.3s ease";
+                    void card.offsetHeight;
+                    card.style.height = "0";
+                    card.style.opacity = "0";
+                    card.style.paddingTop = "0";
+                    card.style.paddingBottom = "0";
+                    card.style.marginTop = "0";
+                    card.style.marginBottom = "0";
+                    card.style.borderWidth = "0";
+                    setTimeout(() => { card.remove(); }, 350);
+                }
+            });
+            setTimeout(() => { removeFromWrongBook(key); }, 50);
+        }
+        function clearAllWrongBook() {
+            if (!confirm(USER_LANG==='en'?'Clear wrong book?':'确定清空所有错题吗？')) return;
+            const content = document.getElementById("user-content");
+            content.style.transition = "all 0.3s ease";
+            content.style.opacity = "0";
+            content.style.transform = "translateY(-10px)";
+            setTimeout(() => {
+                localStorage.removeItem(WRONG_BOOK_KEY);
+                content.style.transition = "none";
+                content.style.opacity = "";
+                content.style.transform = "";
+                renderTab("wrongbook");
+            }, 320);
+        }
+
+        // ---------- 学习记录 ----------
+        function renderHistory(container) {
+            let html = `<h2>📜 ${t("history")}</h2>`;
+            try {
+                const history = JSON.parse(localStorage.getItem("quizHistory") || "[]");
+                if (history.length === 0) { html += `<p style="color:#a0aec0;">${t("noData")}</p>`; container.innerHTML = html; return; }
+                html += `<button class="btn btn-small btn-danger-outline" onclick="clearAllHistory()" style="margin-bottom:12px;">🗑 ${t("clearAll")}</button>`;
+                html += `<div id="history-list" style="max-height:500px;overflow-y:auto;">`;
+                // 倒序显示（最新的在上面）
+                for (let i = history.length - 1; i >= 0; i--) {
+                    const h = history[i];
+                    const r = h.total > 0 ? Math.round(h.correct / h.total * 100) : 0;
+                    let grade = r >= 80 ? "🟢" : r >= 50 ? "🟡" : "🔴";
+                    html += `<div id="hist-item-${i}" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:0.85rem;transition:all 0.3s ease;">
+                        <div><span style="font-weight:600;">${grade}</span> ${escapeHTML(h.bank_name || "")} · ${h.mode || ""} · ${h.time || ""}</div>
+                        <div style="display:flex;align-items:center;gap:8px;"><span>${h.correct}/${h.total} (${r}%)</span><button onclick="deleteHistoryItem(${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.8rem;padding:2px 6px;border-radius:4px;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">✕</button></div>
+                    </div>`;
+                }
+                html += `</div>`;
+            } catch(e) { html += `<p style="color:#a0aec0;">${t("noData")}</p>`; }
+            container.innerHTML = html;
+        }
+        function deleteHistoryItem(idx) {
+            if (!confirm(USER_LANG==='en'?'Delete this record?':'确定删除这条记录吗？')) return;
+            const row = document.getElementById(`hist-item-${idx}`);
+            if (row) {
+                const h = row.offsetHeight;
+                row.style.boxSizing = "border-box";
+                row.style.height = h + "px";
+                row.style.overflow = "hidden";
+                row.style.transition = "all 0.3s ease";
+                row.style.paddingTop = "10px";
+                row.style.paddingBottom = "10px";
+                void row.offsetHeight;
+                row.style.height = "0";
+                row.style.opacity = "0";
+                row.style.paddingTop = "0";
+                row.style.paddingBottom = "0";
+                row.style.marginTop = "0";
+                row.style.marginBottom = "0";
+                row.style.borderWidth = "0";
+                // 动画结束后移除 DOM + 更新数据，下方元素自然上移
+                setTimeout(() => {
+                    row.remove();
+                    try {
+                        let history = JSON.parse(localStorage.getItem("quizHistory") || "[]");
+                        if (idx >= 0 && idx < history.length) {
+                            history.splice(idx, 1);
+                            localStorage.setItem("quizHistory", JSON.stringify(history));
+                        }
+                    } catch(_) {}
+                }, 350);
+            }
+        }
+        function clearAllHistory() {
+            if (!confirm(USER_LANG==='en'?'Clear all history?':'确定清空所有记录吗？')) return;
+            const content = document.getElementById("user-content");
+            content.style.transition = "all 0.3s ease";
+            content.style.opacity = "0";
+            content.style.transform = "translateY(-10px)";
+            setTimeout(() => {
+                localStorage.removeItem("quizHistory");
+                content.style.transition = "none";
+                content.style.opacity = "";
+                content.style.transform = "";
+                renderTab("history");
+            }, 320);
+        }
+
+        // ---------- 设置 ----------
+        let _profileCodeSent = false;
+
+        function renderSettings(container) {
+            let html = `<h2>⚙️ ${t("settings")}</h2>`;
+
+            // 个人信息
+            html += `<div style="background:#f8fafc;border-radius:12px;padding:20px;margin-bottom:20px;" id="profile-section">
+                <h3 style="font-size:1rem;color:#2d3748;margin-bottom:16px;">👤 ${USER_LANG==='en'?'Personal Info':'个人信息'}</h3>
+                <div class="settings-row"><label>${USER_LANG==='en'?'Username':'用户名'}：</label>
+                    <input type="text" id="profile-username" value="${escapeHTML('{{ current_user.username }}')}" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.9rem;flex:1;max-width:240px;">
+                </div>
+                <div class="settings-row" style="border-top:1px solid #e2e8f0;padding-top:16px;margin-top:8px;">
+                    <label>${USER_LANG==='en'?'New Password':'新密码'}：</label>
+                    <input type="password" id="profile-password" placeholder="${USER_LANG==='en'?'New password':'新密码'}" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.9rem;flex:1;max-width:240px;">
+                </div>
+                <div class="settings-row" style="margin-top:-8px;">
+                    <label>&nbsp;</label>
+                    <input type="password" id="profile-password2" placeholder="${USER_LANG==='en'?'Confirm password':'确认密码'}" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.9rem;flex:1;max-width:240px;" oninput="checkProfilePwd()">
+                    <span id="profile-pwd-hint" style="font-size:0.8rem;color:#a0aec0;"></span>
+                </div>
+                <div class="settings-row" style="border-top:1px solid #e2e8f0;padding-top:16px;margin-top:8px;">
+                    <label>${USER_LANG==='en'?'Verify':'验证'}：</label>
+                    <div style="display:flex;gap:8px;flex:1;max-width:340px;">
+                        <input type="text" id="profile-code" placeholder="${USER_LANG==='en'?'Verification code':'验证码'}" style="padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:0.9rem;flex:1;max-width:120px;" maxlength="6">
+                        <button id="profile-send-code-btn" class="code-send-btn" onclick="sendProfileCode()" style="font-size:0.8rem;padding:0 12px;">${USER_LANG==='en'?'Send Code':'发送验证码'}</button>
+                    </div>
+                </div>
+                <div class="settings-row" style="margin-top:16px;gap:12px;">
+                    <button class="btn btn-primary" onclick="saveProfile()" style="padding:8px 28px;">${USER_LANG==='en'?'Save':'保存'}</button>
+                    <button class="btn btn-secondary" onclick="cancelProfile()" style="padding:8px 28px;">${USER_LANG==='en'?'Cancel':'取消'}</button>
+                    <span id="profile-msg" style="font-size:0.85rem;color:#38a169;"></span>
+                </div>
+            </div>`;
+
+            // 考试时长
+            const currentDur = localStorage.getItem("quiz_global_duration") || "auto";
+            html += `<div class="settings-row"><label>📝 ${t("examDuration")}：</label><select id="setting-duration" onchange="saveDuration()">
+                <option value="auto" ${currentDur==='auto'?'selected':''}>${USER_LANG==='en'?'Smart (90s/q)':'智能（每题90秒）'}</option>
+                <option value="15" ${currentDur==='15'?'selected':''}>15 ${USER_LANG==='en'?'min':'分钟'}</option>
+                <option value="30" ${currentDur==='30'?'selected':''}>30 ${USER_LANG==='en'?'min':'分钟'}</option>
+                <option value="45" ${currentDur==='45'?'selected':''}>45 ${USER_LANG==='en'?'min':'分钟'}</option>
+                <option value="60" ${currentDur==='60'?'selected':''}>60 ${USER_LANG==='en'?'min':'分钟'}</option>
+                <option value="0" ${currentDur==='0'?'selected':''}>${USER_LANG==='en'?'Unlimited':'不限时'}</option>
+            </select></div>`;
+
+            // 语言切换
+            html += `<div class="settings-row"><label>🌐 ${t("language")}：</label><select id="setting-lang" onchange="switchLang()">
+                <option value="zh" ${USER_LANG==='zh'?'selected':''}>${t("langZh")}</option>
+                <option value="en" ${USER_LANG==='en'?'selected':''}>${t("langEn")}</option>
+            </select><span class="settings-hint">${USER_LANG==='en'?'Reload to take effect':'切换后刷新页面生效'}</span></div>`;
+
+            html += `<div style="margin-top:24px;padding-top:20px;border-top:1px solid #e2e8f0;font-size:0.8rem;color:#94a3b8;">Quiz Master v0.9.0</div>`;
+            container.innerHTML = html;
+        }
+
+        function checkProfilePwd() {
+            const p1 = document.getElementById("profile-password").value;
+            const p2 = document.getElementById("profile-password2").value;
+            const hint = document.getElementById("profile-pwd-hint");
+            if (!p2) { hint.innerHTML = ''; return; }
+            hint.innerHTML = p1 === p2 ? '✅' : '❌';
+            hint.style.color = p1 === p2 ? '#38a169' : '#e53e3e';
+        }
+
+        let profileCodeCooldown = 0;
+
+        function sendProfileCode() {
+            const btn = document.getElementById("profile-send-code-btn");
+            const msg = document.getElementById("profile-msg");
+            if (profileCodeCooldown > 0) return;
+            fetch("/api/send-code", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: "{{ current_user.email }}" })
+            })
+            .then(async r => { const d = await r.json(); if (!r.ok) throw new Error(d.error); return d; })
+            .then(d => {
+                msg.textContent = USER_LANG==='en'?'Code sent':'验证码已发送';
+                msg.style.color = '#38a169';
+                profileCodeCooldown = 90;
+                btn.disabled = true;
+                const t = setInterval(() => { profileCodeCooldown--; btn.textContent = `${profileCodeCooldown}s`; if (profileCodeCooldown <= 0) { clearInterval(t); btn.disabled = false; btn.textContent = USER_LANG==='en'?'Send Code':'发送验证码'; } }, 1000);
+            })
+            .catch(e => { msg.textContent = e.message; msg.style.color = '#e53e3e'; });
+        }
+
+        function saveProfile() {
+            const section = document.getElementById("profile-section");
+            const msg = document.getElementById("profile-msg");
+            const newUsername = document.getElementById("profile-username").value.trim();
+            const newPwd = document.getElementById("profile-password").value;
+            const newPwd2 = document.getElementById("profile-password2").value;
+            const code = document.getElementById("profile-code").value.trim();
+
+            if (!newUsername && !newPwd) { msg.textContent = USER_LANG==='en'?'Nothing to change':'没有要修改的内容'; msg.style.color = '#a0aec0'; return; }
+
+            // 淡出动画
+            section.style.transition = "all 0.3s ease";
+            section.style.opacity = "0";
+            section.style.transform = "translateY(-8px)";
+
+            const promises = [];
+            if (newUsername) {
+                promises.push(fetch("/api/update-profile", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({action:"username", username: newUsername}) }).then(r=>r.json()));
+            }
+            if (newPwd) {
+                if (newPwd !== newPwd2) { msg.textContent = USER_LANG==='en'?'Passwords do not match':'两次密码不一致'; msg.style.color = '#e53e3e'; section.style.opacity = "1"; section.style.transform = ""; return; }
+                if (!code) { msg.textContent = USER_LANG==='en'?'Please enter verification code':'请填写验证码'; msg.style.color = '#e53e3e'; section.style.opacity = "1"; section.style.transform = ""; return; }
+                promises.push(fetch("/api/update-profile", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({action:"password", password: newPwd, code: code}) }).then(r=>r.json()));
+            }
+
+            Promise.all(promises).then(results => {
+                const err = results.find(r => r.error);
+                if (err) {
+                    msg.textContent = err.error;
+                    msg.style.color = '#e53e3e';
+                    section.style.opacity = "1";
+                    section.style.transform = "";
+                    return;
+                }
+                msg.textContent = USER_LANG==='en'?'Saved successfully':'保存成功';
+                msg.style.color = '#38a169';
+                setTimeout(() => {
+                    section.style.transition = "none";
+                    section.style.opacity = "1";
+                    section.style.transform = "";
+                    renderSettings(document.getElementById("user-content"));
+                }, 350);
+            });
+        }
+
+        function cancelProfile() {
+            const section = document.getElementById("profile-section");
+            section.style.transition = "all 0.3s ease";
+            section.style.opacity = "0";
+            section.style.transform = "translateY(-8px)";
+            setTimeout(() => {
+                section.style.transition = "none";
+                section.style.opacity = "1";
+                section.style.transform = "";
+                const username = document.getElementById("profile-username");
+                if (username) username.value = "{{ current_user.username }}";
+                document.getElementById("profile-password").value = "";
+                document.getElementById("profile-password2").value = "";
+                document.getElementById("profile-code").value = "";
+                document.getElementById("profile-msg").textContent = "";
+                document.getElementById("profile-pwd-hint").textContent = "";
+            }, 300);
+        }
+
+        function saveDuration() {
+            const val = document.getElementById("setting-duration").value;
+            try { localStorage.setItem("quiz_global_duration", val); } catch(e) {}
+            showToast(USER_LANG==='en'?'Duration saved':'时长设置已保存', "success");
+        }
+
+        function switchLang() {
+            const val = document.getElementById("setting-lang").value;
+            window.location.href = `/user?lang=${val}`;
+        }
+
+        // ---------- 初始化 ----------
+        document.addEventListener("DOMContentLoaded", () => {
+            try {
+                // 延迟确保 DOM 完全就绪
+                setTimeout(() => {
+                    const splash = document.getElementById("splash-screen");
+                    if (splash) { splash.classList.add("splash-fade-out"); setTimeout(() => { splash.style.display = "none"; }, 500); }
+                }, 600);
+                setTimeout(() => {
+                    const tab = location.hash.slice(1) || "stats";
+                    switchTab(tab);
+                }, 100);
+            } catch(e) {
+                // 降级：直接显示内容
+                const splash = document.getElementById("splash-screen");
+                if (splash) splash.style.display = "none";
+            }
+        });
+    </script>
+</body>
+</html>

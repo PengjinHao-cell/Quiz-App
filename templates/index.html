@@ -19,11 +19,52 @@
         </div>
     </div>
 
+    {% if lang == 'en' %}
+    {% set _bankList = 'Bank List' %}
+    {% set _search = 'Search' %}
+    {% set _upload = 'Upload' %}
+    {% set _file = 'File' %}
+    {% set _paste = 'Paste Text' %}
+    {% set _vocab = 'Vocabulary' %}
+    {% set _settings = 'Settings' %}
+    {% set _practice = 'Practice' %}
+    {% set _exam = 'Exam' %}
+    {% set _reading = 'Reading' %}
+    {% set _count = 'Qty' %}
+    {% set _passage = 'Passage' %}
+    {% set _all = 'All' %}
+    {% set _noBanks = 'No banks yet. Upload a file or load sample bank!' %}
+    {% set _startVocab = 'Start Learning' %}
+    {% set _aiParse = 'AI Parse' %}
+    {% set _guestNotice = 'Guest mode: all data is public. Login to keep data private.' %}
+    {% set _total = 'Total' %}
+    {% set _questions = 'Q' %}
+    {% else %}
+    {% set _bankList = '题库列表' %}
+    {% set _search = '搜索' %}
+    {% set _upload = '上传' %}
+    {% set _file = '文件' %}
+    {% set _paste = '粘贴文本' %}
+    {% set _vocab = '背单词' %}
+    {% set _settings = '设置' %}
+    {% set _practice = '练习模式' %}
+    {% set _exam = '考试模式' %}
+    {% set _reading = '阅读模式' %}
+    {% set _count = '题数' %}
+    {% set _passage = '篇数' %}
+    {% set _all = '全部' %}
+    {% set _noBanks = '还没有题库，上传一个文件或初始化示例题库开始吧！' %}
+    {% set _startVocab = '开始背单词' %}
+    {% set _aiParse = 'AI 智能解析' %}
+    {% set _guestNotice = '访客模式下答题数据公开可见，登录后数据仅自己可见' %}
+    {% set _total = '共' %}
+    {% set _questions = '题' %}
+    {% endif %}
     <div class="container">
         <header class="app-header">
             <div class="app-header-left">
-                <h1>📝 刷题通</h1>
-                <p class="subtitle">上传题库文件，开始刷题练习</p>
+                <h1>📝 {% if lang == 'en' %}Quiz Master{% else %}刷题通{% endif %}</h1>
+                <p class="subtitle">{% if lang == 'en' %}Upload files, start practicing{% else %}上传题库文件，开始刷题练习{% endif %}</p>
             </div>
             <div class="user-menu" id="user-menu">
                 {% if is_guest %}
@@ -34,11 +75,10 @@
                 </div>
                 <div class="user-dropdown" id="user-dropdown" style="display:none;">
                     <div class="dropdown-header">👤 访客模式</div>
-                    <div class="dropdown-item" style="color:#a0aec0;cursor:default;">📊 学习统计</div>
-                    <div class="dropdown-item" style="color:#a0aec0;cursor:default;">⭐ 收藏本</div>
-                    <div class="dropdown-item" style="color:#a0aec0;cursor:default;">📕 错题本</div>
-                    <div class="dropdown-item" style="color:#a0aec0;cursor:default;">📜 学习记录</div>
-                    <div style="padding:0 16px 8px;font-size:0.7rem;color:#cbd5e0;">登录后查看个人数据</div>
+                    <a class="dropdown-item" href="{{ url_for('auth.login') }}" style="color:#a0aec0;">📊 学习统计</a>
+                    <a class="dropdown-item" href="{{ url_for('auth.login') }}" style="color:#a0aec0;">⭐ 收藏本</a>
+                    <a class="dropdown-item" href="{{ url_for('auth.login') }}" style="color:#a0aec0;">📕 错题本</a>
+                    <a class="dropdown-item" href="{{ url_for('auth.login') }}" style="color:#a0aec0;">📜 学习记录</a>
                     <div class="dropdown-divider"></div>
                     <a class="dropdown-item" href="/" style="color:#e53e3e;">🚪 退出访客模式</a>
                 </div>
@@ -50,12 +90,11 @@
                 </div>
                 <div class="user-dropdown" id="user-dropdown" style="display:none;">
                     <div class="dropdown-header">{{ current_user.username }}</div>
-                    <a class="dropdown-item" href="#">👤 个人信息</a>
-                    <a class="dropdown-item" href="#">⚙️ 设置</a>
-                    <a class="dropdown-item" href="#">📊 学习统计</a>
-                    <a class="dropdown-item" href="#">⭐ 收藏本</a>
-                    <a class="dropdown-item" href="#">📕 错题本</a>
-                    <a class="dropdown-item" href="#">📜 学习记录</a>
+                    <a class="dropdown-item" href="/user#stats">📊 学习统计</a>
+                    <a class="dropdown-item" href="/user#favorites">⭐ 收藏本</a>
+                    <a class="dropdown-item" href="/user#wrongbook">📕 错题本</a>
+                    <a class="dropdown-item" href="/user#history">📜 学习记录</a>
+                    <a class="dropdown-item" href="/user#settings">⚙️ {{ _settings }}</a>
                     <div class="dropdown-divider"></div>
                     <a class="dropdown-item" href="{{ url_for('auth.logout') }}" style="color:#e53e3e;">🚪 退出登录</a>
                 </div>
@@ -70,7 +109,7 @@
         {% if not current_user.is_authenticated %}
         <div id="announcement-banner" class="announcement-banner">
             <span class="announcement-icon">📢</span>
-            <span class="announcement-text">访客模式下答题数据公开可见，登录后数据仅自己可见</span>
+            <span class="announcement-text">{{ _guestNotice }}</span>
             <button class="announcement-close" onclick="dismissAnnouncement()" title="关闭">✕</button>
         </div>
         {% endif %}
@@ -78,49 +117,11 @@
         <!-- 学习统计（由 renderStats 动态填充） -->
         <section class="stats-section" id="stats-section" style="display:none;"></section>
 
-        <!-- 题目收藏 -->
-        <section class="wrongbook-section" id="fav-section" style="display:none;">
-            <div class="wrongbook-section-header">
-                <h2>⭐ 题目收藏</h2>
-                <button class="btn btn-small btn-danger-outline" onclick="clearFavorites()">🗑 清空收藏</button>
-            </div>
-            <div id="fav-container"></div>
-        </section>
 
-        <!-- 错题本 -->
-        <section class="wrongbook-section" id="wrongbook-section" style="display:none;">
-            <div class="wrongbook-section-header">
-                <h2>📕 错题本</h2>
-                <button class="btn btn-small btn-danger-outline" onclick="clearWrongBook()">🗑 清空错题本</button>
-            </div>
-            <div id="wrongbook-container"></div>
-        </section>
-
-        <!-- 历史记录 -->
-        <section class="history-section" id="history-section" style="display:none;">
-            <h2>📊 答题记录</h2>
-            <div class="history-table-wrap">
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            <th>时间</th>
-                            <th>题库</th>
-                            <th>模式</th>
-                            <th>得分</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-tbody"></tbody>
-                </table>
-            </div>
-            <div class="history-actions">
-                <button class="btn btn-small btn-secondary" onclick="clearHistory()">🗑 清空记录</button>
-            </div>
-        </section>
 
         <!-- 题库搜索 -->
         <section class="search-section" id="search-section" style="display:none;">
-            <h2>🔍 搜题</h2>
+            <h2>🔍 {{ _search }}</h2>
             <div class="search-bar">
                 <select id="search-bank-select" class="search-select">
                     <option value="">-- 选择题库 --</option>
@@ -131,15 +132,15 @@
                     {% endif %}
                 </select>
                 <input type="text" id="search-input" class="search-input"
-                       placeholder="输入关键词搜索题目..." autocomplete="off">
-                <button class="btn btn-primary" onclick="doSearch()">🔍 搜索</button>
+                       placeholder="{% if lang == 'en' %}Search questions...{% else %}输入关键词搜索题目...{% endif %}" autocomplete="off">
+                <button class="btn btn-primary" onclick="doSearch()">🔍 {{ _search }}</button>
             </div>
             <div id="search-results" class="search-results"></div>
         </section>
 
         <!-- 题库列表 -->
         <section class="bank-section">
-            <h2>📚 已保存的题库</h2>
+            <h2>📚 {{ _bankList }}</h2>
             <div id="bank-list">
                 {% if banks %}
                     {% for bank in banks %}
@@ -208,7 +209,7 @@
                     {% endfor %}
                 {% else %}
                     <div class="empty-state">
-                        <p>还没有题库，上传一个文件或初始化示例题库开始吧！</p>
+                        <p>{{ _noBanks }}</p>
                         <button class="btn btn-secondary" onclick="initSample()">📥 加载示例题库</button>
                     </div>
                 {% endif %}
@@ -217,16 +218,16 @@
 
         <!-- 背单词入口 -->
         <section class="bank-section">
-            <h2>📖 背单词</h2>
+            <h2>📖 {{ _vocab }}</h2>
             <div style="text-align:center; padding:20px;">
                 <p style="color:#718096; margin-bottom:16px;">CET-6 六级高频词汇 · 给出英文选中文释义</p>
-                <a href="{{ url_for('vocab_page') }}" class="btn btn-primary btn-large" style="max-width:300px; display:inline-block;">📖 开始背单词</a>
+                <a href="{{ url_for('vocab_page') }}" class="btn btn-primary btn-large" style="max-width:300px; display:inline-block;">📖 {{ _startVocab }}</a>
             </div>
         </section>
 
         <!-- 上传新题库 -->
         <section class="upload-section">
-            <h2>📤 上传新题库</h2>
+            <h2>📤 {{ _upload }}</h2>
 
             <!-- 切换标签 -->
             <div class="upload-tabs">
@@ -278,22 +279,7 @@
             </div>
         </section>
 
-        <!-- ⚙️ 全局设置（考试时长） -->
-        <section class="bank-section" id="settings-section">
-            <h2>⚙️ 设置</h2>
-            <div style="display:flex;align-items:center;gap:12px;padding:12px 0;flex-wrap:wrap;">
-                <span style="font-size:0.9rem;color:#4a5568;">📝 考试模式默认时长：</span>
-                <select id="global-duration" class="count-select" style="font-size:0.9rem;">
-                    <option value="auto" selected>智能（每题90秒）</option>
-                    <option value="15">15分钟</option>
-                    <option value="30">30分钟</option>
-                    <option value="45">45分钟</option>
-                    <option value="60">60分钟</option>
-                    <option value="0">不限时</option>
-                </select>
-                <span style="font-size:0.75rem;color:#a0aec0;">后续个人账号功能上线后，此设置将移至右上角</span>
-            </div>
-        </section>
+
 
         <!-- 页脚 -->
         <footer class="app-footer">

@@ -29,14 +29,18 @@
 <body>
     <div class="welcome-card">
         <div class="welcome-icon">📝</div>
-        <h1 class="welcome-title">刷题通</h1>
-        <p class="welcome-sub">轻量级智能刷题平台</p>
-        <p class="welcome-desc">上传题库 · AI 解析 · 练习模式 · 考试模式<br>错题本 · 收藏 · 学习统计 · 全部免费</p>
-        <a href="{{ url_for('auth.login') }}" class="welcome-btn">🚀 登录 / 注册</a>
-        <div class="welcome-divider">或者</div>
-        <a href="{{ url_for('app_main') }}?guest=1" class="welcome-guest">👤 访客模式体验（无需注册）</a>
-        <a href="{{ url_for('agreement') }}" class="welcome-agreement">📋 用户协议</a>
-        <div class="welcome-footer">Quiz Master v0.7.1</div>
+        <h1 class="welcome-title">{% if lang == 'en' %}Quiz Master{% else %}刷题通{% endif %}</h1>
+        <p class="welcome-sub">{% if lang == 'en' %}Smart Quiz Platform{% else %}轻量级智能刷题平台{% endif %}</p>
+        <p class="welcome-desc">{% if lang == 'en' %}Upload · AI Parse · Practice · Exam<br>Wrong Book · Favorites · Stats · Free{% else %}上传题库 · AI 解析 · 练习模式 · 考试模式<br>错题本 · 收藏 · 学习统计 · 全部免费{% endif %}</p>
+        <a href="{{ url_for('auth.login') }}" class="welcome-btn">🚀 {% if lang == 'en' %}Login / Register{% else %}登录 / 注册{% endif %}</a>
+        <div class="welcome-divider">{% if lang == 'en' %}or{% else %}或者{% endif %}</div>
+        <a href="{{ url_for('app_main') }}?guest=1" class="welcome-guest">👤 {% if lang == 'en' %}Guest Mode (no login){% else %}访客模式体验（无需注册）{% endif %}</a>
+        <a href="{{ url_for('agreement') }}" class="welcome-agreement">📋 {% if lang == 'en' %}User Agreement{% else %}用户协议{% endif %}</a>
+        <div class="welcome-footer">Quiz Master v0.9.0</div>
+        <div style="position:fixed;bottom:20px;right:20px;z-index:100;">
+            <a href="/set-lang/zh" style="display:inline-block;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:0.8rem;{% if lang=='zh' %}background:#3b82f6;color:#fff;{% else %}background:#e2e8f0;color:#94a3b8;{% endif %}margin-right:4px;transition:all 0.2s;">中文</a>
+            <a href="/set-lang/en" style="display:inline-block;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:0.8rem;{% if lang=='en' %}background:#3b82f6;color:#fff;{% else %}background:#e2e8f0;color:#94a3b8;{% endif %}transition:all 0.2s;">EN</a>
+        </div>
     </div>
 </body>
 </html>

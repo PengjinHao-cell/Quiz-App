@@ -27,8 +27,36 @@ app.secret_key = os.environ.get("SECRET_KEY", DEFAULT_SECRET)
 if app.secret_key == DEFAULT_SECRET:
     print("⚠️  警告: 使用默认 SECRET_KEY，生产环境请设置环境变量 SECRET_KEY")
 
+
+
+login_manager = LoginManager()
+login_manager.login_view = "auth.login"
+login_manager.init_app(app)
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+@app.context_processor
+def inject_globals():
+    """向所有模板注入全局变量"""
+    return {"lang": session.get("lang", "zh")}
+
+
+app.register_blueprint(auth_bp)
+
+
+
+
+# ---------- 配置 ----------
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+DATA_FOLDER = os.path.join(BASE_DIR, "data")
+
 # ---------- 数据库配置（容错：驱动缺失时不崩溃） ----------
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///quiz_app.db")
+DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'quiz_app.db')}")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 if DATABASE_URL.startswith("postgresql://") and "driver" not in DATABASE_URL:
@@ -44,26 +72,6 @@ try:
 except Exception as e:
     print(f"⚠️  数据库初始化失败: {e}")
     print("   应用将以无数据库模式运行（注册/登录功能不可用）")
-
-login_manager = LoginManager()
-login_manager.login_view = "auth.login"
-login_manager.init_app(app)
-
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-
-app.register_blueprint(auth_bp)
-
-
-
-
-# ---------- 配置 ----------
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
-DATA_FOLDER = os.path.join(BASE_DIR, "data")
 ALLOWED_EXTENSIONS = {"pdf", "docx", "txt"}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -306,17 +314,35 @@ def welcome():
     return render_template("welcome.html")
 
 
+@app.route("/set-lang/<lang>")
+def set_lang(lang):
+    """切换语言并回到上一页"""
+    if lang in ("zh", "en"):
+        session["lang"] = lang
+    referer = request.headers.get("Referer", url_for("welcome"))
+    return redirect(referer)
+
+
 @app.route("/agreement")
 def agreement():
     """用户协议"""
     return render_template("agreement.html")
 
 
+@app.route("/user")
+def user_page():
+    """用户中心页（所有用户均可访问，数据来自 localStorage）"""
+    lang = request.args.get("lang", session.get("lang", "zh"))
+    if lang not in ("zh", "en"):
+        lang = "zh"
+    session["lang"] = lang
+    return render_template("user.html", lang=lang)
+
+
 @app.route("/app")
 def app_main():
     """主应用页 - 题库列表"""
     is_guest = request.args.get("guest", "0") == "1"
-    # 未登录且非访客 → 回欢迎页
     if not current_user.is_authenticated and not is_guest:
         return redirect(url_for("welcome"))
 

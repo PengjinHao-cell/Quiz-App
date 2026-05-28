@@ -2,7 +2,7 @@
   <strong>🇬🇧 English</strong> · <strong><a href="#简体中文">🇨🇳 简体中文</a></strong> · <strong><a href="#繁體中文">🇭🇰 繁體中文</a></strong>
 </p>
 
-<h1 align="center">📝 Quiz Master v0.7.1</h1>
+<h1 align="center">📝 Quiz Master v0.9.0</h1>
 
 <p align="center">
   <em>A lightweight, feature-rich quiz web application with AI-powered parsing, reading comprehension mode, and smart annotation tools.</em><br>
@@ -25,38 +25,33 @@
 
 ## 🇬🇧 English
 
-Quiz Master is a web-based quiz platform that supports uploading **PDF / DOCX / TXT** files and **AI-powered text parsing**. It features **Practice, Exam, Reading Comprehension, and Vocabulary** modes, along with **highlight annotations, wrong answer review, favorites, and learning statistics**.
+Quiz Master is a web-based quiz platform that supports uploading **PDF / DOCX / TXT** files and **AI-powered text parsing**. It features **Practice, Exam, Reading Comprehension, and Vocabulary** modes, along with **user accounts, email verification, bilingual UI, personal dashboard, highlight annotations**, and more.
 
 ### ✨ Features
 
-**📤 Import**
+**📤 Import** — PDF / DOCX / TXT upload · AI text paste · Built-in banks · Vocabulary
 
-| Method | Description |
-|--------|-------------|
-| 📄 File Upload | PDF / DOCX / TXT — auto-parses questions, options, and answers |
-| ✏️ AI Text Paste | Paste any question text → **DeepSeek AI** auto-formats it |
-| 📚 Built-in Banks | Python sample questions included out-of-the-box |
-| 📖 Vocabulary | CET-6 words (120+) — English word → Chinese definition |
+**🔐 Account System** — Register with email verification · Login/Logout · Guest mode · Forgot password via email · Session persistence
 
-**🧠 Smart Detection**
-- **Triple-Engine Recognition** — Auto-detects format on upload:
-  - *Reading Engine* — Detects long passages + comprehension questions (CN/EN)
-  - *Format Engine* — Handles special layouts like "试题类型X选题题目分值2"
-  - *Standard Engine* — Processes "1. Question / A. Option / Answer: A" format
+**👤 User Center** — Personal dashboard with stats · Favorites · Wrong book · Study history · Settings (exam duration, language)
 
-**📚 Bank Management** — Rename · Type Badges · Sort by Name · Duplicate Detection · Delete
+**🌐 Bilingual** — Full Chinese/English UI switch · System text only (questions unchanged)
 
-**🧠 Quiz Modes** — Practice (instant feedback) · Exam (timed, scored) · Shuffled Options · Answer Sheet · Keyboard Shortcuts
+**🧠 Smart Detection** — Triple-engine: Reading / Party format / Standard format
 
-**📖 Reading Comprehension** — Dual-panel layout · Highlighter 🖍 · Underline ＿ · Passage Count
+**📚 Bank Management** — Rename · Type badges · Sort by name · Duplicate detection · Delete (password protected)
 
-**📊 Learning Tools** — Wrong Book · Favorites · Statistics · History · Share Results
+**🧠 Quiz Modes** — Practice (instant feedback) · Exam (timed, scored, custom duration) · Shuffled options · Answer sheet · Keyboard shortcuts
 
-**🎨 UX** — Toast Notifications · Splash Screen · Search · Responsive Design · Announcement Banner · Exam Timer Settings
+**📖 Reading Comprehension** — Dual-panel layout · Highlight 🖍 · Underline ＿ · Passage count
+
+**📊 Learning Tools** — Wrong book · Favorites · Statistics · History · Share results
+
+**🎨 UX** — Toast notifications · Splash screen · Search · Responsive design · Announcement banner
 
 ### 🛠 Tech Stack
 
-Python 3 + Flask · Vanilla HTML/CSS/JS · PyPDF2 / pymupdf / python-docx · DeepSeek API · JSON + localStorage
+Python 3 + Flask · Vanilla HTML/CSS/JS · SQLite / PostgreSQL · PyPDF2 / pymupdf / python-docx · DeepSeek API
 
 ### 🚀 Quick Start
 
@@ -67,23 +62,16 @@ python3 app.py
 # → http://localhost:5050
 ```
 
-### 📖 Usage
-
-| Action | How |
-|--------|-----|
-| Upload file | PDF/DOCX/TXT → auto-parse → redirect to quiz |
-| Paste text | Paste questions → AI Parse → auto-save |
-| Highlight | Select text → 🖍 (all modes) |
-| Underline | Select text → ＿ (reading mode only) |
-
 ### 📜 Changelog
 
 | Version | Highlights |
 |---------|-----------|
-| **v0.7.1** | Bug fixes: bank name truncation, duration moved to global settings, wrong book retry now loads correct questions, exam timer display compacted |
-| **v0.7.0** | Scrollable answer sheet, submit button in top bar, delete password (224070), custom exam duration, announcement banner |
+| **v0.9.0** | Account system: register with email verification, login/logout, guest mode, forgot password, user center (stats/favorites/wrong book/history/settings), bilingual CN/EN, personal info edit, duplicate password confirmation, login redirect protection |
+| **v0.8.0** | Scrollable answer sheet, submit button in top bar, delete password, custom exam duration, announcement banner |
+| **v0.7.1** | Bank name truncation, duration moved to global settings, wrong book retry fix, timer display compacted |
+| **v0.7.0** | Reading mode, highlighter/underline, triple-engine, .txt upload, sort by name, duplicate detection, toast notifications |
 | **v0.6.0** | Code cleanup: dead code removal, dismissSplash unification, secret key warning, CSS cleanup |
-| **v0.5.0** | Reading mode, highlighter/underline, triple-engine, .txt upload, sort by name, duplicate detection, toast notifications |
+| **v0.5.0** | Reading mode, highlight/underline, triple-engine recognition |
 | **v0.4.0** | Vocabulary module (CET-6) |
 | **v0.3.0** | Welcome page, rename, type badges |
 | **v0.2.0** | AI text parsing, shuffled options, share results, search |
@@ -94,11 +82,10 @@ python3 app.py
 
 <h2 id="简体中文">🇨🇳 简体中文</h2>
 
-<h1 align="center">📝 刷题通 (Quiz Master) v0.7.1</h1>
+<h1 align="center">📝 刷题通 (Quiz Master) v0.9.0</h1>
 
 <p align="center">
-  <em>一个功能丰富的轻量级刷题 Web 应用。<br>
-  支持 PDF / DOCX / TXT 上传 + AI 智能解析，内置练习/考试/阅读/背单词四大模式。</em>
+  <em>冲刺正式版 · 账号系统 · 邮箱验证 · 中英文切换 · 个人中心</em>
 </p>
 
 <p align="center">
@@ -108,28 +95,23 @@ python3 app.py
 
 ### ✨ 功能特性
 
-**📤 题库导入**
-- 📄 **上传文件** — PDF / DOCX / TXT，自动解析题目、选项、答案
-- ✏️ **粘贴文本** — 任意格式题目文字 → DeepSeek AI 自动整理为标准题库
-- 📚 **内置题库** — 开箱即用的 Python 示例题库
-- 📖 **背单词** — CET-6 高频词汇（120+ 词），英文选中文释义
+**🔐 账号系统** — 邮箱验证码注册 · 登录/登出 · 访客模式 · 忘记密码找回 · 登录态保持
 
-**🧠 智能识别**
-- 🤖 **三引擎自动识别** — 上传后自动判断格式：阅读 / 异形格式 / 标准
+**👤 个人中心** — 学习统计 · 收藏本 · 错题本 · 学习记录 · 设置（考试时长、语言切换、个人信息修改）
 
-**📚 题库管理** — 重命名 · 题型标识 · 按名称排序 · 重复检测 · 删除
+**🌐 中英文切换** — 系统界面全量翻译，题目原文不变
 
-**🧠 刷题模式** — 练习模式（即时反馈）· 考试模式（倒计时评分）· 选项乱序 · 答题卡 · 快捷键
+**📤 题库导入** — PDF/DOCX/TXT · AI 粘贴解析 · 内置题库 · 背单词
 
-**📖 阅读理解** — 左右分栏 · 🖍 荧光笔 · ＿ 下划线 · 篇数选择 · 提交评判移至顶栏
+**🧠 三引擎识别** — 阅读格式 / 异形格式 / 标准格式自动判断
+
+**📖 阅读理解** — 左右分栏 · 荧光笔 🖍 · 下划线 ＿ · 篇数选择
+
+**🧠 刷题模式** — 练习模式 · 考试模式（自定义时长）· 选项乱序 · 答题卡 · 快捷键
 
 **📊 学习工具** — 错题本 · 收藏 · 统计 · 记录 · 分享成绩
 
-**🎨 体验优化** — Toast 通知 · 启动画面 · 搜题 · 响应式设计
-
-### 🛠 技术栈
-
-Python 3 + Flask · 原生 HTML/CSS/JS · PyPDF2 / pymupdf / python-docx · DeepSeek API · JSON + localStorage
+**🎨 体验** — Toast 通知 · 启动动画 · 搜题 · 响应式 · 公告横幅 · 删除密码保护
 
 ### 🚀 快速开始
 
@@ -137,32 +119,32 @@ Python 3 + Flask · 原生 HTML/CSS/JS · PyPDF2 / pymupdf / python-docx · Deep
 cd quiz-app
 pip install -r requirements.txt
 python3 app.py
-# → http://localhost:5050
 ```
 
 ### 📜 更新日志
 
 | 版本 | 内容 |
 |------|------|
-| **v0.7.1** | 题库名称截断、时长移至底部全局设置、错题重练修复、计时显示精简 |
-| **v0.7.0** | 答题卡滚动、交卷按钮顶栏、删除密码(224070)、自定义时长、公告横幅 |
-| **v0.6.0** | 代码清理：死代码删除、dismissSplash统一、密钥警告、CSS清理 |
-| **v0.5.0** | 阅读模式、荧光/下划线标注、三引擎识别、.txt上传、名称排序、重复检测、Toast通知 |
-| **v0.4.0** | 背单词模块（CET-6） |
-| **v0.3.0** | 欢迎页、题库重命名、题型标识 |
-| **v0.2.0** | AI 解析、选项乱序、分享成绩、搜题 |
-| **v0.1.0** | 错题本、收藏、统计、倒计时、启动画面 |
-| **v0.0.1** | 初始版本：PDF/DOCX上传、练习/考试模式、答题卡 |
+| **v0.9.0** | 账号系统：邮箱验证注册、登录/登出、访客模式、忘记密码、个人中心（统计/收藏/错题/记录/设置）、中英文切换、个人信息修改、双重密码认定、登录跳转保护 |
+| **v0.8.0** | 答题卡滚动、交卷按钮顶栏、删除密码、自定义时长、公告横幅 |
+| **v0.7.1** | 名称截断、时长移至设置、错题重练修复、计时精简 |
+| **v0.7.0** | 阅读模式、荧光/下划线、三引擎、.txt上传、排序、重复检测、Toast |
+| **v0.6.0** | 代码清理、密钥警告、CSS清理 |
+| **v0.5.0** | 阅读模式、荧光标注、三引擎识别 |
+| **v0.4.0** | 背单词（CET-6） |
+| **v0.3.0** | 欢迎页、重命名、题型标识 |
+| **v0.2.0** | AI 解析、乱序、分享、搜索 |
+| **v0.1.0** | 错题本、收藏、统计、倒计时 |
+| **v0.0.1** | 初始版本 |
 
 <hr>
 
 <h2 id="繁體中文">🇭🇰 繁體中文</h2>
 
-<h1 align="center">📝 刷題通 (Quiz Master) v0.7.1</h1>
+<h1 align="center">📝 刷題通 (Quiz Master) v0.9.0</h1>
 
 <p align="center">
-  <em>功能豐富的輕量級刷題 Web 應用。<br>
-  支援 PDF / DOCX / TXT 上傳 + AI 智能解析，內建練習/考試/閱讀/背單字四大模式。</em>
+  <em>衝刺正式版 · 帳號系統 · 郵箱驗證 · 中英文切換 · 個人中心</em>
 </p>
 
 <p align="center">
@@ -172,21 +154,17 @@ python3 app.py
 
 ### ✨ 功能特色
 
-**📤 題庫匯入** — 上傳檔案 (PDF/DOCX/TXT) · 貼上文字 AI 解析 · 內建題庫 · 背單字
+**🔐 帳號系統** — 郵箱驗證碼註冊 · 登入/登出 · 訪客模式 · 忘記密碼 · 登入態保持
 
-**🧠 智能識別** — 三引擎自動識別：閱讀 / 異形格式 / 標準
+**👤 個人中心** — 學習統計 · 收藏本 · 錯題本 · 學習記錄 · 設定
 
-**📚 題庫管理** — 重新命名 · 題型標籤 · 依名稱排序 · 重複檢測 · 刪除
+**🌐 中英文切換** — 系統界面全量翻譯，題目原文不變
 
-**🧠 刷題模式** — 練習模式 · 考試模式 · 選項亂序 · 答題卡 · 快捷鍵
+**📤 題庫匯入** — PDF/DOCX/TXT · AI 解析 · 內建題庫 · 背單字
 
-**📖 閱讀理解** — 左右分欄 · 🖍 螢光筆 · ＿ 底線 · 篇數選擇
+**📖 閱讀理解** — 左右分欄 · 螢光筆 🖍 · 底線 ＿
 
-**📊 學習工具** — 錯題本 · 收藏 · 統計 · 記錄 · 分享成績
-
-### 🛠 技術棧
-
-Python 3 + Flask · 原生 HTML/CSS/JS · PyPDF2 / pymupdf / python-docx · DeepSeek API
+**🧠 刷題模式** — 練習 · 考試（自訂時長）· 選項亂序 · 答題卡 · 快捷鍵
 
 ### 🚀 快速開始
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>注册 - 刷题通</title>
+    <title>{% if lang == 'en' %}Register{% else %}注册{% endif %} - Quiz Master</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
         .splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.5s ease; }
@@ -55,28 +55,35 @@
 
     <div class="container">
         <div class="auth-wrap">
-            <h1>📝 注册</h1>
-            <p>创建你的刷题通账号<br>注册后数据将保存到云端，换设备不丢失</p>
+            <h1>📝 {% if lang == 'en' %}Register{% else %}注册{% endif %}</h1>
+            <p>{% if lang == 'en' %}Create your Quiz Master account<br>Your data will be saved to the cloud.{% else %}创建你的刷题通账号<br>注册后数据将保存到云端，换设备不丢失{% endif %}</p>
             <div class="auth-error" id="auth-error"></div>
-            <input type="text" class="auth-field" id="username" placeholder="用户名（字母数字）" autocomplete="username" autofocus>
-            <input type="email" class="auth-field" id="email" placeholder="邮箱" autocomplete="email">
+            <input type="text" class="auth-field" id="username" placeholder="{% if lang == 'en' %}Username (letters & numbers){% else %}用户名（字母数字）{% endif %}" autocomplete="username" autofocus>
+            <input type="email" class="auth-field" id="email" placeholder="{% if lang == 'en' %}Email{% else %}邮箱{% endif %}" autocomplete="email">
             <div class="code-row">
-                <input type="text" class="auth-field" id="code" placeholder="验证码" autocomplete="off" maxlength="6">
-                <button class="code-send-btn" id="send-code-btn" onclick="handleSendCode()">发送验证码</button>
+                <input type="text" class="auth-field" id="code" placeholder="{% if lang == 'en' %}Verification Code{% else %}验证码{% endif %}" autocomplete="off" maxlength="6">
+                <button class="code-send-btn" id="send-code-btn" onclick="handleSendCode()">{% if lang == 'en' %}Send Code{% else %}发送验证码{% endif %}</button>
             </div>
-            <input type="password" class="auth-field" id="password" placeholder="密码（≥6位，含字母+数字+特殊字符）" autocomplete="new-password">
-            <div class="auth-hint">密码必须包含字母、数字和特殊字符，至少6位</div>
-            <button class="auth-btn primary" id="register-btn" onclick="handleRegister()">注册</button>
+            <input type="password" class="auth-field" id="password" placeholder="{% if lang == 'en' %}Password (6+ chars, letters+numbers+symbols){% else %}密码（≥6位，含字母+数字+特殊字符）{% endif %}" autocomplete="new-password" oninput="checkPasswordMatch()">
+            <input type="password" class="auth-field" id="password2" placeholder="{% if lang == 'en' %}Confirm Password{% else %}再次输入密码{% endif %}" autocomplete="new-password" oninput="checkPasswordMatch()" style="margin-bottom:4px;">
+            <div id="password-match-hint" style="font-size:0.85rem;min-height:1.5em;margin-bottom:14px;text-align:left;">
+                {% if lang == 'en' %}Enter the same password twice{% else %}请再次输入密码确认{% endif %}
+            </div>
+            <button class="auth-btn primary" id="register-btn" onclick="handleRegister()">{% if lang == 'en' %}Register{% else %}注册{% endif %}</button>
             <div class="auth-link">
-                已有账号？<a href="{{ url_for('auth.login') }}">去登录</a>
+                {% if lang == 'en' %}Already have an account?{% else %}已有账号？{% endif %}<a href="{{ url_for('auth.login') }}">{% if lang == 'en' %}Login{% else %}去登录{% endif %}</a>
             </div>
             <div style="margin-top:24px;padding-top:20px;border-top:1px solid #e2e8f0;">
-                <a href="/app?guest=1" class="auth-btn guest" style="display:block;text-decoration:none;box-sizing:border-box;">👤 访客模式</a>
-                <div style="font-size:0.75rem;color:#a0aec0;margin-top:8px;text-align:center;">无需注册，答题数据公开可见</div>
+                <a href="/app?guest=1" class="auth-btn guest" style="display:block;text-decoration:none;box-sizing:border-box;">👤 {% if lang == 'en' %}Guest Mode{% else %}访客模式{% endif %}</a>
+                <div style="font-size:0.75rem;color:#a0aec0;margin-top:8px;text-align:center;">{% if lang == 'en' %}No login required, data is public{% else %}无需注册，答题数据公开可见{% endif %}</div>
             </div>
         </div>
     </div>
 
+        <div style="position:fixed;bottom:20px;right:20px;z-index:100;">
+            <a href="/set-lang/zh" style="display:inline-block;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:0.8rem;{% if lang=='zh' %}background:#3b82f6;color:#fff;{% else %}background:#e2e8f0;color:#94a3b8;{% endif %}margin-right:4px;transition:all 0.2s;">中文</a>
+            <a href="/set-lang/en" style="display:inline-block;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:0.8rem;{% if lang=='en' %}background:#3b82f6;color:#fff;{% else %}background:#e2e8f0;color:#94a3b8;{% endif %}transition:all 0.2s;">EN</a>
+        </div>
     <script>
         // 启动画面淡出
         document.addEventListener("DOMContentLoaded", () => {
@@ -90,6 +97,25 @@
         });
 
         let codeCooldown = 0;
+        const LANG = "{{ lang }}";
+
+        function checkPasswordMatch() {
+            const p1 = document.getElementById("password").value;
+            const p2 = document.getElementById("password2").value;
+            const hint = document.getElementById("password-match-hint");
+            if (!p2) {
+                hint.innerHTML = LANG === 'en' ? 'Enter the same password twice' : '请再次输入密码确认';
+                hint.style.color = '#a0aec0';
+                return;
+            }
+            if (p1 === p2) {
+                hint.innerHTML = '✅ ' + (LANG === 'en' ? 'Passwords match' : '两次密码一致');
+                hint.style.color = '#38a169';
+            } else {
+                hint.innerHTML = '❌ ' + (LANG === 'en' ? 'Passwords do not match' : '两次密码不一致');
+                hint.style.color = '#e53e3e';
+            }
+        }
 
         function handleSendCode() {
             const btn = document.getElementById("send-code-btn");
@@ -142,13 +168,15 @@
             const email = document.getElementById("email").value.trim();
             const code = document.getElementById("code").value.trim();
             const password = document.getElementById("password").value;
+            const password2 = document.getElementById("password2").value;
 
             errEl.textContent = "";
             errEl.style.color = "#e53e3e";
-            if (!username) { errEl.textContent = "请填写用户名"; return; }
-            if (!email) { errEl.textContent = "请填写邮箱"; return; }
-            if (!code) { errEl.textContent = "请填写验证码"; return; }
-            if (!password) { errEl.textContent = "请填写密码"; return; }
+            if (!username) { errEl.textContent = LANG === 'en' ? 'Please enter username' : '请填写用户名'; return; }
+            if (!email) { errEl.textContent = LANG === 'en' ? 'Please enter email' : '请填写邮箱'; return; }
+            if (!code) { errEl.textContent = LANG === 'en' ? 'Please enter verification code' : '请填写验证码'; return; }
+            if (!password) { errEl.textContent = LANG === 'en' ? 'Please enter password' : '请填写密码'; return; }
+            if (password !== password2) { errEl.textContent = LANG === 'en' ? 'Passwords do not match' : '两次密码不一致'; return; }
 
             btn.disabled = true;
             btn.textContent = "注册中...";

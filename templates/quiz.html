@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>刷题 - {{ bank_name }}</title>
+    <title>{% if lang == 'en' %}Quiz{% else %}刷题{% endif %} - {{ bank_name }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
         /* 题库名称过长时截断 */
@@ -35,10 +35,10 @@
     <div class="container">
         <header class="quiz-header">
             <div class="quiz-header-left">
-                <a href="{{ url_for('app_main') }}" class="btn btn-back">← 返回题库列表</a>
+                <a href="{{ url_for('app_main') }}" class="btn btn-back">← {% if lang == 'en' %}Back{% else %}返回题库列表{% endif %}</a>
                 <div class="quiz-info">
                     <h1>{{ bank_name }}</h1>
-                    <span class="badge badge-{{ mode }}">{% if mode == 'exam' %}📝 考试模式{% else %}✏️ 练习模式{% endif %}</span>
+                    <span class="badge badge-{{ mode }}">{% if mode == 'exam' %}📝 {% if lang == 'en' %}Exam{% else %}考试模式{% endif %}{% else %}✏️ {% if lang == 'en' %}Practice{% else %}练习模式{% endif %}{% endif %}</span>
                 </div>
             </div>
             <div class="quiz-header-right">
@@ -48,7 +48,7 @@
                 <div class="quiz-progress" id="quiz-progress">
                     <span id="progress-text">0 / {{ total }}</span>
                 </div>
-                <button id="btn-submit" class="btn btn-primary hidden" style="margin-left:12px;">📩 交卷</button>
+                <button id="btn-submit" class="btn btn-primary hidden" style="margin-left:12px;">📩 {% if lang == 'en' %}Submit{% else %}交卷{% endif %}</button>
             </div>
         </header>
 
@@ -60,29 +60,29 @@
                 </div>
 
                 <div id="quiz-navigation" class="quiz-nav hidden">
-                    <button id="btn-prev" class="btn btn-secondary" disabled>◀ 上一题</button>
+                    <button id="btn-prev" class="btn btn-secondary" disabled>◀ {% if lang == 'en' %}Prev{% else %}上一题{% endif %}</button>
                     <span id="question-indicator"></span>
-                    <button id="btn-next" class="btn btn-secondary">下一题 ▶</button>
+                    <button id="btn-next" class="btn btn-secondary">{% if lang == 'en' %}Next{% else %}下一题{% endif %} ▶</button>
                 </div>
             </main>
 
             <!-- 答题卡侧边栏 -->
             <aside id="answer-sheet" class="answer-sheet hidden">
-                <h3>📋 答题卡</h3>
+                <h3>📋 {% if lang == 'en' %}Answer Sheet{% else %}答题卡{% endif %}</h3>
                 <div id="sheet-legend">
-                    <span class="legend-item"><span class="dot answered"></span> 已答</span>
-                    <span class="legend-item"><span class="dot current"></span> 当前</span>
-                    <span class="legend-item"><span class="dot unanswered"></span> 未答</span>
+                    <span class="legend-item"><span class="dot answered"></span> {% if lang == 'en' %}Answered{% else %}已答{% endif %}</span>
+                    <span class="legend-item"><span class="dot current"></span> {% if lang == 'en' %}Current{% else %}当前{% endif %}</span>
+                    <span class="legend-item"><span class="dot unanswered"></span> {% if lang == 'en' %}Unanswered{% else %}未答{% endif %}</span>
                 </div>
                 <div id="sheet-grid" class="sheet-grid"></div>
                 <div id="sheet-stats" class="sheet-stats">
-                    已答：<strong id="sheet-answered-count">0</strong> / <span id="sheet-total"></span>
+                    {% if lang == 'en' %}Answered{% else %}已答{% endif %}：<strong id="sheet-answered-count">0</strong> / <span id="sheet-total"></span>
                 </div>
-                <button id="btn-sheet-toggle" class="btn btn-secondary btn-sm">收起答题卡</button>
+                <button id="btn-sheet-toggle" class="btn btn-secondary btn-sm">{% if lang == 'en' %}Collapse{% else %}收起答题卡{% endif %}</button>
             </aside>
 
             <!-- 展开答题卡按钮（收起后显示） -->
-            <button id="btn-sheet-expand" class="btn btn-secondary btn-sm sheet-expand hidden">📋 答题卡</button>
+            <button id="btn-sheet-expand" class="btn btn-secondary btn-sm sheet-expand hidden">📋 {% if lang == 'en' %}Answer Sheet{% else %}答题卡{% endif %}</button>
         </div>
     </div>
 
@@ -97,6 +97,7 @@
             count: "{{ count }}",
             duration: "{{ duration }}",
             qids: "{{ qids }}",
+            lang: "{{ lang }}",
             q: urlParams.get("q") || ""
         };
     </script>
