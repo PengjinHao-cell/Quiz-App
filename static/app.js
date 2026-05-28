@@ -1019,12 +1019,13 @@ function renderWrongBook() {
             `;
         });
 
-        // "重新练习" 按钮
+        // "重新练习" 按钮（带上具体错题 ID，确保重练的就是这些题）
         const wrongCount = qs.length;
+        const qids = qs.map(item => item.question_id).join(",");
         html += `
                 </div>
                 <div class="wrongbook-group-footer">
-                    <a href="/quiz/${group.bank_id}?mode=practice&count=${wrongCount}" class="btn btn-primary btn-small">📝 重练这 ${wrongCount} 道错题</a>
+                    <a href="/quiz/${group.bank_id}?mode=practice&count=${wrongCount}&qids=${encodeURIComponent(qids)}" class="btn btn-primary btn-small">📝 重练这 ${wrongCount} 道错题</a>
                 </div>
             </div>
         `;

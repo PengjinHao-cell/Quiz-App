@@ -368,6 +368,7 @@ def quiz_page(bank_id):
 
     count = request.args.get("count", "0")  # 0 = 全部
     duration = request.args.get("duration", "auto")  # auto / 分钟数 / 0
+    qids = request.args.get("qids", "")  # 指定题目ID列表
 
     try:
         bank = load_bank(bank_id)
@@ -387,15 +388,17 @@ def quiz_page(bank_id):
         mode=mode,
         count=count,
         duration=duration,
+        qids=qids,
     )
 
 
 @app.route("/api/bank/<bank_id>/questions")
 def api_get_questions(bank_id):
-    """API: 获取某个题库的题目（支持 count/q 参数）"""
+    """API: 获取某个题库的题目（支持 count/q/qids 参数）"""
     mode = request.args.get("mode", "practice")
     count = request.args.get("count", "0")  # 0 = 全部
     q = request.args.get("q", "").strip()  # 搜索关键词
+    qids = request.args.get("qids", "").strip()  # 指定题目ID列表（逗号分隔）
 
     try:
         bank = load_bank(bank_id)
@@ -418,11 +421,24 @@ def api_get_questions(bank_id):
                     break
         questions = filtered
 
+    # 指定题目ID列表（错题重练、收藏复习等）
+    if qids:
+        id_set = set()
+        for part in qids.split(","):
+            part = part.strip()
+            if part.isdigit():
+                id_set.add(int(part))
+        if id_set:
+            questions = [q for q in questions if q["id"] in id_set]
+
     # 搜索模式：按题号排序
     is_search = bool(q)
     # 按比例抽选题目
     count_int = int(count) if count.isdigit() else 0
-    if count_int > 0 and count_int < len(questions):
+    if qids:
+        # 指定题目列表时保持顺序
+        shuffled = questions[:]
+    elif count_int > 0 and count_int < len(questions):
         shuffled = sample_questions_proportional(questions, count_int)
     elif is_search:
         shuffled = sorted(questions, key=lambda x: x["id"])  # 搜索结果按题号排序
