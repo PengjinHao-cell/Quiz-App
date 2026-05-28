@@ -57,7 +57,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function loadQuestions() {
     const searchParam = config.q ? `&q=${encodeURIComponent(config.q)}` : "";
-    fetch(`/api/bank/${config.bankId}/questions?mode=${config.mode}&count=${config.count || 0}${searchParam}`)
+    const qidsParam = config.qids ? `&qids=${encodeURIComponent(config.qids)}` : "";
+    fetch(`/api/bank/${config.bankId}/questions?mode=${config.mode}&count=${config.count || 0}${searchParam}${qidsParam}`)
         .then((res) => {
             if (!res.ok) throw new Error("加载题目失败");
             return res.json();
