@@ -139,19 +139,24 @@ body {
 .announcement-close:hover { color: #ef4444; background: #fee2e2; }
 
 /* ---------- Header ---------- */
-/* 基础页面（首页/欢迎页）的 header 居中 */
-.container > header {
-    text-align: center;
-    margin-bottom: 32px;
+/* ---------- App 首页 Header（含用户菜单） ---------- */
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    gap: 16px;
 }
-
-.container > header h1 {
-    font-size: 2rem;
+.app-header-left h1 {
+    font-size: 1.6rem;
     font-weight: 700;
     color: #2d3748;
-    margin-bottom: 8px;
-    text-align: center;
-    width: 100%;
+    margin: 0;
+}
+.app-header-left .subtitle {
+    color: #718096;
+    font-size: 0.85rem;
+    margin: 2px 0 0;
 }
 
 .subtitle {
