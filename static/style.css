@@ -98,6 +98,33 @@ body {
     padding: 24px 16px 48px;
 }
 
+/* ---------- 公告横幅 ---------- */
+.announcement-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    color: #1e40af;
+    animation: bannerSlideIn 0.4s ease-out;
+}
+@keyframes bannerSlideIn {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.announcement-banner.hidden { display: none; }
+.announcement-icon { font-size: 1.2rem; flex-shrink: 0; }
+.announcement-text { flex: 1; line-height: 1.5; }
+.announcement-close {
+    background: none; border: none; font-size: 1.1rem; cursor: pointer;
+    color: #93c5fd; padding: 4px 6px; border-radius: 4px; transition: all 0.2s; flex-shrink: 0;
+}
+.announcement-close:hover { color: #ef4444; background: #fee2e2; }
+
 /* ---------- Header ---------- */
 /* 基础页面（首页/欢迎页）的 header 居中 */
 .container > header {
@@ -598,6 +625,8 @@ body {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     position: sticky;
     top: 24px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
 }
 
 .answer-sheet.hidden {

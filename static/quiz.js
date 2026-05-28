@@ -18,9 +18,17 @@ let examTimer = null;
 let timeRemaining = 0;
 
 function calcExamDuration(totalQuestions) {
-    const perQuestion = 90; // 秒
-    const minTime = 10 * 60; // 最少 10 分钟
-    const maxTime = 60 * 60; // 最多 60 分钟
+    // 优先使用用户自定义时长
+    const dur = config.duration || "auto";
+    if (dur === "0") return 0; // 不限时
+    if (dur !== "auto") {
+        const minutes = parseInt(dur, 10);
+        if (!isNaN(minutes) && minutes > 0) return minutes * 60;
+    }
+    // 智能：每题 90 秒，最短 10 分钟，最长 60 分钟
+    const perQuestion = 90;
+    const minTime = 10 * 60;
+    const maxTime = 60 * 60;
     return Math.max(minTime, Math.min(maxTime, totalQuestions * perQuestion));
 }
 
@@ -678,14 +686,29 @@ function updateSheetHighlight() {
 
 function startExamTimer(totalQuestions) {
     timeRemaining = calcExamDuration(totalQuestions);
-    updateTimerDisplay();
-    document.getElementById("exam-timer").classList.remove("hidden");
+    // 在计时器旁边显示时长说明
+    const totalMin = Math.round(timeRemaining / 60);
+    const timerEl = document.getElementById("exam-timer");
+    let note = "";
+    if (timeRemaining === 0) {
+        note = "不限时";
+        timerEl.innerHTML = `⏱️ <span id="timer-display">--:--</span> <small style="color:#718096;font-size:0.75rem;">不限时</small>`;
+        timerEl.classList.add("hidden");
+        return;
+    } else if (config.duration === "auto") {
+        note = `共 ${totalMin} 分钟（每题90秒）`;
+    } else {
+        note = `共 ${totalMin} 分钟`;
+    }
+    timerEl.innerHTML = `⏱️ <span id="timer-display">00:00</span> <small style="color:#718096;font-size:0.7rem;font-weight:400;">${note}</small>`;
+    timerEl.classList.remove("hidden");
 
+    updateTimerDisplay();
     examTimer = setInterval(() => {
         timeRemaining--;
         updateTimerDisplay();
 
-        if (timeRemaining <= 0) {
+        if (timeRemaining <= 0 && timeRemaining > -10) {
             clearInterval(examTimer);
             examTimer = null;
             alert("⏰ 时间到！正在自动交卷...");

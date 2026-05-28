@@ -367,6 +367,7 @@ def quiz_page(bank_id):
         mode = "practice"
 
     count = request.args.get("count", "0")  # 0 = 全部
+    duration = request.args.get("duration", "auto")  # auto / 分钟数 / 0
 
     try:
         bank = load_bank(bank_id)
@@ -374,7 +375,6 @@ def quiz_page(bank_id):
         return render_template("error.html", message="题库不存在或已被删除"), 404
 
     total_in_bank = len(bank["questions"])
-    # 计算实际题目数
     count_int = int(count) if count.isdigit() else 0
     actual_total = count_int if count_int > 0 else total_in_bank
     actual_total = min(actual_total, total_in_bank)
@@ -386,6 +386,7 @@ def quiz_page(bank_id):
         total=actual_total,
         mode=mode,
         count=count,
+        duration=duration,
     )
 
 

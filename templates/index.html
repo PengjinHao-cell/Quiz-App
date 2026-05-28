@@ -25,6 +25,13 @@
             <p class="subtitle">上传题库文件（PDF / DOCX），开始刷题练习</p>
         </header>
 
+        <!-- 公告横幅（可关闭，localStorage 记忆） -->
+        <div id="announcement-banner" class="announcement-banner">
+            <span class="announcement-icon">📢</span>
+            <span class="announcement-text">上传的题库和个人的答题情况都是公开的，后续个人用户模式敬请期待！</span>
+            <button class="announcement-close" onclick="dismissAnnouncement()" title="关闭">✕</button>
+        </div>
+
         <!-- 学习统计（由 renderStats 动态填充） -->
         <section class="stats-section" id="stats-section" style="display:none;"></section>
 
@@ -147,6 +154,16 @@
                                     {% if n >= 50 %}<option value="50">50</option>{% endif %}
                                     {% if n >= 100 %}<option value="100">100</option>{% endif %}
                                     <option value="0" selected>全部({{ n }})</option>
+                                </select>
+                            </label>
+                            <label class="count-label" style="font-size:0.8rem;">时长：
+                                <select class="count-select" id="duration-{{ bank.id }}" style="font-size:0.8rem;">
+                                    <option value="auto">智能(每题90s)</option>
+                                    <option value="15">15分钟</option>
+                                    <option value="30">30分钟</option>
+                                    <option value="45">45分钟</option>
+                                    <option value="60">60分钟</option>
+                                    <option value="0">不限时</option>
                                 </select>
                             </label>
                             <a href="#" class="btn btn-primary" onclick="startQuiz('{{ bank.id }}', 'practice')">练习模式</a>

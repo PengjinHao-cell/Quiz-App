@@ -35,6 +35,7 @@
                 <div class="quiz-progress" id="quiz-progress">
                     <span id="progress-text">0 / {{ total }}</span>
                 </div>
+                <button id="btn-submit" class="btn btn-primary hidden" style="margin-left:12px;">📩 交卷</button>
             </div>
         </header>
 
@@ -49,7 +50,6 @@
                     <button id="btn-prev" class="btn btn-secondary" disabled>◀ 上一题</button>
                     <span id="question-indicator"></span>
                     <button id="btn-next" class="btn btn-secondary">下一题 ▶</button>
-                    <button id="btn-submit" class="btn btn-primary hidden">📩 交卷</button>
                 </div>
             </main>
 
@@ -82,6 +82,7 @@
             total: {{ total }},
             mode: "{{ mode }}",
             count: "{{ count }}",
+            duration: "{{ duration }}",
             q: urlParams.get("q") || ""
         };
     </script>
