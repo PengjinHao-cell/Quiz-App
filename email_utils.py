@@ -27,6 +27,16 @@ SMTP_PORT = int(os.environ.get("SMTP_PORT", "465"))
 SMTP_USER = os.environ.get("SMTP_USER", "QuizMasterProgram@yeah.net")
 SMTP_PASS = os.environ.get("SMTP_PASS", "")
 
+if not SMTP_PASS:
+    print("⚠️  SMTP_PASS 未设置，验证码邮件功能不可用")
+    print("   请设置以下环境变量启用邮件：")
+    print("     SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS")
+    print("   推荐免费 SMTP 服务（云服务器友好）：")
+    print("     - SendGrid:   smtp.sendgrid.net:587 (免费 100封/天)")
+    print("     - Mailgun:    smtp.mailgun.org:587 (免费 100封/天)")
+    print("     - Gmail:      smtp.gmail.com:587   (需 App Password)")
+    print("     - QQ邮箱:     smtp.qq.com:465      (需授权码)")
+
 # ====== 全局限流 ======
 # 不管哪个邮箱，90 秒内只能发一封邮件，防止系统邮箱被频繁调用封号
 _global_last_sent = 0.0   # 上次发送时间戳
@@ -80,14 +90,34 @@ def send_verify_email(to_email: str, code: str, username: str) -> bool:
         msg["To"] = to_email
         msg.attach(MIMEText(build_email_content(code, username), "html", "utf-8"))
 
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
+        import sys as _sys
+        _sys.stderr.write(f"📧 正在发送邮件到 {to_email} (SMTP: {SMTP_HOST}:{SMTP_PORT}, user={SMTP_USER})\n")
+        _sys.stderr.flush()
+
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15) as server:
             server.login(SMTP_USER, SMTP_PASS)
             server.sendmail(SMTP_USER, [to_email], msg.as_string())
 
         _global_last_sent = time.time()
+        _sys.stderr.write(f"✅ 邮件发送成功: {to_email}\n")
         return True
+    except smtplib.SMTPAuthenticationError:
+        print(f"❌ 邮件认证失败: SMTP 用户名或密码错误 (user={SMTP_USER})")
+        print(f"   提示: 确保 SMTP_PASS 是「授权码」而非邮箱登录密码")
+        return False
+    except smtplib.SMTPConnectError:
+        print(f"❌ 邮件连接失败: 无法连接 SMTP 服务器 {SMTP_HOST}:{SMTP_PORT}")
+        print(f"   提示: 云服务器 IP 可能被邮箱服务商屏蔽，尝试更换 SMTP 提供商")
+        return False
+    except smtplib.SMTPException as e:
+        print(f"❌ SMTP 错误: {e}")
+        return False
+    except OSError as e:
+        print(f"❌ 网络错误: {e}")
+        print(f"   提示: Railway 可能无法连接到 {SMTP_HOST}:{SMTP_PORT}，尝试更换 SMTP")
+        return False
     except Exception as e:
-        print(f"❌ 邮件发送失败: {e}")
+        print(f"❌ 邮件发送失败: {type(e).__name__}: {e}")
         return False
 
 
