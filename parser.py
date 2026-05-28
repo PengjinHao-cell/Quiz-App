@@ -465,12 +465,6 @@ def _parse_questions(text: str) -> list:
                     current_text_lines.append(line)
                 accumulating_text = False
                 continue
-                for label, value in multi_opts:
-                    lbl = label.upper()
-                    if lbl not in current_options:
-                        current_options[lbl] = value.strip()
-                accumulating_text = False
-                continue
 
             # 普通文本行：如果还在积累文本阶段或没有选项，则追加到题目文本
             if accumulating_text or not current_options:

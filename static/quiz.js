@@ -40,14 +40,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(dismissSplash, 300);
 });
 
-function dismissSplash() {
-    const splash = document.getElementById("splash-screen");
-    if (!splash) return;
-    splash.classList.add("splash-fade-out");
-    setTimeout(() => {
-        splash.style.display = "none";
-    }, 500);
-}
+
 
 document.addEventListener("DOMContentLoaded", () => {
 });

@@ -18,7 +18,10 @@ from werkzeug.utils import secure_filename
 from parser import parse_file, create_sample_questions
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "quiz-app-secret-key-change-in-production")
+DEFAULT_SECRET = "quiz-app-secret-key-change-in-production"
+app.secret_key = os.environ.get("SECRET_KEY", DEFAULT_SECRET)
+if app.secret_key == DEFAULT_SECRET:
+    print("⚠️  警告: 使用默认 SECRET_KEY，生产环境请设置环境变量 SECRET_KEY")
 
 # ---------- 配置 ----------
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
