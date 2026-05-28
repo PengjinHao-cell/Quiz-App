@@ -98,6 +98,13 @@ body {
     padding: 24px 16px 48px;
 }
 
+/* ---------- 页脚 ---------- */
+.app-footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid #e2e8f0; text-align: center; }
+.footer-item { font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px; }
+.footer-item a { color: #94a3b8; text-decoration: none; }
+.footer-item a:hover { color: #3b82f6; }
+.footer-github { display: inline-flex; align-items: center; gap: 4px; }
+
 /* ---------- 用户菜单 ---------- */
 .user-menu { position: relative; flex-shrink: 0; }
 .user-avatar { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 12px; border-radius: 8px; transition: background 0.2s; }

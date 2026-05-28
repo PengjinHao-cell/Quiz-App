@@ -469,21 +469,12 @@ document.addEventListener("click", function(e) {
 const ANNOUNCEMENT_KEY = "quiz_announcement_dismissed";
 
 function initAnnouncement() {
-    const banner = document.getElementById("announcement-banner");
-    if (!banner) return;
-    try {
-        if (localStorage.getItem(ANNOUNCEMENT_KEY) === "1") {
-            banner.classList.add("hidden");
-        }
-    } catch (e) {}
+    // 公告显示与否由服务端控制，前端不做持久化
 }
 
 function dismissAnnouncement() {
     const banner = document.getElementById("announcement-banner");
     if (!banner) return;
-    try {
-        localStorage.setItem(ANNOUNCEMENT_KEY, "1");
-    } catch (e) {}
     banner.classList.add("hidden");
 }
 
