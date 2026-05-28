@@ -27,9 +27,20 @@
             </div>
             <div class="user-menu" id="user-menu">
                 {% if is_guest %}
-                <div class="user-avatar" style="cursor:default;opacity:0.7;">
+                <div class="user-avatar" onclick="toggleUserDropdown()" style="opacity:0.7;">
                     <span class="avatar-letter" style="background:#9ca3af;">👤</span>
                     <span class="avatar-name" style="font-size:0.8rem;">访客模式</span>
+                    <span class="avatar-arrow">▾</span>
+                </div>
+                <div class="user-dropdown" id="user-dropdown" style="display:none;">
+                    <div class="dropdown-header">👤 访客模式</div>
+                    <div class="dropdown-item" style="color:#a0aec0;cursor:default;">📊 学习统计</div>
+                    <div class="dropdown-item" style="color:#a0aec0;cursor:default;">⭐ 收藏本</div>
+                    <div class="dropdown-item" style="color:#a0aec0;cursor:default;">📕 错题本</div>
+                    <div class="dropdown-item" style="color:#a0aec0;cursor:default;">📜 学习记录</div>
+                    <div style="padding:0 16px 8px;font-size:0.7rem;color:#cbd5e0;">登录后查看个人数据</div>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="/app" style="color:#e53e3e;">🚪 退出访客模式</a>
                 </div>
                 {% elif current_user.is_authenticated %}
                 <div class="user-avatar" onclick="toggleUserDropdown()">
