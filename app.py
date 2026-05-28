@@ -79,6 +79,9 @@ DATA_FOLDER = os.path.join(BASE_DIR, "data")
 DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'instance', 'quiz_app.db')}")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+# Railway PostgreSQL 要求 SSL 连接
+if DATABASE_URL.startswith("postgresql://") and "sslmode" not in DATABASE_URL:
+    DATABASE_URL += "&sslmode=require" if "?" in DATABASE_URL else "?sslmode=require"
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 # PostgreSQL 连接池：保持连接不断开，避免每次请求重建连接
 if DATABASE_URL.startswith("postgresql://"):
