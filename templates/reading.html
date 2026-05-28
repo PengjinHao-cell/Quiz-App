@@ -83,19 +83,19 @@
     <div class="container">
         <header class="quiz-header">
             <div class="quiz-header-left">
-                <a href="{{ url_for('app_main') }}" class="btn btn-back">← 返回题库列表</a>
+                <a href="{{ url_for('app_main') }}" class="btn btn-back">← {% if lang == 'en' %}Back to Bank List{% else %}返回题库列表{% endif %}</a>
                 <div class="quiz-info">
                     <h1>{{ bank_name }}</h1>
-                    <span class="badge badge-practice">📖 阅读模式</span>
+                    <span class="badge badge-practice">📖 {% if lang == 'en' %}Reading Mode{% else %}阅读模式{% endif %}</span>
                 </div>
             </div>
             <div class="quiz-header-right">
                 <div class="quiz-progress" style="display:flex;gap:12px;align-items:center;">
-                    <span id="reading-passage-progress" style="font-weight:700;color:#2d3748;">第 1 / 1 篇</span>
-                    <span id="reading-progress" style="color:#718096;">0 / 0 题</span>
+                    <span id="reading-passage-progress" style="font-weight:700;color:#2d3748;">{% if lang == 'en' %}Passage{% else %}第{% endif %} 1 / 1 {% if lang == 'en' %}{% else %}篇{% endif %}</span>
+                    <span id="reading-progress" style="color:#718096;">0 / 0 {% if lang == 'en' %}Q{% else %}题{% endif %}</span>
                     <button id="btn-submit-reading" class="btn btn-primary" style="margin-left:12px;"
                             onclick="submitReading()">
-                        📩 提交评判
+                        📩 {% if lang == 'en' %}Submit{% else %}提交评判{% endif %}
                     </button>
                 </div>
             </div>
@@ -126,11 +126,11 @@
 
                 <!-- 答题卡 -->
                 <aside id="answer-sheet" class="answer-sheet hidden" style="width:100%;margin-top:16px;position:static;">
-                    <h3>📋 答题卡</h3>
+                    <h3>📋 {% if lang == 'en' %}Answer Sheet{% else %}答题卡{% endif %}</h3>
                     <div id="reading-sheet-legend" style="display:flex;justify-content:center;gap:12px;margin-bottom:12px;font-size:0.7rem;color:#718096;">
-                        <span><span class="dot answered"></span> 已答</span>
-                        <span><span class="dot current"></span> 当前</span>
-                        <span><span class="dot unanswered"></span> 未答</span>
+                        <span><span class="dot answered"></span> {% if lang == 'en' %}Answered{% else %}已答{% endif %}</span>
+                        <span><span class="dot current"></span> {% if lang == 'en' %}Current{% else %}当前{% endif %}</span>
+                        <span><span class="dot unanswered"></span> {% if lang == 'en' %}Unanswered{% else %}未答{% endif %}</span>
                     </div>
                     <div id="reading-sheet-grid" style="display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-bottom:12px;"></div>
                 </aside>
