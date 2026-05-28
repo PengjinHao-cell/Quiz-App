@@ -27,16 +27,23 @@ app.secret_key = os.environ.get("SECRET_KEY", DEFAULT_SECRET)
 if app.secret_key == DEFAULT_SECRET:
     print("⚠️  警告: 使用默认 SECRET_KEY，生产环境请设置环境变量 SECRET_KEY")
 
-# ---------- 数据库配置 ----------
+# ---------- 数据库配置（容错：驱动缺失时不崩溃） ----------
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///quiz_app.db")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-# 使用 pg8000 驱动（纯 Python，无需编译）
 if DATABASE_URL.startswith("postgresql://") and "driver" not in DATABASE_URL:
     DATABASE_URL += "?driver=pg8000" if "?" not in DATABASE_URL else "&driver=pg8000"
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-db.init_app(app)
+
+try:
+    db.init_app(app)
+    with app.app_context():
+        db.create_all()
+    print("✅ 数据库连接成功")
+except Exception as e:
+    print(f"⚠️  数据库初始化失败: {e}")
+    print("   应用将以无数据库模式运行（注册/登录功能不可用）")
 
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
@@ -50,8 +57,8 @@ def load_user(user_id):
 
 app.register_blueprint(auth_bp)
 
-with app.app_context():
-    db.create_all()
+
+
 
 # ---------- 配置 ----------
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
