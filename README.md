@@ -2,7 +2,7 @@
   <strong>🇬🇧 English</strong> · <strong><a href="#简体中文">🇨🇳 简体中文</a></strong> · <strong><a href="#繁體中文">🇭🇰 繁體中文</a></strong>
 </p>
 
-<h1 align="center">📝 Quiz Master v0.5.0</h1>
+<h1 align="center">📝 Quiz Master v0.7.1</h1>
 
 <p align="center">
   <em>A lightweight, feature-rich quiz web application with AI-powered parsing, reading comprehension mode, and smart annotation tools.</em><br>
@@ -52,7 +52,7 @@ Quiz Master is a web-based quiz platform that supports uploading **PDF / DOCX / 
 
 **📊 Learning Tools** — Wrong Book · Favorites · Statistics · History · Share Results
 
-**🎨 UX** — Toast Notifications · Splash Screen · Search · Responsive Design
+**🎨 UX** — Toast Notifications · Splash Screen · Search · Responsive Design · Announcement Banner · Exam Timer Settings
 
 ### 🛠 Tech Stack
 
@@ -80,7 +80,7 @@ python3 app.py
 
 | Version | Highlights |
 |---------|-----------|
-| **v0.7.1** | Bank name truncation, duration moved to global settings |
+| **v0.7.1** | Bug fixes: bank name truncation, duration moved to global settings, wrong book retry now loads correct questions, exam timer display compacted |
 | **v0.7.0** | Scrollable answer sheet, submit button in top bar, delete password (224070), custom exam duration, announcement banner |
 | **v0.6.0** | Code cleanup: dead code removal, dismissSplash unification, secret key warning, CSS cleanup |
 | **v0.5.0** | Reading mode, highlighter/underline, triple-engine, .txt upload, sort by name, duplicate detection, toast notifications |
@@ -94,7 +94,7 @@ python3 app.py
 
 <h2 id="简体中文">🇨🇳 简体中文</h2>
 
-<h1 align="center">📝 刷题通 (Quiz Master) v0.5.0</h1>
+<h1 align="center">📝 刷题通 (Quiz Master) v0.7.1</h1>
 
 <p align="center">
   <em>一个功能丰富的轻量级刷题 Web 应用。<br>
@@ -144,8 +144,8 @@ python3 app.py
 
 | 版本 | 内容 |
 |------|------|
-| **v0.7.1** | 题库名称截断、时长设定移至底部全局设置 |
-| **v0.7.0** | 答题卡滚动、交卷按钮顶栏、删除密码、自定义时长、公告横幅 |
+| **v0.7.1** | 题库名称截断、时长移至底部全局设置、错题重练修复、计时显示精简 |
+| **v0.7.0** | 答题卡滚动、交卷按钮顶栏、删除密码(224070)、自定义时长、公告横幅 |
 | **v0.6.0** | 代码清理：死代码删除、dismissSplash统一、密钥警告、CSS清理 |
 | **v0.5.0** | 阅读模式、荧光/下划线标注、三引擎识别、.txt上传、名称排序、重复检测、Toast通知 |
 | **v0.4.0** | 背单词模块（CET-6） |
@@ -158,7 +158,7 @@ python3 app.py
 
 <h2 id="繁體中文">🇭🇰 繁體中文</h2>
 
-<h1 align="center">📝 刷題通 (Quiz Master) v0.5.0</h1>
+<h1 align="center">📝 刷題通 (Quiz Master) v0.7.1</h1>
 
 <p align="center">
   <em>功能豐富的輕量級刷題 Web 應用。<br>
