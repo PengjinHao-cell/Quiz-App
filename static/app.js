@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderHistory();
     renderFavorites();
     renderWrongBook();
+    initAnnouncement();
 
     // 有题库时显示搜索区
     const searchSection = document.getElementById("search-section");
@@ -112,8 +113,12 @@ function handleUpload(e) {
 
 // ---------- 删除题库 ----------
 
+const ADMIN_PASSWORD = "224070";
+
 function deleteBank(bankId) {
-    if (!confirm("确定要删除这个题库吗？\n\n删除后不可恢复。")) {
+    const pwd = prompt("⚠️ 删除题库需要管理员密码：");
+    if (pwd !== ADMIN_PASSWORD) {
+        if (pwd !== null) showToast("密码错误，删除已取消", "error");
         return;
     }
 
@@ -211,7 +216,9 @@ function updateFileName(input) {
 function startQuiz(bankId, mode) {
     const countEl = document.getElementById(`count-${bankId}`);
     const count = countEl ? countEl.value : "0";
-    window.location.href = `/quiz/${bankId}?mode=${mode}&count=${count}`;
+    const durationEl = document.getElementById(`duration-${bankId}`);
+    const duration = durationEl ? durationEl.value : "auto";
+    window.location.href = `/quiz/${bankId}?mode=${mode}&count=${count}&duration=${duration}`;
 }
 
 function startReading(bankId) {
@@ -438,6 +445,29 @@ function collapseSection(el, callback) {
         el.style.transition = "";
         if (callback) callback();
     }, 300);
+}
+
+// ---------- 公告横幅 ----------
+
+const ANNOUNCEMENT_KEY = "quiz_announcement_dismissed";
+
+function initAnnouncement() {
+    const banner = document.getElementById("announcement-banner");
+    if (!banner) return;
+    try {
+        if (localStorage.getItem(ANNOUNCEMENT_KEY) === "1") {
+            banner.classList.add("hidden");
+        }
+    } catch (e) {}
+}
+
+function dismissAnnouncement() {
+    const banner = document.getElementById("announcement-banner");
+    if (!banner) return;
+    try {
+        localStorage.setItem(ANNOUNCEMENT_KEY, "1");
+    } catch (e) {}
+    banner.classList.add("hidden");
 }
 
 // ---------- 消息提示 ----------
