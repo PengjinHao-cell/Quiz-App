@@ -16,6 +16,51 @@ function dismissSplash() {
 }
 
 /**
+ * 弹窗式确认框（替代 confirm()，带样式，返回 Promise）
+ * @param {string} message - 主消息
+ * @param {string} [detail] - 次要说明（灰色小字）
+ * @returns {Promise<boolean>}
+ */
+function showConfirmModal(message, detail) {
+    return new Promise((resolve) => {
+        // 创建遮罩+弹窗
+        const overlay = document.createElement("div");
+        overlay.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;animation:fadeInModal 0.2s ease;";
+        const modal = document.createElement("div");
+        modal.style.cssText = "background:#fff;border-radius:16px;padding:28px 32px;max-width:400px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,0.2);text-align:center;animation:slideUpModal 0.25s ease;";
+        modal.innerHTML = `
+            <div style="font-size:2rem;margin-bottom:12px;">⚠️</div>
+            <p style="font-size:1rem;color:#2d3748;font-weight:600;margin-bottom:8px;">${escapeHTML(message)}</p>
+            ${detail ? `<p style="font-size:0.85rem;color:#a0aec0;margin-bottom:20px;">${escapeHTML(detail)}</p>` : '<div style="height:20px;"></div>'}
+            <div style="display:flex;gap:12px;justify-content:center;">
+                <button id="modal-cancel" style="padding:10px 24px;border:2px solid #e2e8f0;border-radius:10px;background:#fff;font-size:0.9rem;font-weight:600;color:#4a5568;cursor:pointer;">取消</button>
+                <button id="modal-confirm" style="padding:10px 24px;border:none;border-radius:10px;background:#e53e3e;font-size:0.9rem;font-weight:600;color:#fff;cursor:pointer;">确认</button>
+            </div>
+        `;
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        // 注入动画样式（仅一次）
+        if (!document.getElementById("modal-style-injected")) {
+            const s = document.createElement("style");
+            s.id = "modal-style-injected";
+            s.textContent = "@keyframes fadeInModal{from{opacity:0}to{opacity:1}}@keyframes slideUpModal{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}";
+            document.head.appendChild(s);
+        }
+
+        function close(result) {
+            overlay.style.opacity = "0";
+            setTimeout(() => overlay.remove(), 200);
+            resolve(result);
+        }
+
+        document.getElementById("modal-confirm").onclick = () => close(true);
+        document.getElementById("modal-cancel").onclick = () => close(false);
+        overlay.addEventListener("click", (e) => { if (e.target === overlay) close(false); });
+    });
+}
+
+/**
  * 转义 HTML 特殊字符，防止 XSS
  */
 function escapeHTML(str) {

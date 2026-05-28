@@ -48,11 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(dismissSplash, 300);
 });
 
-
-
-document.addEventListener("DOMContentLoaded", () => {
-});
-
 // ---------- 加载题目 ----------
 
 function loadQuestions() {
@@ -94,6 +89,9 @@ function loadQuestions() {
             bindNavigation();
             initAnswerSheet();
 
+            // 预打乱每题选项顺序（只执行一次，保持后续导航中选项位置稳定）
+            preShuffleOptions();
+
             // 渲染第一题
             showQuestion(0);
 
@@ -117,6 +115,23 @@ function formatAnswerText(answer, options) {
     return parts.length > 0 ? parts.join("；") : answer;
 }
 
+/** 预打乱题目选项顺序（只执行一次） */
+function preShuffleOptions() {
+    questions.forEach(q => {
+        const entries = Object.entries(q.options);
+        if (entries.length >= 3) {
+            const shuffled = [...entries];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            q._shuffledOrder = shuffled;
+        } else {
+            q._shuffledOrder = entries;
+        }
+    });
+}
+
 // ---------- 渲染题目 ----------
 
 function showQuestion(index) {
@@ -127,20 +142,11 @@ function showQuestion(index) {
     const qtype = q.type || "single";
 
     const container = document.getElementById("question-container");
-    const options = Object.entries(q.options);
-    // 选项乱序并重新标号 A/B/C/D
-    let letterMap = {};  // 新标签 -> 原始字母
-    let shuffledOptions = [...options];
-    if (shuffledOptions.length >= 3) {
-        for (let i = shuffledOptions.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-        }
-    }
+    // 使用预打乱的选项顺序（保证每次显示同一题时选项位置不变）
+    const options = q._shuffledOrder || Object.entries(q.options);
     // 重新标号为 A/B/C/D...
-    const relabeled = shuffledOptions.map(([origLetter, text], idx) => {
+    const relabeled = options.map(([origLetter, text], idx) => {
         const newLabel = String.fromCharCode(65 + idx);  // A, B, C, D...
-        letterMap[newLabel] = origLetter;
         return [newLabel, origLetter, text];
     });
 
@@ -599,6 +605,9 @@ function bindNavigation() {
 
     // 键盘快捷键（事件委托，全局生效）
     document.addEventListener("keydown", (e) => {
+        // 如果焦点在输入框/文本框中，不触发快捷键
+        const tag = e.target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
         if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
             e.preventDefault();
             if (currentIndex > 0) showQuestion(currentIndex - 1);
@@ -734,7 +743,7 @@ function updateTimerDisplay() {
 
 // ---------- 提交考试 ----------
 
-function submitExam() {
+async function submitExam() {
     // 停止倒计时
     if (examTimer) {
         clearInterval(examTimer);
@@ -746,12 +755,9 @@ function submitExam() {
     }).length;
     const unanswered = questions.length - answered;
 
-    let confirmMsg = `确定要交卷吗？`;
-    if (unanswered > 0) {
-        confirmMsg += `\n\n⚠️ 还有 ${unanswered} 道题未作答！`;
-    }
-
-    if (!confirm(confirmMsg)) return;
+    let detail = unanswered > 0 ? `还有 ${unanswered} 道题未作答` : "";
+    const confirmed = await showConfirmModal("确定要交卷吗？", detail);
+    if (!confirmed) return;
 
     // 构建提交数据：将多选题答案转换为排序字符串
     const answers = {};

@@ -6,16 +6,6 @@
     <title>{% if lang == 'en' %}User Center{% else %}用户中心{% endif %} - 刷题通</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        .splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.5s ease; }
-        .splash-screen.splash-fade-out { opacity: 0; pointer-events: none; }
-        .splash-card { text-align: center; animation: splashBounce 0.6s ease-out; }
-        @keyframes splashBounce { 0% { transform: scale(0.7); opacity: 0; } 60% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
-        .splash-icon { font-size: 4rem; margin-bottom: 12px; }
-        .splash-title { font-size: 1.8rem; font-weight: 800; color: #1e3a5f; margin-bottom: 4px; }
-        .splash-subtitle { font-size: 0.9rem; color: #64748b; margin-bottom: 20px; }
-        .splash-bar-bg { width: 200px; height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden; margin: 0 auto; }
-        .splash-bar-fill { height: 100%; width: 0; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 2px; animation: splashLoad 1.2s ease-in-out forwards; }
-        @keyframes splashLoad { 0% { width: 0; } 50% { width: 70%; } 100% { width: 100%; } }
         .user-layout { display: flex; gap: 24px; align-items: flex-start; min-height: 70vh; }
         .user-sidebar { width: 200px; flex-shrink: 0; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 12px 0; position: sticky; top: 24px; }
         .user-sidebar-item { display: flex; align-items: center; gap: 10px; padding: 12px 20px; font-size: 0.9rem; color: #4a5568; text-decoration: none; transition: all 0.15s; cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
@@ -34,16 +24,9 @@
 </head>
 <body>
     <!-- 启动缓冲画面 -->
-    <div id="splash-screen" class="splash-screen">
-        <div class="splash-card">
-            <div class="splash-icon">👤</div>
-            <h1 class="splash-title">{% if lang == 'en' %}User Center{% else %}用户中心{% endif %}</h1>
-            <p class="splash-subtitle">{% if lang == 'en' %}Loading...{% else %}加载中...{% endif %}</p>
-            <div class="splash-bar-bg">
-                <div class="splash-bar-fill"></div>
-            </div>
-        </div>
-    </div>
+    {% set splash_icon = '👤' %}
+    {% set splash_text = lang == 'en' and 'Loading...' or '加载中...' %}
+    {% include '_splash.html' %}
 
     <div class="container">
         <header class="quiz-header">

@@ -113,17 +113,14 @@ function handleUpload(e) {
 
 // ---------- 删除题库 ----------
 
-const ADMIN_PASSWORD = "224070";
-
 function deleteBank(bankId) {
     const pwd = prompt("⚠️ 删除题库需要管理员密码：");
-    if (pwd !== ADMIN_PASSWORD) {
-        if (pwd !== null) showToast("密码错误，删除已取消", "error");
-        return;
-    }
+    if (!pwd) return;
 
     fetch(`/api/bank/${bankId}/delete`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pwd }),
     })
         .then((res) => res.json())
         .then((data) => {
@@ -616,27 +613,25 @@ function renderStats() {
     const recent = history.slice(0, 10).reverse();
 
     // ---- 每日活跃（近 7 天） ----
+    // 使用 YYYY-MM-DD 统一日期格式，避免 toLocaleDateString 跨平台格式差异
+    function _fmtDate(d) {
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
     const dayMap = {};
     const now = new Date();
     for (let i = 6; i >= 0; i--) {
         const d = new Date(now);
         d.setDate(d.getDate() - i);
-        const key = d.toLocaleDateString("zh-CN");
-        dayMap[key] = 0;
+        dayMap[_fmtDate(d)] = 0;
     }
     history.forEach(r => {
-        // 尝试从时间字符串解析日期
         try {
-            const dateStr = r.time.split(" ")[0]; // "2026/5/27" 或 "2026-5-27"
-            if (dateStr && dayMap[dateStr] !== undefined) {
-                dayMap[dateStr] += r.total;
-            } else {
-                // 尝试匹配格式
-                for (const dk of Object.keys(dayMap)) {
-                    if (dk.startsWith(dateStr.slice(0, 4))) {
-                        dayMap[dk] += r.total;
-                        break;
-                    }
+            // r.time 格式: "2026/5/27 23:41:17" 或 "2026-5-27 23:41:17"
+            const parts = r.time.split(" ")[0].split(/[\/\-]/);
+            if (parts.length === 3) {
+                const key = parts[0] + '-' + String(parseInt(parts[1])).padStart(2,'0') + '-' + String(parseInt(parts[2])).padStart(2,'0');
+                if (dayMap[key] !== undefined) {
+                    dayMap[key] += r.total;
                 }
             }
         } catch (_) {}

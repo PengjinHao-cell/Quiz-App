@@ -7,17 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <!-- 启动缓冲画面 -->
-    <div id="splash-screen" class="splash-screen">
-        <div class="splash-card">
-            <div class="splash-icon">📝</div>
-            <h1 class="splash-title">刷题通</h1>
-            <p class="splash-subtitle">加载中...</p>
-            <div class="splash-bar-bg">
-                <div class="splash-bar-fill"></div>
-            </div>
-        </div>
-    </div>
+    {% include '_splash.html' %}
 
     {% if lang == 'en' %}
     {% set _bankList = 'Bank List' %}

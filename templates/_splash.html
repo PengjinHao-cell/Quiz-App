@@ -1,0 +1,12 @@
+<!-- 通用启动缓冲画面（所有页面共用） -->
+{# 自定义 subtitles 和 icon：在 include 前设置 splash_text / splash_icon 变量 #}
+<div id="splash-screen" class="splash-screen">
+    <div class="splash-card">
+        <div class="splash-icon">{{ splash_icon | default('📝') }}</div>
+        <h1 class="splash-title">刷题通</h1>
+        <p class="splash-subtitle">{{ splash_text | default('加载中...') }}</p>
+        <div class="splash-bar-bg">
+            <div class="splash-bar-fill"></div>
+        </div>
+    </div>
+</div>

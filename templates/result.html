@@ -7,17 +7,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <!-- 启动缓冲画面 -->
-    <div id="splash-screen" class="splash-screen">
-        <div class="splash-card">
-            <div class="splash-icon">📊</div>
-            <h1 class="splash-title">刷题通</h1>
-            <p class="splash-subtitle">加载结果中...</p>
-            <div class="splash-bar-bg">
-                <div class="splash-bar-fill"></div>
-            </div>
-        </div>
-    </div>
+    {% set splash_icon = '📊' %}
+    {% set splash_text = '加载结果中...' %}
+    {% include '_splash.html' %}
 
     <div class="container">
         <header class="quiz-header">
