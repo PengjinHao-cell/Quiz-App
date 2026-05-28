@@ -158,18 +158,13 @@ def api_send_code():
     # 先存储（保证验证码可用）
     store_code(email, code)
 
-    # 尝试发送邮件（3 秒超时，不阻塞太久）
+    # 发送邮件（3 秒超时，不阻塞太久）
     ok = send_verify_email(email, code, email.split("@")[0])
 
     if ok:
         return jsonify({"success": True, "message": "✅ 验证码已发送到邮箱，5 分钟内有效"})
     else:
-        # 邮件发送失败 → 直接返回验证码作为保底
-        return jsonify({
-            "success": True,
-            "fallback_code": code,
-            "message": f"⚠️ 邮件发送异常，您的验证码是：{code}（5 分钟内有效）"
-        })
+        return jsonify({"error": "邮件发送失败，请检查邮箱地址或稍后重试"}), 500
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
