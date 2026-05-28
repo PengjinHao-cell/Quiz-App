@@ -5,14 +5,8 @@
  */
 
 document.addEventListener("DOMContentLoaded", () => {
-    // 启动画面淡出
-    setTimeout(() => {
-        const splash = document.getElementById("splash-screen");
-        if (splash) {
-            splash.classList.add("splash-fade-out");
-            setTimeout(() => { splash.style.display = "none"; }, 500);
-        }
-    }, 300);
+    // 启动画面淡出（使用 utils.js 中的共享函数）
+    setTimeout(dismissSplash, 300);
 
     // 从 sessionStorage 读取结果
     const resultStr = sessionStorage.getItem("quizResult");

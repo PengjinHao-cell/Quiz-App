@@ -34,14 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(dismissSplash, 400);
 });
 
-function dismissSplash() {
-    const splash = document.getElementById("splash-screen");
-    if (!splash) return;
-    splash.classList.add("splash-fade-out");
-    setTimeout(() => {
-        splash.style.display = "none";
-    }, 500);
-}
+
 
 // ---------- 文件上传 ----------
 

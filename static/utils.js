@@ -3,6 +3,19 @@
  */
 
 /**
+ * 启动画面淡出（统一函数，避免各页面重复定义）
+ * 所有带 splash-screen 的页面共用此函数
+ */
+function dismissSplash() {
+    const splash = document.getElementById("splash-screen");
+    if (!splash) return;
+    splash.classList.add("splash-fade-out");
+    setTimeout(() => {
+        splash.style.display = "none";
+    }, 500);
+}
+
+/**
  * 转义 HTML 特殊字符，防止 XSS
  */
 function escapeHTML(str) {
