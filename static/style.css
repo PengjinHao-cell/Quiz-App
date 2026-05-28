@@ -357,9 +357,19 @@ header h1 {
     border: 1px solid #e2e8f0;
     border-radius: 10px;
     margin-bottom: 10px;
-    transition: box-shadow 0.2s;
+    transition: all 0.3s ease;
     flex-wrap: wrap;
     gap: 12px;
+    overflow: hidden;
+}
+
+.bank-card.removing {
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    border-width: 0;
+    gap: 0;
 }
 
 .bank-card:hover {
@@ -449,6 +459,11 @@ header h1 {
 .type-badge.judge {
     background: #fffaf0;
     color: #c05621;
+}
+
+.type-badge.fill {
+    background: #f0fff4;
+    color: #276749;
 }
 
 .bank-meta {
@@ -744,6 +759,8 @@ header h1 {
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-wrap: nowrap;
+    min-width: 0;
 }
 
 .quiz-info h1 {
@@ -760,6 +777,8 @@ header h1 {
     border-radius: 20px;
     font-size: 0.8rem;
     font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .badge-practice {
@@ -886,10 +905,20 @@ header h1 {
     padding: 12px 14px;
     margin-bottom: 8px;
     background: #fffff0;
+    transition: all 0.3s ease;
+    overflow: hidden;
 }
 
 .fav-item:last-child {
     margin-bottom: 0;
+}
+
+.fav-item.removing {
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    border-width: 0;
 }
 
 /* Question Type Badge */
@@ -915,6 +944,51 @@ header h1 {
 .question-type-badge.judge {
     background: #fffaf0;
     color: #c05621;
+}
+
+.question-type-badge.fill {
+    background: #f0fff4;
+    color: #276749;
+}
+
+/* ---------- 填空题输入框 ---------- */
+.fill-input-wrap {
+    margin: 20px 0;
+}
+
+.fill-input-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.fill-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.fill-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 12px 16px;
+    font-size: 1.05rem;
+    border: 2px solid #cbd5e0;
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.2s;
+    background: #fff;
+    color: #2d3748;
+}
+
+.fill-input:focus {
+    border-color: #3182ce;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.15);
+}
+
+.fill-input::placeholder {
+    color: #a0aec0;
 }
 
 .question-text {
@@ -1488,10 +1562,19 @@ header h1 {
     margin-bottom: 8px;
     background: #fff5f5;
     transition: all 0.2s;
+    overflow: hidden;
 }
 
 .wrongbook-item:last-child {
     margin-bottom: 0;
+}
+
+.wrongbook-item.removing {
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-bottom: 0;
+    border-width: 0;
 }
 
 .wrongbook-q-header {
@@ -1525,6 +1608,11 @@ header h1 {
 .wrongbook-type.judge {
     background: #fffaf0;
     color: #c05621;
+}
+
+.wrongbook-type.fill {
+    background: #f0fff4;
+    color: #276749;
 }
 
 .wrongbook-qtext {

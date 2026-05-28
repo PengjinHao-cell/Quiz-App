@@ -85,7 +85,227 @@
             q: urlParams.get("q") || ""
         };
     </script>
-    <script src="{{ url_for('static', filename='utils.js') }}"></script>
-    <script src="{{ url_for('static', filename='quiz.js') }}"></script>
+    <style>
+        /* === 荧光标注样式（含淡入淡出动画） === */
+        @keyframes hlQuizFadeIn {
+            from { opacity: 0; background: transparent; }
+            to   { opacity: 1; background: #fef08a; }
+        }
+        @keyframes hlQuizFadeOut {
+            from { opacity: 1; background: #fef08a; }
+            to   { opacity: 0; background: transparent; }
+        }
+        .hl-quiz {
+            background: #fef08a; border-radius: 2px; padding: 0 2px; cursor: pointer;
+            animation: hlQuizFadeIn 0.25s ease-out;
+            transition: background 0.2s;
+        }
+        .hl-quiz:hover { background: #fde047; }
+        .hl-quiz-fade-out {
+            animation: hlQuizFadeOut 0.25s ease-in forwards !important;
+        }
+        .hl-quiz-toolbar {
+            position: fixed; z-index: 1000; background: #fff; border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.18); padding: 6px 10px;
+            display: flex; gap: 6px; align-items: center; font-size: 0.85rem;
+            opacity: 0; transition: opacity 0.15s; pointer-events: none;
+        }
+        .hl-quiz-toolbar.show { opacity: 1; pointer-events: auto; }
+        .hl-quiz-toolbar button {
+            padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer;
+            font-size: 0.85rem; font-weight: 600; transition: all 0.15s;
+            background: #fef08a; color: #854d0e;
+        }
+        .hl-quiz-toolbar button:hover { transform: translateY(-1px); background: #fde047; }
+        .hl-quiz-clear {
+            font-size: 0.75rem; color: #9ca3af; cursor: pointer; margin-left: 4px;
+            padding: 2px 6px; border-radius: 4px; transition: all 0.2s;
+        }
+        .hl-quiz-clear:hover { color: #ef4444; background: #fee2e2; }
+    </style>
+
+    <!-- 浮动荧光工具栏 -->
+    <div id="hl-quiz-toolbar" class="hl-quiz-toolbar">
+        <button onclick="applyQuizHighlight()">🖍 荧光</button>
+        <span class="hl-quiz-clear" onclick="clearQuizHighlights()">✕ 清除</span>
+    </div>
+
+    <script src="{{ url_for('static', filename='utils.js', v=2) }}"></script>
+    <script src="{{ url_for('static', filename='quiz.js', v=2) }}"></script>
+
+<script>
+/**
+ * 练习/考试模式的荧光标注功能
+ * - 选中题目文字后弹出荧光笔
+ * - 标注存入 localStorage（按 bankId 区分）
+ * - 淡入淡出动画
+ */
+(function() {
+    const STORAGE_KEY = "quiz_hl_{{ bank_id }}";
+    const container = document.getElementById("question-container");
+    const toolbar = document.getElementById("hl-quiz-toolbar");
+    if (!container || !toolbar) return;
+
+    let lastSelection = null;
+
+    // 选中文字 → 弹出工具栏（仅限题干，不包括选项区）
+    container.addEventListener("mouseup", function(e) {
+        setTimeout(() => {
+            const sel = window.getSelection();
+            if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+                toolbar.classList.remove("show");
+                return;
+            }
+            if (!container.contains(sel.anchorNode) || !container.contains(sel.focusNode)) {
+                toolbar.classList.remove("show");
+                return;
+            }
+            // 检查选中内容是否在选项区域内（.option-item / .options-list）
+            // 如果在选项内则不弹出工具栏
+            let node = sel.anchorNode;
+            if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+            if (node.closest(".option-item, .options-list, .practice-hint")) {
+                toolbar.classList.remove("show");
+                return;
+            }
+            node = sel.focusNode;
+            if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+            if (node.closest(".option-item, .options-list, .practice-hint")) {
+                toolbar.classList.remove("show");
+                return;
+            }
+
+            lastSelection = sel;
+            toolbar.classList.add("show");
+            const rect = container.getBoundingClientRect();
+            let tx = e.clientX;
+            let ty = e.clientY - toolbar.offsetHeight - 12;
+            if (ty < rect.top) ty = e.clientY + 12;
+            if (tx + toolbar.offsetWidth > rect.right) tx = rect.right - toolbar.offsetWidth - 8;
+            if (tx < rect.left) tx = rect.left + 8;
+            toolbar.style.left = tx + "px";
+            toolbar.style.top = ty + "px";
+        }, 10);
+    });
+
+    document.addEventListener("mousedown", function(e) {
+        if (!toolbar.contains(e.target)) {
+            toolbar.classList.remove("show");
+        }
+    });
+
+    // 应用荧光
+    window.applyQuizHighlight = function() {
+        const sel = lastSelection || window.getSelection();
+        if (!sel || sel.isCollapsed) return;
+        const range = sel.getRangeAt(0);
+        if (!range) return;
+
+        const span = document.createElement("span");
+        span.className = "hl-quiz";
+        try {
+            range.surroundContents(span);
+        } catch (e) {
+            const fragment = range.extractContents();
+            span.appendChild(fragment);
+            range.insertNode(span);
+        }
+        sel.removeAllRanges();
+        toolbar.classList.remove("show");
+        saveQuizHighlights();
+    };
+
+    // 点击已标注文字 → 移除（带淡出）
+    container.addEventListener("click", function(e) {
+        let target = e.target;
+        if (target.classList && target.classList.contains("hl-quiz")) {
+            if (confirm("移除这个荧光标注？")) {
+                target.classList.add("hl-quiz-fade-out");
+                setTimeout(() => {
+                    if (target.parentNode) {
+                        const parent = target.parentNode;
+                        while (target.firstChild) {
+                            parent.insertBefore(target.firstChild, target);
+                        }
+                        parent.removeChild(target);
+                    }
+                    setTimeout(() => saveQuizHighlights(), 50);
+                }, 260);
+            }
+        }
+    });
+
+    // 清除全部
+    window.clearQuizHighlights = function() {
+        if (!confirm("清除所有荧光标注？")) return;
+        const spans = container.querySelectorAll(".hl-quiz");
+        if (spans.length === 0) return;
+        spans.forEach(s => s.classList.add("hl-quiz-fade-out"));
+        setTimeout(() => {
+            spans.forEach(s => {
+                if (s.parentNode) {
+                    const parent = s.parentNode;
+                    while (s.firstChild) {
+                        parent.insertBefore(s.firstChild, s);
+                    }
+                    parent.removeChild(s);
+                }
+            });
+            localStorage.removeItem(STORAGE_KEY);
+        }, 260);
+    };
+
+    // 保存到 localStorage（每次应用/移除后保存当前题的 innerHTML，
+    // 这样同一题切回来时能恢复。切换题目后旧题的标注会丢失——这是预期的，
+    // 因为 quiz.js 会重新渲染 DOM）
+    function saveQuizHighlights() {
+        try {
+            localStorage.setItem(STORAGE_KEY, container.innerHTML);
+        } catch (e) {}
+    }
+
+    // 当前题渲染后尝试恢复标注
+    function tryRestoreQuizHL() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (!saved) return;
+            const parser = new DOMParser();
+            const savedDoc = parser.parseFromString(saved, "text/html");
+            const savedHLs = savedDoc.querySelectorAll(".hl-quiz");
+            if (savedHLs.length === 0) return;
+            savedHLs.forEach(sh => {
+                const text = sh.textContent;
+                const walker = document.createTreeWalker(
+                    container, NodeFilter.SHOW_TEXT, null, false
+                );
+                let node;
+                while (node = walker.nextNode()) {
+                    if (node.textContent.includes(text) && node.textContent.length === text.length) {
+                        const span = document.createElement("span");
+                        span.className = "hl-quiz";
+                        try {
+                            const range = document.createRange();
+                            range.selectNode(node);
+                            range.surroundContents(span);
+                        } catch(e) {}
+                        break;
+                    }
+                }
+            });
+        } catch (e) {}
+    }
+
+    // 拦截 quiz.js 的 renderQuestion 以在每题渲染后恢复标注
+    // quiz.js 用 showQuestion(q) 渲染，每次调用生成新 DOM
+    const origRender = window.showQuestion;
+    if (typeof origRender === "function") {
+        window.showQuestion = function(q) {
+            origRender(q);
+            // 等 DOM 更新后尝试恢复荧光
+            setTimeout(tryRestoreQuizHL, 20);
+        };
+    }
+})();
+</script>
 </body>
 </html>

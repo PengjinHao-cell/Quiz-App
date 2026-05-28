@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阅读理解 - {{ bank_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=3) }}">
+    <style>
+        .reading-layout { display: flex; gap: 20px; align-items: flex-start; min-height: 70vh; }
+        .reading-passage { flex: 1.2; background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow-y: auto; max-height: 80vh; position: sticky; top: 24px; }
+        .reading-passage h2 { font-size: 1.2rem; color: #2d3748; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #3182ce; }
+        .reading-passage p { font-size: 1rem; line-height: 1.9; color: #2d3748; margin-bottom: 14px; text-indent: 2em; }
+        /* === 荧光笔/下划线 样式（含淡入淡出动画） === */
+        @keyframes hlFadeIn {
+            from { opacity: 0; transform: scaleY(0.85); }
+            to   { opacity: 1; transform: scaleY(1); }
+        }
+        @keyframes hlFadeOut {
+            from { opacity: 1; }
+            to   { opacity: 0; }
+        }
+        .hl-highlight {
+            background: #fef08a; border-radius: 2px; padding: 0 2px; cursor: pointer;
+            animation: hlFadeIn 0.25s ease-out;
+            transition: background 0.2s;
+        }
+        .hl-highlight:hover { background: #fde047; }
+        .hl-underline {
+            cursor: pointer;
+            background-image: linear-gradient(to right, #ef4444, #ef4444);
+            background-repeat: no-repeat;
+            background-position: 0 100%;
+            background-size: 0% 2px;
+            padding-bottom: 1px;
+            -webkit-box-decoration-break: clone;
+            box-decoration-break: clone;
+            animation: hlUnderlineDraw 0.35s ease-out forwards;
+        }
+        @keyframes hlUnderlineDraw {
+            from { background-size: 0% 2px; }
+            to   { background-size: 100% 2px; }
+        }
+        .hl-underline.hl-fade-out {
+            animation: hlUnderlineRetract 0.25s ease-in forwards !important;
+        }
+        @keyframes hlUnderlineRetract {
+            from { background-size: 100% 2px; }
+            to   { background-size: 0% 2px; }
+        }
+        .hl-fade-out {
+            animation: hlFadeOut 0.25s ease-in forwards !important;
+        }
+        /* 浮动工具栏 */
+        .hl-toolbar { position: fixed; z-index: 1000; background: #fff; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); padding: 6px 8px; display: flex; gap: 4px; align-items: center; font-size: 0.85rem; opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+        .hl-toolbar.show { opacity: 1; pointer-events: auto; }
+        .hl-toolbar-btn { padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.15s; }
+        .hl-toolbar-btn:hover { transform: translateY(-1px); }
+        .hl-toolbar-btn.highlight { background: #fef08a; color: #854d0e; }
+        .hl-toolbar-btn.highlight:hover { background: #fde047; }
+        .hl-toolbar-btn.underline { background: #fee2e2; color: #991b1b; }
+        .hl-toolbar-btn.underline:hover { background: #fecaca; }
+        .hl-toolbar-btn.remove { background: #f3f4f6; color: #4b5563; }
+        .hl-toolbar-btn.remove:hover { background: #e5e7eb; }
+        .hl-toolbar-sep { width: 1px; height: 20px; background: #e5e7eb; margin: 0 4px; }
+
+        .reading-question { flex: 0.8; min-width: 360px; }
+        .reading-question .quiz-main { min-height: 400px; }
+        .reading-nav { margin-bottom: 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .reading-nav .passage-title { font-size: 0.85rem; color: #718096; }
+        .reading-nav .reading-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin: 0 2px; cursor: pointer; background: #e2e8f0; transition: all 0.2s; }
+        .reading-nav .reading-dot.answered { background: #3182ce; }
+        .reading-nav .reading-dot.current { border: 2px solid #3182ce; box-shadow: 0 0 0 2px rgba(49,130,206,0.3); }
+        .reading-nav .reading-dot.wrong { background: #e53e3e; }
+        .reading-nav .reading-dot:hover { transform: scale(1.2); }
+        @media (max-width: 860px) {
+            .reading-layout { flex-direction: column; }
+            .reading-passage { max-height: 40vh; position: static; }
+            .reading-question { min-width: unset; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="quiz-header">
+            <div class="quiz-header-left">
+                <a href="{{ url_for('app_main') }}" class="btn btn-back">← 返回题库列表</a>
+                <div class="quiz-info">
+                    <h1>{{ bank_name }}</h1>
+                    <span class="badge badge-practice">📖 阅读模式</span>
+                </div>
+            </div>
+            <div class="quiz-header-right">
+                <div class="quiz-progress" style="display:flex;gap:12px;align-items:center;">
+                    <span id="reading-passage-progress" style="font-weight:700;color:#2d3748;">第 1 / 1 篇</span>
+                    <span id="reading-progress" style="color:#718096;">0 / 0 题</span>
+                    <button id="btn-submit-reading" class="btn btn-primary" style="margin-left:12px;"
+                            onclick="submitReading()">
+                        📩 提交评判
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="reading-layout">
+            <!-- 左栏：阅读材料 -->
+            <div class="reading-passage" id="reading-passage">
+                <div class="loading">加载中...</div>
+            </div>
+
+            <!-- 浮动标注工具栏（选中文字后出现） -->
+            <div id="hl-toolbar" class="hl-toolbar">
+                <button class="hl-toolbar-btn highlight" onclick="applyHighlight('highlight')">🖍 荧光</button>
+                <button class="hl-toolbar-btn underline" onclick="applyHighlight('underline')">＿ 下划线</button>
+                <span class="hl-toolbar-sep"></span>
+                <button class="hl-toolbar-btn remove" onclick="removeHighlight()">✕ 移除</button>
+            </div>
+
+            <!-- 右栏：题目 + 答题卡 -->
+            <div class="reading-question">
+                <!-- 题号导航 -->
+                <div class="reading-nav" id="reading-nav"></div>
+                <!-- 题目区 -->
+                <main class="quiz-main" id="question-container">
+                    <div class="loading">加载题目中...</div>
+                </main>
+
+                <!-- 答题卡 -->
+                <aside id="answer-sheet" class="answer-sheet hidden" style="width:100%;margin-top:16px;position:static;">
+                    <h3>📋 答题卡</h3>
+                    <div id="reading-sheet-legend" style="display:flex;justify-content:center;gap:12px;margin-bottom:12px;font-size:0.7rem;color:#718096;">
+                        <span><span class="dot answered"></span> 已答</span>
+                        <span><span class="dot current"></span> 当前</span>
+                        <span><span class="dot unanswered"></span> 未答</span>
+                    </div>
+                    <div id="reading-sheet-grid" style="display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-bottom:12px;"></div>
+                </aside>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const READING_CONFIG = {
+            bankId: "{{ bank_id }}",
+            bankName: "{{ bank_name }}",
+            passageCount: {{ passage_count }}
+        };
+    </script>
+    <script src="{{ url_for('static', filename='utils.js', v=2) }}"></script>
+    <script src="{{ url_for('static', filename='reading.js', v=2) }}"></script>
+
+<script>
+/**
+ * 阅读标注功能：荧光笔 + 下划线
+ * - 选中文字后弹出工具栏
+ * - 标注保存到 localStorage（按 bankId 区分）
+ * - 页面加载时自动恢复标注
+ */
+(function() {
+    const STORAGE_KEY = `reading_hl_{{ bank_id }}`;
+    const passageEl = document.getElementById("reading-passage");
+    const toolbar = document.getElementById("hl-toolbar");
+
+    if (!passageEl || !toolbar) return;
+
+    // ---------- 选中文字 → 弹出工具栏 ----------
+
+    let lastSelection = null;
+
+    passageEl.addEventListener("mouseup", function(e) {
+        // 延迟一点等 selection 稳定
+        setTimeout(() => {
+            const sel = window.getSelection();
+            if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+                hideToolbar();
+                return;
+            }
+
+            // 确保选中的是在 passage 内部
+            if (!passageEl.contains(sel.anchorNode) || !passageEl.contains(sel.focusNode)) {
+                hideToolbar();
+                return;
+            }
+
+            lastSelection = sel;
+            showToolbar(e.clientX, e.clientY);
+        }, 10);
+    });
+
+    // 点击其他地方隐藏工具栏
+    document.addEventListener("mousedown", function(e) {
+        if (!toolbar.contains(e.target)) {
+            hideToolbar();
+        }
+    });
+
+    function showToolbar(x, y) {
+        toolbar.classList.add("show");
+        // 定位：在选中文字上方
+        const rect = passageEl.getBoundingClientRect();
+        let tx = x;
+        let ty = y - toolbar.offsetHeight - 12;
+
+        // 不超出 passage 区域
+        if (ty < rect.top) ty = y + 12;
+        if (tx + toolbar.offsetWidth > rect.right) tx = rect.right - toolbar.offsetWidth - 8;
+        if (tx < rect.left) tx = rect.left + 8;
+
+        toolbar.style.left = tx + "px";
+        toolbar.style.top = ty + "px";
+    }
+
+    function hideToolbar() {
+        toolbar.classList.remove("show");
+    }
+
+    // ---------- 应用标注（同一段文字支持荧光+下划线共存） ----------
+
+    window.applyHighlight = function(type) {
+        const sel = lastSelection || window.getSelection();
+        if (!sel || sel.isCollapsed) return;
+
+        const range = sel.getRangeAt(0);
+        if (!range) return;
+
+        // 检查选中范围是否完全在一个已有 hl-* span 内 → 直接加 class（不嵌套）
+        let startNode = range.startContainer;
+        let endNode = range.endContainer;
+        if (startNode.nodeType === Node.TEXT_NODE) startNode = startNode.parentNode;
+        if (endNode.nodeType === Node.TEXT_NODE) endNode = endNode.parentNode;
+        const startSpan = startNode.closest ? startNode.closest('.hl-highlight, .hl-underline') : null;
+        const endSpan = endNode.closest ? endNode.closest('.hl-highlight, .hl-underline') : null;
+
+        if (startSpan && startSpan === endSpan && startSpan.textContent === range.toString()) {
+            // 同一个 span → 加 class，荧光和下划线在同一个元素上共存
+            startSpan.classList.add(`hl-${type}`);
+            sel.removeAllRanges();
+            hideToolbar();
+            saveHighlights();
+            return;
+        }
+
+        // 跨区域：包裹新 span
+        const span = document.createElement("span");
+        span.className = `hl-${type}`;
+        try {
+            range.surroundContents(span);
+        } catch (e) {
+            const fragment = range.extractContents();
+            span.appendChild(fragment);
+            range.insertNode(span);
+        }
+
+        sel.removeAllRanges();
+        hideToolbar();
+        saveHighlights();
+    };
+
+    // ---------- 移除标注（简单移除整个 span） ----------
+
+    window.removeHighlight = function() {
+        const sel = lastSelection || window.getSelection();
+        if (!sel || sel.isCollapsed) return;
+
+        const range = sel.getRangeAt(0);
+        if (!range) return;
+
+        let node = range.startContainer;
+        if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+        const hlSpan = node.closest ? node.closest(".hl-highlight, .hl-underline") : null;
+
+        if (!hlSpan) {
+            const parent = range.commonAncestorContainer;
+            const container = parent.nodeType === Node.TEXT_NODE ? parent.parentNode : parent;
+            const spans = container.querySelectorAll ? container.querySelectorAll(".hl-highlight, .hl-underline") : [];
+            spans.forEach(s => unwrapSpan(s));
+            setTimeout(() => saveHighlights(), 300);
+        } else {
+            unwrapSpan(hlSpan);
+            setTimeout(() => saveHighlights(), 300);
+        }
+
+        sel.removeAllRanges();
+        hideToolbar();
+    };
+
+    function unwrapSpan(span, animate) {
+        if (animate === undefined) animate = true;
+        if (!animate) {
+            // 直接移除（无动画）
+            const parent = span.parentNode;
+            while (span.firstChild) {
+                parent.insertBefore(span.firstChild, span);
+            }
+            parent.removeChild(span);
+            return;
+        }
+        // 淡出动画后移除
+        span.classList.add("hl-fade-out");
+        const parent = span.parentNode;
+        const clone = span.cloneNode(true);
+        clone.classList.add("hl-fade-out");
+        setTimeout(() => {
+            if (span.parentNode) {
+                while (span.firstChild) {
+                    parent.insertBefore(span.firstChild, span);
+                }
+                parent.removeChild(span);
+            }
+        }, 260);
+    }
+
+    // ---------- localStorage 持久化 ----------
+
+    function saveHighlights() {
+        // 把 passage 的 innerHTML 存起来（包含 hl-span）
+        const passageContent = passageEl.innerHTML;
+        try {
+            localStorage.setItem(STORAGE_KEY, passageContent);
+        } catch (e) {
+            // localStorage 可能满
+        }
+    }
+
+    function loadHighlights() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                passageEl.innerHTML = saved;
+                // 重新绑定 hl-span 的点击事件（点击移除功能）
+                passageEl.querySelectorAll(".hl-highlight, .hl-underline").forEach(el => {
+                    el.addEventListener("click", function(e) {
+                        if (confirm("移除这个标注？")) {
+                            unwrapSpan(this);
+                            setTimeout(() => saveHighlights(), 300);
+                        }
+                    });
+                });
+            }
+        } catch (e) {
+            // 解析失败就忽略
+        }
+    }
+
+    // 初始化时恢复标注
+    loadHighlights();
+})();
+</script>
+</body>
+</html>

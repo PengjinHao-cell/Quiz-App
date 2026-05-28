@@ -69,6 +69,10 @@ function loadQuestions() {
                 return;
             }
 
+            // 更新题数显示为实际题目数（搜索/筛选后的）
+            const actualTotal = questions.length;
+            document.getElementById("progress-text").textContent = `0 / ${actualTotal}`;
+
             // 初始化用户答案
             userAnswers = {};
             questions.forEach((q) => {
@@ -101,6 +105,16 @@ function loadQuestions() {
         });
 }
 
+// 将答案字母串转为选项文本（如 "AC" → "A. 内容1, C. 内容2"）
+function formatAnswerText(answer, options) {
+    if (!answer || !options) return answer || "";
+    // 直接返回内容文本，不返回字母（因为选项已重新标号，字母对不上）
+    var parts = answer.split("").map(function(letter) {
+        return options[letter];
+    }).filter(function(t) { return t; });
+    return parts.length > 0 ? parts.join("；") : answer;
+}
+
 // ---------- 渲染题目 ----------
 
 function showQuestion(index) {
@@ -112,14 +126,21 @@ function showQuestion(index) {
 
     const container = document.getElementById("question-container");
     const options = Object.entries(q.options);
-    // 选项乱序（≥3个选项时随机排列，保留原始字母用于提交）
-    const shuffledOptions = options.length >= 3 ? [...options] : options;
-    if (shuffledOptions.length >= 3 && options.length >= 3) {
+    // 选项乱序并重新标号 A/B/C/D
+    let letterMap = {};  // 新标签 -> 原始字母
+    let shuffledOptions = [...options];
+    if (shuffledOptions.length >= 3) {
         for (let i = shuffledOptions.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
         }
     }
+    // 重新标号为 A/B/C/D...
+    const relabeled = shuffledOptions.map(([origLetter, text], idx) => {
+        const newLabel = String.fromCharCode(65 + idx);  // A, B, C, D...
+        letterMap[newLabel] = origLetter;
+        return [newLabel, origLetter, text];
+    });
 
     // 选择题型标签
     let typeLabel = "";
@@ -127,13 +148,11 @@ function showQuestion(index) {
         typeLabel = '<span class="question-type-badge multi">多选题</span>';
     } else if (qtype === "judge") {
         typeLabel = '<span class="question-type-badge judge">判断题</span>';
+    } else if (qtype === "fill") {
+        typeLabel = '<span class="question-type-badge fill">填空题</span>';
     } else {
         typeLabel = '<span class="question-type-badge single">单选题</span>';
     }
-
-    // 根据题型生成不同 input type
-    const inputType = (qtype === "multi") ? "checkbox" : "radio";
-    const inputName = (qtype === "multi") ? `q-${q.id}-opt` : `q-${q.id}`;
 
     // 当前用户答案
     let currentAnswer = userAnswers[q.id];
@@ -141,34 +160,62 @@ function showQuestion(index) {
         currentAnswer = [];
     }
 
-    // 生成选项 HTML（已乱序）
-    const optionsHTML = shuffledOptions
-        .map(([letter, text]) => {
+    // 填空题：生成文本输入框
+    let inputAreaHTML = "";
+    if (qtype === "fill") {
+        const val = typeof currentAnswer === "string" ? currentAnswer : "";
+        inputAreaHTML = `
+            <div class="fill-input-area">
+                <label class="fill-label">请输入答案：</label>
+                <input type="text" class="fill-input" id="fill-input-${q.id}"
+                       value="${escapeHTML(val)}" autocomplete="off"
+                       placeholder="输入你的答案..."
+                       oninput="onFillInput(${q.id}, this.value)">
+            </div>
+        `;
+    }
+
+    // 根据题型生成不同 input type
+    const inputType = (qtype === "multi") ? "checkbox" : "radio";
+    const inputName = (qtype === "multi") ? `q-${q.id}-opt` : `q-${q.id}`;
+    if (qtype === "multi" && !Array.isArray(currentAnswer)) {
+        currentAnswer = [];
+    }
+
+    // 生成选项 HTML（已乱序并重新标号）（填空题跳过）
+    let optionsHTML = "";
+    if (qtype !== "fill") {
+        optionsHTML = relabeled
+        .map(([newLabel, origLetter, text]) => {
             let checked = "";
             let selectedClass = "";
+            // 用新标签显示，但用原始字母提交
+            const displayLetter = newLabel;
+            const submitLetter = origLetter;
             if (qtype === "multi") {
-                if (Array.isArray(currentAnswer) && currentAnswer.includes(letter)) {
+                if (Array.isArray(currentAnswer) && currentAnswer.includes(submitLetter)) {
                     checked = "checked";
                     selectedClass = "selected";
                 }
             } else {
-                if (currentAnswer === letter) {
+                if (currentAnswer === submitLetter) {
                     checked = "checked";
                     selectedClass = "selected";
                 }
             }
             return `
                 <li class="option-item ${selectedClass}"
-                    onclick="selectOption(${q.id}, '${letter}')">
-                    <input type="${inputType}" name="${inputName}" value="${letter}"
+                    onclick="selectOption(${q.id}, '${submitLetter}')">
+                    <input type="${inputType}" name="${inputName}" value="${submitLetter}"
                            class="option-input" ${checked}
-                           onclick="event.stopPropagation(); selectOption(${q.id}, '${letter}')">
-                    <span class="option-label">${letter}.</span>
+                           onclick="event.stopPropagation(); selectOption(${q.id}, '${submitLetter}')">
+                    <span class="option-label">${displayLetter}.</span>
                     <span class="option-text">${escapeHTML(text)}</span>
                 </li>
             `;
         })
         .join("");
+    }
 
     // 练习模式：选择后显示正确答案提示
     let hintHTML = "";
@@ -180,7 +227,7 @@ function showQuestion(index) {
             if (userArr.length > 0 && userArr.length < correctLen) {
                 hintHTML = `
                     <div class="practice-hint info">
-                        ✅ 已选 <strong>${userArr.length}</strong> 个选项，正确答案共 <strong>${correctLen}</strong> 个，请继续选择
+                        ✅ 已选 <strong>${userArr.length}</strong> 个选项，继续选择或点击已选项取消
                     </div>
                 `;
             } else if (userArr.length >= correctLen && q.answer) {
@@ -191,7 +238,21 @@ function showQuestion(index) {
                     <div class="practice-hint ${isCorrect ? "correct" : "wrong"}">
                         ${isCorrect
                             ? "✅ 回答正确！"
-                            : `❌ 回答错误！正确答案是 <strong>${q.answer}</strong>`}
+                            : `❌ 回答错误！正确答案是 <strong>${formatAnswerText(q.answer, q.options)}</strong>`}
+                    </div>
+                `;
+            }
+        } else if (qtype === "fill") {
+            // 填空题
+            if (userAnswers[q.id] && q.answer) {
+                const userStr = String(userAnswers[q.id]).replace(/\s/g, "");
+                const correctStr = q.answer.replace(/\s/g, "");
+                const isCorrect = userStr === correctStr;
+                hintHTML = `
+                    <div class="practice-hint ${isCorrect ? "correct" : "wrong"}">
+                        ${isCorrect
+                            ? "✅ 回答正确！"
+                            : `❌ 回答错误！正确答案是 <strong>${escapeHTML(q.answer)}</strong>`}
                     </div>
                 `;
             }
@@ -203,7 +264,7 @@ function showQuestion(index) {
                     <div class="practice-hint ${isCorrect ? "correct" : "wrong"}">
                         ${isCorrect
                             ? "✅ 回答正确！"
-                            : `❌ 回答错误！正确答案是 <strong>${q.answer}</strong>`}
+                            : `❌ 回答错误！正确答案是 <strong>${formatAnswerText(q.answer, q.options)}</strong>`}
                     </div>
                 `;
             }
@@ -222,9 +283,10 @@ function showQuestion(index) {
                       onclick="toggleFav(${q.id})" title="${starTitle}">${starIcon}</span>
             </div>
             <div class="question-text">${escapeHTML(q.text)}</div>
-            <ul class="options-list">
-                ${optionsHTML}
-            </ul>
+            ${qtype === "fill"
+                ? `<div class="fill-input-wrap">${inputAreaHTML}</div>`
+                : `<ul class="options-list">${optionsHTML}</ul>`
+            }
             ${hintHTML}
         </div>
     `;
@@ -236,6 +298,35 @@ function showQuestion(index) {
     updateProgress();
 
     // 更新答题卡高亮
+    updateSheetHighlight();
+}
+
+// ---------- 填空题输入 ----------
+
+function onFillInput(questionId, value) {
+    userAnswers[questionId] = value;
+    const q = questions.find(qq => qq.id === questionId);
+    if (!q) return;
+
+    // 练习模式：实时反馈
+    if (config.mode === "practice") {
+        const userStr = value.replace(/\s/g, "");
+        const correctStr = (q.answer || "").replace(/\s/g, "");
+        if (value && q.answer) {
+            if (userStr === correctStr) {
+                const key = `${config.bankId}_${q.id}`;
+                const book = getWrongBook();
+                if (book[key]) removeFromWrongBook(key);
+            } else {
+                addToWrongBook(q, value, config.bankId, config.bankName);
+            }
+        }
+        // 更新提示
+        updatePracticeFeedback(currentIndex);
+    }
+
+    updateProgress();
+    renderAnswerSheet();
     updateSheetHighlight();
 }
 
@@ -317,8 +408,8 @@ function selectOption(questionId, letter) {
         }
         updateProgress();
 
-        // 考试模式：单选/判断选择后自动跳到下一题（多选题不自动跳）
-        if (qtype !== "multi") {
+        // 考试模式：单选/判断选择后自动跳到下一题（多选题/填空题不自动跳）
+        if (qtype !== "multi" && qtype !== "fill") {
             const nextIndex = currentIndex + 1;
             if (nextIndex < questions.length) {
                 setTimeout(() => {
@@ -366,20 +457,22 @@ function updatePracticeFeedback(index) {
     const qtype = q.type || "single";
     const currentAnswer = userAnswers[q.id];
 
-    // 更新选项选中样式
-    items.forEach((item) => {
-        const input = item.querySelector("input");
-        if (!input) return;
-        const letter = input.value;
-        let shouldSelect = false;
-        if (qtype === "multi") {
-            shouldSelect = Array.isArray(currentAnswer) && currentAnswer.includes(letter);
-        } else {
-            shouldSelect = currentAnswer === letter;
-        }
-        item.classList.toggle("selected", shouldSelect);
-        input.checked = shouldSelect;
-    });
+    // 更新选项选中样式（填空题跳过）
+    if (qtype !== "fill") {
+        items.forEach((item) => {
+            const input = item.querySelector("input");
+            if (!input) return;
+            const letter = input.value;
+            let shouldSelect = false;
+            if (qtype === "multi") {
+                shouldSelect = Array.isArray(currentAnswer) && currentAnswer.includes(letter);
+            } else {
+                shouldSelect = currentAnswer === letter;
+            }
+            item.classList.toggle("selected", shouldSelect);
+            input.checked = shouldSelect;
+        });
+    }
 
     // 构建提示 HTML
     let hintHTML = "";
@@ -389,7 +482,7 @@ function updatePracticeFeedback(index) {
         if (userArr.length > 0 && userArr.length < correctLen) {
             hintHTML = `
                 <div class="practice-hint info">
-                    ✅ 已选 <strong>${userArr.length}</strong> 个选项，正确答案共 <strong>${correctLen}</strong> 个，请继续选择
+                    ✅ 已选 <strong>${userArr.length}</strong> 个选项，继续选择或点击已选项取消
                 </div>
             `;
         } else if (userArr.length >= correctLen && q.answer) {
@@ -408,7 +501,20 @@ function updatePracticeFeedback(index) {
                 <div class="practice-hint ${isCorrect ? "correct" : "wrong"}">
                     ${isCorrect
                         ? "✅ 回答正确！"
-                        : `❌ 回答错误！正确答案是 <strong>${q.answer}</strong>`}
+                        : `❌ 回答错误！正确答案是 <strong>${formatAnswerText(q.answer, q.options)}</strong>`}
+                </div>
+            `;
+        }
+    } else if (qtype === "fill") {
+        if (currentAnswer && q.answer) {
+            const userStr = String(currentAnswer).replace(/\s/g, "");
+            const correctStr = q.answer.replace(/\s/g, "");
+            const isCorrect = userStr === correctStr;
+            hintHTML = `
+                <div class="practice-hint ${isCorrect ? "correct" : "wrong"}">
+                    ${isCorrect
+                        ? "✅ 回答正确！"
+                        : `❌ 回答错误！正确答案是 <strong>${escapeHTML(q.answer)}</strong>`}
                 </div>
             `;
         }
@@ -419,7 +525,7 @@ function updatePracticeFeedback(index) {
                 <div class="practice-hint ${isCorrect ? "correct" : "wrong"}">
                     ${isCorrect
                         ? "✅ 回答正确！"
-                        : `❌ 回答错误！正确答案是 <strong>${q.answer}</strong>`}
+                        : `❌ 回答错误！正确答案是 <strong>${formatAnswerText(q.answer, q.options)}</strong>`}
                 </div>
             `;
         }
@@ -434,6 +540,11 @@ function updatePracticeFeedback(index) {
             const optionsList = container.querySelector(".options-list");
             if (optionsList) {
                 optionsList.insertAdjacentHTML("afterend", hintHTML);
+            } else {
+                const fillWrap = container.querySelector(".fill-input-wrap");
+                if (fillWrap) {
+                    fillWrap.insertAdjacentHTML("afterend", hintHTML);
+                }
             }
         }
     } else if (existingHint) {

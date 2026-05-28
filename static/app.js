@@ -61,12 +61,12 @@ function handleUpload(e) {
     const mode = document.querySelector('input[name="mode"]:checked').value;
 
     // 客户端校验
-    const allowedExts = [".pdf", ".docx"];
+    const allowedExts = [".pdf", ".docx", ".txt"];
     const fileName = file.name.toLowerCase();
     const isValid = allowedExts.some(ext => fileName.endsWith(ext));
 
     if (!isValid) {
-        showMessage("仅支持 PDF 和 DOCX 格式的文件", "error");
+        showMessage("仅支持 PDF、DOCX 和 TXT 格式的文件", "error");
         return;
     }
 
@@ -98,6 +98,10 @@ function handleUpload(e) {
         })
         .then((data) => {
             if (data.success && data.redirect) {
+                // 如果有同名题库警告，用 toast 提示
+                if (data.duplicate_warning) {
+                    showToast(data.duplicate_warning, "warning");
+                }
                 showMessage(`解析成功！共 ${data.question_count} 道题，即将跳转...`, "success");
                 setTimeout(() => {
                     window.location.href = data.redirect;
@@ -128,18 +132,33 @@ function deleteBank(bankId) {
             if (data.success) {
                 const card = document.getElementById(`bank-${bankId}`);
                 if (card) {
-                    card.style.transition = "opacity 0.3s";
+                    // 获取实际高度，然后动画收缩到 0
+                    const h = card.offsetHeight;
+                    card.style.boxSizing = "border-box";
+                    card.style.height = h + "px";
+                    card.style.overflow = "hidden";
+                    card.style.transition = "all 0.3s ease";
+                    // 触发重排后开始动画
+                    void card.offsetHeight;
+                    card.style.height = "0";
                     card.style.opacity = "0";
+                    card.style.padding = "0";
+                    card.style.marginBottom = "0";
+                    card.style.borderWidth = "0";
+                    card.style.gap = "0";
                     setTimeout(() => card.remove(), 300);
                 }
 
-                // 如果所有题库都被删了，刷新以显示空状态
-                const remaining = document.querySelectorAll(".bank-card");
-                if (remaining.length <= 1) {
+                // 如果所有题库都被删了，刷新以显示空状态（排除正在删的这张）
+                const remaining = document.querySelectorAll(".bank-card").length - 1;
+                if (remaining <= 0) {
                     setTimeout(() => window.location.reload(), 400);
+                } else {
+                    // 还有题库 → 3 秒后无刷新重新排序（在后端已按名称排序）
+                    setTimeout(() => window.location.reload(), 3000);
                 }
 
-                showMessage("题库已删除", "success");
+                showToast("题库已删除", "success");
             } else {
                 showMessage(data.error || "删除失败", "error");
             }
@@ -164,7 +183,8 @@ function initSample() {
         .then((res) => res.json())
         .then((data) => {
             if (data.success) {
-                window.location.reload();
+                showToast("示例题库加载成功", "success");
+                setTimeout(() => window.location.reload(), 500);
             } else {
                 showMessage(data.error || "初始化失败", "error");
                 if (btn) {
@@ -199,6 +219,12 @@ function startQuiz(bankId, mode) {
     const countEl = document.getElementById(`count-${bankId}`);
     const count = countEl ? countEl.value : "0";
     window.location.href = `/quiz/${bankId}?mode=${mode}&count=${count}`;
+}
+
+function startReading(bankId) {
+    const countEl = document.getElementById(`count-${bankId}`);
+    const count = countEl ? countEl.value : "0";
+    window.location.href = `/reading/${bankId}?count=${count}`;
 }
 
 // ---------- 搜题 ----------
@@ -241,7 +267,7 @@ function doSearch() {
             `;
 
             qs.forEach((q, idx) => {
-                const typeLabel = q.type === "multi" ? "多选题" : q.type === "judge" ? "判断题" : "单选题";
+                const typeLabel = q.type === "multi" ? "多选题" : q.type === "judge" ? "判断题" : q.type === "fill" ? "填空题" : "单选题";
                 const typeClass = q.type || "single";
                 // 高亮关键词
                 const highlightedText = highlightKeyword(q.text, keyword);
@@ -363,6 +389,7 @@ function renameBank(bankId) {
         })
         .then((data) => {
             if (data.success) {
+                showToast(`已重命名为「${newName.trim()}」`, "success");
                 nameEl.textContent = newName.trim();
                 nameEl.title = newName.trim();
                 // 同时更新搜索下拉框中的名称
@@ -370,7 +397,6 @@ function renameBank(bankId) {
                 if (sel) {
                     for (const opt of sel.options) {
                         if (opt.value === bankId) {
-                            // 更新选项文本，保留题数部分
                             const countMatch = opt.text.match(/\((\d+)题\)/);
                             const count = countMatch ? countMatch[1] : "";
                             opt.text = count ? `${newName.trim()} (${count}题)` : newName.trim();
@@ -385,8 +411,47 @@ function renameBank(bankId) {
         });
 }
 
+// ---------- 通用模块折叠动画 ----------
+
+function collapseSection(el, callback) {
+    if (!el || el.style.display === "none") {
+        if (callback) callback();
+        return;
+    }
+    const h = el.offsetHeight;
+    el.style.boxSizing = "border-box";
+    el.style.height = h + "px";
+    el.style.overflow = "hidden";
+    el.style.transition = "all 0.3s ease";
+    void el.offsetHeight;
+    el.style.height = "0";
+    el.style.opacity = "0";
+    el.style.paddingTop = "0";
+    el.style.paddingBottom = "0";
+    el.style.marginTop = "0";
+    el.style.marginBottom = "0";
+    el.style.borderWidth = "0";
+    setTimeout(() => {
+        el.style.display = "none";
+        // 重置样式以备后续显示时能正常展开
+        el.style.height = "";
+        el.style.opacity = "";
+        el.style.paddingTop = "";
+        el.style.paddingBottom = "";
+        el.style.marginTop = "";
+        el.style.marginBottom = "";
+        el.style.borderWidth = "";
+        el.style.overflow = "";
+        el.style.transition = "";
+        if (callback) callback();
+    }, 300);
+}
+
 // ---------- 消息提示 ----------
 
+/**
+ * 显示上传区的消息（原地文本提示）
+ */
 function showMessage(text, type) {
     const msgDiv = document.getElementById("upload-msg");
     if (!msgDiv) return;
@@ -394,7 +459,6 @@ function showMessage(text, type) {
     msgDiv.textContent = text;
     msgDiv.className = `msg ${type}`;
 
-    // 成功后 3 秒自动清除
     if (type === "success") {
         setTimeout(() => {
             msgDiv.textContent = "";
@@ -402,6 +466,76 @@ function showMessage(text, type) {
         }, 3000);
     }
 }
+
+/**
+ * 浮动 Toast 通知 — 用于操作成功/警告/错误的全局提示
+ * 不依赖任何特定 DOM 元素，自动显示在页面顶部
+ */
+function showToast(text, type) {
+    // 创建 toast 容器（如果还没有的话）
+    let container = document.getElementById("toast-container");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toast-container";
+        container.style.cssText =
+            "position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;max-width:380px;";
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement("div");
+    const icons = { success: "✅", error: "❌", warning: "⚠️", info: "ℹ️" };
+    const icon = icons[type] || "ℹ️";
+    const bgColors = {
+        success: "#f0fff4",
+        error: "#fff5f5",
+        warning: "#fffbeb",
+        info: "#eff6ff",
+    };
+    const borderColors = {
+        success: "#38a169",
+        error: "#e53e3e",
+        warning: "#d69e2e",
+        info: "#3182ce",
+    };
+
+    toast.style.cssText = `
+        padding: 14px 18px;
+        background: ${bgColors[type] || "#fff"};
+        border-left: 4px solid ${borderColors[type] || "#3182ce"};
+        border-radius: 10px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        font-size: 0.95rem;
+        color: #2d3748;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        animation: toastSlideIn 0.3s ease;
+        word-break: break-word;
+    `;
+    toast.innerHTML = `<span style="flex-shrink:0;font-size:1.1rem;">${icon}</span><span>${escapeHTML(text)}</span>`;
+
+    container.appendChild(toast);
+
+    // 3.5 秒后自动消失
+    setTimeout(() => {
+        toast.style.transition = "all 0.3s ease";
+        toast.style.opacity = "0";
+        toast.style.transform = "translateX(40px)";
+        setTimeout(() => toast.remove(), 350);
+    }, 3500);
+}
+
+// 注入 toast 滑入动画
+(function injectToastStyle() {
+    const style = document.createElement("style");
+    style.textContent = `
+        @keyframes toastSlideIn {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+    `;
+    document.head.appendChild(style);
+})();
 
 // ---------- 学习统计 ----------
 
@@ -416,7 +550,7 @@ function renderStats() {
     } catch (_) {}
 
     if (history.length === 0) {
-        section.style.display = "none";
+        collapseSection(section);
         return;
     }
 
@@ -629,7 +763,7 @@ function renderHistory() {
     }
 
     if (history.length === 0) {
-        section.style.display = "none";
+        collapseSection(section);
         return;
     }
 
@@ -669,20 +803,37 @@ function renderHistory() {
 }
 
 function deleteHistoryItem(idx) {
-    let history = [];
-    try {
-        const raw = localStorage.getItem("quizHistory");
-        history = raw ? JSON.parse(raw) : [];
-    } catch (_) {
-        history = [];
+    const row = document.querySelector(`#history-tbody tr[data-index="${idx}"]`);
+    if (row) {
+        const h = row.offsetHeight;
+        row.style.boxSizing = "border-box";
+        row.style.height = h + "px";
+        row.style.overflow = "hidden";
+        row.style.transition = "all 0.3s ease";
+        void row.offsetHeight;
+        row.style.height = "0";
+        row.style.opacity = "0";
+        row.style.padding = "0";
+        row.style.borderWidth = "0";
     }
 
-    if (idx >= 0 && idx < history.length) {
-        history.splice(idx, 1);
-        localStorage.setItem("quizHistory", JSON.stringify(history));
-        renderStats();
-        renderHistory();
-    }
+    setTimeout(() => {
+        let history = [];
+        try {
+            const raw = localStorage.getItem("quizHistory");
+            history = raw ? JSON.parse(raw) : [];
+        } catch (_) {
+            history = [];
+        }
+
+        if (idx >= 0 && idx < history.length) {
+            history.splice(idx, 1);
+            localStorage.setItem("quizHistory", JSON.stringify(history));
+            renderStats();
+            renderHistory();
+            showToast("答题记录已删除", "success");
+        }
+    }, 300);
 }
 
 function clearHistory() {
@@ -690,6 +841,7 @@ function clearHistory() {
     localStorage.removeItem("quizHistory");
     renderStats();
     renderHistory();
+    showToast("答题记录已清空", "success");
 }
 
 // ---------- 题目收藏 ----------
@@ -703,7 +855,7 @@ function renderFavorites() {
     const totalFav = Object.values(groups).reduce((sum, g) => sum + g.questions.length, 0);
 
     if (totalFav === 0) {
-        section.style.display = "none";
+        collapseSection(section);
         return;
     }
 
@@ -722,7 +874,7 @@ function renderFavorites() {
         `;
 
         qs.forEach((item) => {
-            const typeLabel = item.type === "multi" ? "多选题" : item.type === "judge" ? "判断题" : "单选题";
+            const typeLabel = item.type === "multi" ? "多选题" : item.type === "judge" ? "判断题" : item.type === "fill" ? "填空题" : "单选题";
 
             html += `
                 <div class="fav-item" id="fav-${escapeHTML(item.key)}">
@@ -759,8 +911,17 @@ function removeFav(key) {
     saveFavorites(book);
     const el = document.getElementById(`fav-${key}`);
     if (el) {
-        el.style.transition = "opacity 0.3s";
+        const h = el.offsetHeight;
+        el.style.boxSizing = "border-box";
+        el.style.height = h + "px";
+        el.style.overflow = "hidden";
+        el.style.transition = "all 0.3s ease";
+        void el.offsetHeight;
+        el.style.height = "0";
         el.style.opacity = "0";
+        el.style.padding = "0";
+        el.style.marginBottom = "0";
+        el.style.borderWidth = "0";
         setTimeout(() => {
             el.remove();
             renderFavorites();
@@ -772,6 +933,7 @@ function clearFavorites() {
     if (!confirm("确定要清空所有收藏吗？")) return;
     localStorage.removeItem(FAVORITE_KEY);
     renderFavorites();
+    showToast("收藏已清空", "success");
 }
 
 // ---------- 错题本 ----------
@@ -785,7 +947,7 @@ function renderWrongBook() {
     const totalWrong = Object.values(groups).reduce((sum, g) => sum + g.questions.length, 0);
 
     if (totalWrong === 0) {
-        section.style.display = "none";
+        collapseSection(section);
         return;
     }
 
@@ -804,7 +966,7 @@ function renderWrongBook() {
         `;
 
         qs.forEach((item) => {
-            const typeLabel = item.type === "multi" ? "多选题" : item.type === "judge" ? "判断题" : "单选题";
+            const typeLabel = item.type === "multi" ? "多选题" : item.type === "judge" ? "判断题" : item.type === "fill" ? "填空题" : "单选题";
             const optText = Object.entries(item.question_options || {})
                 .map(([k, v]) => `${k}. ${escapeHTML(String(v))}`)
                 .join("　");
@@ -860,12 +1022,21 @@ function deleteWrongItem(key) {
     removeFromWrongBook(key);
     const el = document.getElementById(`wrong-${key}`);
     if (el) {
-        el.style.transition = "opacity 0.3s";
+        const h = el.offsetHeight;
+        el.style.boxSizing = "border-box";
+        el.style.height = h + "px";
+        el.style.overflow = "hidden";
+        el.style.transition = "all 0.3s ease";
+        void el.offsetHeight;
+        el.style.height = "0";
         el.style.opacity = "0";
+        el.style.padding = "0";
+        el.style.marginBottom = "0";
+        el.style.borderWidth = "0";
         setTimeout(() => {
             el.remove();
-            // 如果整个组空了，重新渲染
             renderWrongBook();
+            showToast("错题已移除", "success");
         }, 300);
     }
 }
@@ -874,6 +1045,7 @@ function clearWrongBook() {
     if (!confirm("确定要清空所有错题吗？")) return;
     localStorage.removeItem(WRONG_BOOK_KEY);
     renderWrongBook();
+    showToast("错题本已清空", "success");
 }
 
 

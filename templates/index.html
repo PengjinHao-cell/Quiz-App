@@ -102,28 +102,56 @@
                                     <button class="btn-rename" onclick="renameBank('{{ bank.id }}')" title="重命名">✏️</button>
                                 </div>
                                 <span class="bank-meta">
-                                    上传时间: {{ bank.upload_time }} &nbsp;|&nbsp; {{ bank.question_count }} 题
+                                    上传时间: {{ bank.upload_time }} &nbsp;|&nbsp;
+                                    {% if bank.type == "reading" %}
+                                    {{ bank.passage_count }} 篇阅读 · {{ bank.question_count }} 题
+                                    {% else %}
+                                    {{ bank.question_count }} 题
+                                    {% endif %}
                                 </span>
                                 <div class="bank-type-badges">
+                                    {% if bank.type == "reading" %}
+                                    <span class="type-badge single">📖 阅读</span>
+                                    <span class="type-badge judge" style="background:#e8f5e9;color:#2e7d32;">
+                                        {% if bank.language == "en" %}🇬🇧 英文{% else %}🇨🇳 中文{% endif %}
+                                    </span>
+                                    {% else %}
                                     {% if bank.single_count > 0 %}<span class="type-badge single">单选 {{ bank.single_count }}</span>{% endif %}
                                     {% if bank.multi_count > 0 %}<span class="type-badge multi">多选 {{ bank.multi_count }}</span>{% endif %}
                                     {% if bank.judge_count > 0 %}<span class="type-badge judge">判断 {{ bank.judge_count }}</span>{% endif %}
+                                    {% if bank.fill_count > 0 %}<span class="type-badge fill">填空 {{ bank.fill_count }}</span>{% endif %}
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
                         <div class="bank-actions">
+                            {% if bank.type == "reading" %}
+                            <label class="count-label">篇数：
+                                <select class="count-select" id="count-{{ bank.id }}">
+                                    {% set pc = bank.passage_count %}
+                                    {% if pc >= 2 %}<option value="1">1 篇</option>{% endif %}
+                                    {% if pc >= 3 %}<option value="2">2 篇</option>{% endif %}
+                                    {% if pc >= 5 %}<option value="3">3 篇</option>{% endif %}
+                                    {% if pc >= 10 %}<option value="5">5 篇</option>{% endif %}
+                                    <option value="0" selected>全部({{ pc }}篇)</option>
+                                </select>
+                            </label>
+                            <a href="#" class="btn btn-exam" onclick="startReading('{{ bank.id }}')">📖 阅读模式</a>
+                            {% else %}
                             <label class="count-label">题数：
                                 <select class="count-select" id="count-{{ bank.id }}">
-                                    <option value="10">10</option>
-                                    <option value="20">20</option>
-                                    <option value="30">30</option>
-                                    <option value="50">50</option>
-                                    <option value="100">100</option>
-                                    <option value="0" selected>全部({{ bank.question_count }})</option>
+                                    {% set n = bank.question_count %}
+                                    {% if n >= 10 %}<option value="10">10</option>{% endif %}
+                                    {% if n >= 20 %}<option value="20">20</option>{% endif %}
+                                    {% if n >= 30 %}<option value="30">30</option>{% endif %}
+                                    {% if n >= 50 %}<option value="50">50</option>{% endif %}
+                                    {% if n >= 100 %}<option value="100">100</option>{% endif %}
+                                    <option value="0" selected>全部({{ n }})</option>
                                 </select>
                             </label>
                             <a href="#" class="btn btn-primary" onclick="startQuiz('{{ bank.id }}', 'practice')">练习模式</a>
                             <a href="#" class="btn btn-exam" onclick="startQuiz('{{ bank.id }}', 'exam')">考试模式</a>
+                            {% endif %}
                             <button class="btn btn-danger" onclick="deleteBank('{{ bank.id }}')">删除</button>
                         </div>
                     </div>
@@ -163,7 +191,7 @@
                         <label class="file-label" for="file-input">
                             <span id="file-name-display">选择文件 (PDF / DOCX)</span>
                         </label>
-                        <input type="file" id="file-input" name="file" accept=".pdf,.docx" hidden
+                        <input type="file" id="file-input" name="file" accept=".pdf,.docx,.txt" hidden
                                onchange="updateFileName(this)">
                     </div>
                     <div class="form-row mode-select">
@@ -189,7 +217,7 @@
             <div id="upload-panel-text" style="display:none;">
                 <div class="form-row">
                     <textarea id="ai-text-input" class="ai-textarea"
-                              placeholder="粘贴题目文本，AI 自动识别题型和答案...&#10;&#10;示例：&#10;1、中国共产党成立于哪一年？&#10;A、1919年 B、1920年 C、1921年 D、1922年&#10;答案：C&#10;&#10;2、以下哪些是马克思主义的来源？&#10;A、德国古典哲学 B、英国古典政治经济学 C、法国空想社会主义 D、美国实用主义&#10;答案：ABC"></textarea>
+                              placeholder="粘贴题目文本，AI 自动识别题型和答案...&#10;&#10;【单选/多选/判断/填空】直接粘贴，每行一题：&#10;1、中国共产党成立于哪一年？&#10;A、1919年 B、1920年 C、1921年 D、1922年&#10;答案：C&#10;&#10;2、以下哪些是马克思主义的来源？&#10;A、德国古典哲学 B、英国古典政治经济学 C、法国空想社会主义 D、美国实用主义&#10;答案：ABC&#10;&#10;3、光年是时间单位。&#10;A、正确 B、错误&#10;答案：B&#10;&#10;4、Python 中用于定义函数的关键字是 ____。&#10;答案：def&#10;&#10;【阅读理解】粘贴文章 + 题目，AI 自动识别为阅读模式：&#10;In recent years, AI has transformed many industries.&#10;The impact of artificial intelligence on healthcare...&#10;1. What is the main topic of the passage?&#10;A. Education B. Healthcare C. AI transformation D. Economy&#10;答案：C&#10;2. According to the passage, AI has transformed...&#10;A. Only healthcare B. Many industries C. No industries D. Education&#10;答案：B"></textarea>
                 </div>
                 <div class="form-row">
                     <button class="btn btn-primary btn-large" id="ai-parse-btn" onclick="handleAiParse()">
@@ -201,7 +229,7 @@
         </section>
     </div>
 
-    <script src="{{ url_for('static', filename='utils.js') }}"></script>
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script src="{{ url_for('static', filename='utils.js', v=2) }}"></script>
+    <script src="{{ url_for('static', filename='app.js', v=2) }}"></script>
 </body>
 </html>

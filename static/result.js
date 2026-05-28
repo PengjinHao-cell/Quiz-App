@@ -127,14 +127,18 @@ function renderResult(data, quizMode, bankName) {
             ? '<span class="correct-icon">✅ 正确</span>'
             : '<span class="wrong-icon">❌ 错误</span>';
 
-        const optionsHTML = Object.entries(options)
-            .map(([letter, optText]) => {
-                let cls = "";
-                if (letter === correct_answer) cls = "correct-show";
-                if (letter === user_answer && !is_correct) cls = "wrong-show";
-                return `<span class="${cls}" style="margin-right: 12px;">${letter}. ${escapeHTML(optText)}</span>`;
-            })
-            .join("<br>");
+        // 填空题：无选项，直接显示答案
+        const isFill = !options || Object.keys(options).length === 0;
+        const optionsHTML = isFill
+            ? ""
+            : Object.entries(options)
+                .map(([letter, optText]) => {
+                    let cls = "";
+                    if (letter === correct_answer) cls = "correct-show";
+                    if (letter === user_answer && !is_correct) cls = "wrong-show";
+                    return `<span class="${cls}" style="margin-right: 12px;">${letter}. ${escapeHTML(optText)}</span>`;
+                })
+                .join("<br>");
 
         html += `
             <div class="detail-card ${cardClass}">
@@ -147,7 +151,7 @@ function renderResult(data, quizMode, bankName) {
                 <div class="detail-answers" style="margin-top: 8px;">
                     你的答案：<span class="${is_correct ? 'correct-ans' : 'user-ans'}">${user_answer || "未作答"}</span>
                     &nbsp;|&nbsp;
-                    正确答案：<span class="correct-ans">${correct_answer || "无"}</span>
+                    正确答案：<span class="correct-ans">${(correct_answer || "").split("").map(function(l){ return options[l] || l; }).filter(Boolean).join("；") || "无"}</span>
                 </div>
             </div>
         `;
