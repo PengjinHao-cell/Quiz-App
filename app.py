@@ -71,6 +71,28 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 DATA_FOLDER = os.path.join(BASE_DIR, "data")
 
+# =========================== 默认管理员 ===========================
+
+def _init_default_admin():
+    """从环境变量读取管理员账号密码并创建（如已存在则跳过）
+    
+    环境变量未设置时使用硬编码默认值（PuertoJupiter / REDACTED）。
+    """
+    username = os.environ.get("ADMIN_USERNAME", "PuertoJupiter").strip()
+    password = os.environ.get("ADMIN_PASSWORD", "REDACTED").strip()
+    try:
+        existing = User.query.filter_by(username=username).first()
+        if existing:
+            return
+        user = User(username=username, email=f"{username}@quizmaster.app")
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        print(f"✅ 管理员用户「{username}」已自动创建")
+    except Exception as e:
+        print(f"⚠️  管理员创建失败（可忽略）: {e}")
+
+
 # ---------- 数据库配置 ----------
 # Railway PostgreSQL 自动注入 DATABASE_URL
 # 自动检测可用驱动：psycopg2-binary > pg8000
@@ -1083,28 +1105,6 @@ def api_vocab_batch():
     """批量生成更多词汇（用 AI 扩展词库）"""
     # TODO: 实现批量词汇生成（需提前提取 parse_with_llm 到独立模块避免自导入）
     return jsonify({"error": "此功能开发中"}), 501
-
-
-# =========================== 默认管理员 ===========================
-
-def _init_default_admin():
-    """从环境变量读取管理员账号密码并创建（如已存在则跳过）
-    
-    环境变量未设置时使用硬编码默认值（PuertoJupiter / REDACTED）。
-    """
-    username = os.environ.get("ADMIN_USERNAME", "PuertoJupiter").strip()
-    password = os.environ.get("ADMIN_PASSWORD", "REDACTED").strip()
-    try:
-        existing = User.query.filter_by(username=username).first()
-        if existing:
-            return
-        user = User(username=username, email=f"{username}@quizmaster.app")
-        user.set_password(password)
-        db.session.add(user)
-        db.session.commit()
-        print(f"✅ 管理员用户「{username}」已自动创建")
-    except Exception as e:
-        print(f"⚠️  管理员创建失败（可忽略）: {e}")
 
 
 # =========================== 启动 ===========================
