@@ -140,14 +140,8 @@
                     return data;
                 })
                 .then((data) => {
-                    if (data.fallback_code) {
-                        // 邮件发送失败，直接显示验证码
-                        errEl.innerHTML = `⚠️ 邮件发送异常，验证码：<strong style="font-size:1.3rem;letter-spacing:4px;color:#2563eb;">${data.fallback_code}</strong>（5分钟内有效）`;
-                        errEl.style.color = "#d69e2e";
-                    } else {
-                        errEl.textContent = data.message || "✅ 验证码已发送";
-                        errEl.style.color = "#38a169";
-                    }
+                    errEl.textContent = "✅ 验证码已发送";
+                    errEl.style.color = "#38a169";
                     // 开始 90 秒倒计时
                     codeCooldown = 90;
                     const timer = setInterval(() => {
