@@ -180,12 +180,13 @@ def login():
     password = data.get("password") or ""
     remember = data.get("remember", False)
 
-    # 登录限流检查
+    # 登录限流检查（内存操作，<1ms）
     client_ip = request.remote_addr or "unknown"
     allowed, wait = _check_login_rate_limit(client_ip)
     if not allowed:
         return jsonify({"error": f"登录尝试过于频繁，请 {wait} 秒后再试"}), 429
 
+    # 数据库查询 + 密码验证（慢点在这）
     user = User.query.filter_by(username=username).first()
     if not user or not user.check_password(password):
         _record_login_attempt(client_ip, False)

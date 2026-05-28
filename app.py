@@ -80,13 +80,14 @@ DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
-# PostgreSQL 生产连接池（Railway 推荐启用）：
-# app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-#     "pool_size": 5,
-#     "max_overflow": 10,
-#     "pool_pre_ping": True,
-#     "pool_recycle": 3600,
-# }
+# PostgreSQL 连接池：保持连接不断开，避免每次请求重建连接
+if DATABASE_URL.startswith("postgresql://"):
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_size": 5,
+        "max_overflow": 10,
+        "pool_pre_ping": True,     # 每次取连接前 ping 一下，防止用死连接
+        "pool_recycle": 3600,      # 连接最多存活 1 小时
+    }
 
 # 打印数据库连接信息（隐藏密码）
 _db_url_display = DATABASE_URL.replace(DATABASE_URL.split("@")[0].split("://")[1].split(":")[1] if "@" in DATABASE_URL and "://" in DATABASE_URL else "", "****") if "@" in DATABASE_URL else DATABASE_URL
@@ -99,6 +100,12 @@ try:
         # 自动创建默认管理员（环境变量 ADMIN_USERNAME + ADMIN_PASSWORD）
         _init_default_admin()
     print("✅ 数据库连接成功")
+    # 预热：执行一次简单查询，让连接池建立初始连接
+    # 避免第一个用户请求时花时间建连接
+    try:
+        _ = User.query.first()
+    except Exception:
+        pass
 except Exception as e:
     print(f"⚠️  数据库初始化失败: {e}")
     print("   应用将以无数据库模式运行（注册/登录功能不可用）")
