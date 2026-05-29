@@ -27,6 +27,13 @@ SMTP_PORT = int(os.environ.get("SMTP_PORT", "465"))
 SMTP_USER = os.environ.get("SMTP_USER", "QuizMasterProgram@yeah.net")
 SMTP_PASS = os.environ.get("SMTP_PASS", "")
 
+# 打印当前 SMTP 配置（隐藏密码）
+_smtp_display = f"{SMTP_USER} @ {SMTP_HOST}:{SMTP_PORT}"
+if SMTP_PASS:
+    print(f"📧  SMTP 已配置: {_smtp_display}")
+else:
+    print(f"⚠️  SMTP 未配置 (无 SMTP_PASS)")
+
 if not SMTP_PASS:
     print("⚠️  SMTP_PASS 未设置，验证码邮件功能不可用")
     print("   请设置以下环境变量启用邮件：")
@@ -103,7 +110,7 @@ def send_verify_email(to_email: str, code: str, username: str) -> bool:
             server.sendmail(SMTP_USER, [to_email], msg.as_string())
 
         _global_last_sent = time.time()
-        _sys.stderr.write(f"✅ 邮件发送成功: {to_email}\n")
+        print(f"✅ 邮件发送成功: {to_email}")
         return True
 
     except smtplib.SMTPAuthenticationError:
