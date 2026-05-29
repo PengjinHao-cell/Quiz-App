@@ -2,7 +2,7 @@
   <strong>🇬🇧 English</strong> · <strong><a href="#简体中文">🇨🇳 简体中文</a></strong> · <strong><a href="#繁體中文">🇭🇰 繁體中文</a></strong>
 </p>
 
-<h1 align="center">📝 Quiz Master v1.0.0</h1>
+<h1 align="center">📝 Quiz Master v1.0.2</h1>
 
 <p align="center">
   <em>A lightweight, feature-rich quiz web application with AI-powered parsing, reading comprehension mode, and smart annotation tools.</em><br>
@@ -19,7 +19,7 @@
 
 <p align="center">
   🔗 <strong><a href="https://quiz-app-production-9e7f.up.railway.app">🌐 Live → quiz-app-production-9e7f.up.railway.app</a></strong><br>
-  <sub>🚀 v1.0.0 正式版 · 托管于 Railway · PostgreSQL 数据库</sub>
+  <sub>🚀 v1.0.2 · 托管于 Railway · PostgreSQL 数据库</sub>
 </p>
 
 <hr>
@@ -199,7 +199,7 @@ Railway 环境变量要求同上 English 部分。
 
 | 版本 | 内容 |
 |------|------|
-| **v1.0.2** | ⚙️ **管理员后台！** 独立 `/admin` 页面，仅管理员可见。用户管理（列表/重置密码/删除，含级联清理关联数据）。数据概览 5 张统计卡片。安全：DELETE_PASSWORD 未设置时自动降级为管理员鉴权。Bug 修复：考试倒计时 alert 阻塞改为 Toast 通知。代码清理：优化 vocab batch 501 提示信息。协议更新。 |
+| **v1.0.2** | 📧 **邮箱验证码打通！** 自定义域名 `quizmasterprogram.top` + Resend API 发信。管理员后台（`/admin`页面：用户管理/统计卡片/重置密码/删除）。数据库自动迁移 `is_admin` 列。Bug 修复：Railway 上 `urllib` 发 Resend 403 换 `requests` 解决、`DELETE_PASSWORD` 安全加固、考试倒计时 alert 改 Toast。 |
 | **v1.0.1** | 🛡️ **用户数据云端同步！** 登录用户的错题本、收藏、学习记录自动备份到服务器（PostgreSQL），换设备登录可恢复。新增 Sync API（9 个端点，CSRF 防护）。UI：下拉菜单展开动画（opacity+transform）、成绩分享保存为 PNG 图片（html2canvas 按需加载）。体验：上传题库新增"仅上传"模式、"不跳转"选项。Bug 修复：彻底解决删除错题/收藏/记录后刷新又回弹的问题（单向同步策略，本地为权威源）。 |
 | **v1.0.0** | 🎉 **正式版发布！** Railway + PostgreSQL 部署。安全大升级：SECRET_KEY 强制、服务端删除鉴权、登录限流(5次/IP/5分)、验证码限流(3次/邮箱/10分)、会话保护 strong。UX：统一启动画面、模态弹窗、密码强度条、稳定选项乱序、7日图表修复。性能：题库列表缓存(3秒)。Bug 修复：阅读模式写入历史。 |
 | **v0.9.0** | 账号系统：邮箱验证注册、登录/登出、访客模式、忘记密码、个人中心（统计/收藏/错题/记录/设置）、中英文切换、个人信息修改、双重密码认定、登录跳转保护 |
@@ -218,7 +218,7 @@ Railway 环境变量要求同上 English 部分。
 
 <h2 id="繁體中文">🇭🇰 繁體中文</h2>
 
-<h1 align="center">📝 刷題通 (Quiz Master) v1.0.1</h1>
+<h1 align="center">📝 刷題通 (Quiz Master) v1.0.2</h1>
 
 <p align="center">
   <em>正式版發佈 · 安全加固 · Railway 託管 · PostgreSQL 數據庫</em>
@@ -255,5 +255,5 @@ python3 app.py
 <p align="center">
   <a href="https://github.com/PengjinHao-cell/Quiz-App">📦 GitHub</a> ·
   <a href="https://quiz-app-production-9e7f.up.railway.app">🌐 Live Demo</a><br>
-  <sub>Made with ❤️ by PengjinHao · © 2026 Quiz Master · v1.0.1</sub>
+  <sub>Made with ❤️ by PengjinHao · © 2026 Quiz Master · v1.0.2</sub>
 </p>
