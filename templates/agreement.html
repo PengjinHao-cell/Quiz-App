@@ -41,8 +41,9 @@
             <li><strong>密钥强制</strong>：Flask 会话签名使用环境变量 <code>SECRET_KEY</code>，生产环境未设置时会拒绝启动，防止会话伪造。</li>
             <li><strong>登录限流</strong>：同一 IP 5 分钟内登录失败 5 次，将被限制登录 5 分钟，防止暴力破解。</li>
             <li><strong>验证码限流</strong>：同一邮箱 10 分钟内验证码错误 3 次，将被锁定 10 分钟。</li>
-            <li><strong>会话保护</strong>：Flask-Login 启用 <code>session_protection = "strong"</code>，防止会话劫持。</li>
+            <li><strong>会话保护</strong>：Flask-Login 启用 <code>session_protection = "basic"</code>，防止会话劫持，同时允许多设备同时登录。</li>
             <li><strong>记住我</strong>："记住我" 为可选，最长保持 14 天登录态。</li>
+            <li><strong>多设备登录</strong>：支持同一账号多台设备同时在线。错题本、收藏、学习记录通过服务器同步，删除操作以当前设备为准。首次在新设备登录时会自动拉取云端数据合并到本地。</li>
         </ul>
 
         <div class="highlight">
