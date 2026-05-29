@@ -1,139 +1,12 @@
 <p align="center">
-  <strong>🇬🇧 English</strong> · <strong><a href="#简体中文">🇨🇳 简体中文</a></strong> · <strong><a href="#繁體中文">🇭🇰 繁體中文</a></strong>
+  <strong><a href="#简体中文">🇨🇳 简体中文</a></strong> · <strong>🇬🇧 English</strong> · <strong><a href="#繁體中文">🇭🇰 繁體中文</a></strong>
 </p>
-
-<h1 align="center">📝 Quiz Master v1.2.1</h1>
-
-<p align="center">
-  <em>A lightweight, feature-rich quiz web application with AI-powered parsing, reading comprehension mode, and smart annotation tools.</em><br>
-  <em>"Turn any study material into an interactive quiz in seconds."</em>
-</p>
-
-<p align="center">
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.9%2B-blue" alt="Python"></a>
-  <a href="https://flask.palletsprojects.com/"><img src="https://img.shields.io/badge/Flask-3.0-green" alt="Flask"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow" alt="License"></a>
-  <a href="https://quiz-app-production-9e7f.up.railway.app"><img src="https://img.shields.io/badge/Live-Online-brightgreen" alt="Live"></a>
-  <a href="https://github.com/PengjinHao-cell/Quiz-App"><img src="https://img.shields.io/badge/GitHub-Repo-181717" alt="GitHub"></a>
-</p>
-
-<p align="center">
-  🔗 <strong><a href="https://quiz-app-production-9e7f.up.railway.app">🌐 Live → quiz-app-production-9e7f.up.railway.app</a></strong><br>
-  <sub>🚀 v1.2.1 · 托管于 Railway · PostgreSQL 数据库</sub>
-</p>
-
-<hr>
-
-## 🇬🇧 English
-
-Quiz Master is a web-based quiz platform that supports uploading **PDF / DOCX / TXT** files and **AI-powered text parsing**. It features **Practice, Exam, Reading Comprehension, and Vocabulary** modes, along with **user accounts, email verification, bilingual UI, personal dashboard, highlight annotations**, and more.
-
-### ✨ Features
-
-**📤 Import** — PDF / DOCX / TXT upload · AI text paste · Built-in banks · Vocabulary
-
-**🔐 Account System** — Register with email verification · Login/Logout · Guest mode · Forgot password via email · Session persistence · Remember me · Login rate limiting
-
-**👤 User Center** — Personal dashboard with stats · Favorites · Wrong book · Study history · Settings (exam duration, language)
-
-**🌐 Bilingual** — Full Chinese/English UI switch · System text only (questions unchanged)
-
-**🧠 Smart Detection** — Triple-engine: Reading / Party format / Standard format
-
-**📚 Bank Management** — Rename · Type badges · Sort by name · Duplicate detection · Delete (password protected)
-
-**🧠 Quiz Modes** — Practice (instant feedback) · Exam (timed, scored, custom duration) · Shuffled options · Answer sheet · Keyboard shortcuts · Modal confirm dialogs
-
-**📖 Reading Comprehension** — Dual-panel layout · Highlight 🖍 · Underline ＿ · Passage count · History saved to localStorage
-
-**📊 Learning Tools** — Wrong book · Favorites · Statistics · History · Share results · 7-day activity chart
-
-**🎨 UX** — Toast notifications · Unified splash screen · Search · Responsive design · Announcement banner · Password strength indicator
-
-### 🛠 Tech Stack
-
-**Python 3 + Flask** · Vanilla HTML/CSS/JS · **PostgreSQL** (via SQLAlchemy) · PyPDF2 / pymupdf / python-docx · DeepSeek API
-
-**Hosting:** [Railway](https://railway.app) · **Version Control:** [GitHub](https://github.com/PengjinHao-cell/Quiz-App)
-
-### 🔐 Security
-
-| Item | Detail |
-|------|--------|
-| **Password storage** | Hashed with `pbkdf2:sha256` (Werkzeug). Plaintext never stored. |
-| **Password transmission** | Over HTTPS (Railway). POST body JSON, never in URL. |
-| **Session** | Flask signed cookies (SECRET_KEY). `session_protection = "strong"`. Optional "Remember me" (14-day cookie). |
-| **Login rate limit** | 5 failed attempts per IP per 5 minutes → 5 min cooldown. |
-| **Verification code** | 3 failed attempts per email per 10 min → lockout. 5 min code expiry. |
-| **Secret key** | Required via `SECRET_KEY` env var. App refuses to start with default in production. |
-| **Delete auth** | Server-side `DELETE_PASSWORD` env var. Front-end hardcoded password removed. |
-| **Guest mode** | No login required. All guest data is public. |
-| **XSS protection** | `escapeHTML()` on all user-generated content in templates. |
-
-### 🚀 Quick Start
-
-```bash
-# Clone
-git clone https://github.com/PengjinHao-cell/Quiz-App.git
-cd quiz-app
-
-# Install
-pip install -r requirements.txt
-
-# Configure (copy and fill)
-cp .env.example .env
-# Set SECRET_KEY, DATABASE_URL, ADMIN_USERNAME, ADMIN_PASSWORD, etc.
-
-# Run
-python3 app.py
-# → http://localhost:5050
-```
-
-### 🌐 Deployment (Railway)
-
-This project is live on Railway with PostgreSQL:
-
-```
-https://quiz-app-production-9e7f.up.railway.app
-```
-
-Required Railway Variables:
-
-| Variable | Description |
-|----------|-------------|
-| `SECRET_KEY` | Flask session signing key (run `openssl rand -hex 32`) |
-| `DATABASE_URL` | Auto-injected by Railway PostgreSQL plugin |
-| `ADMIN_USERNAME` | Optional: auto-create admin on first boot |
-| `ADMIN_PASSWORD` | Optional: admin password |
-| `DELETE_PASSWORD` | Password required to delete question banks |
-| `DEEPSEEK_API_KEY` | For AI text parsing |
-| `SMTP_*` | For email verification codes |
-
-### 📜 Changelog
-
-| Version | Highlights |
-|---------|-----------|
-| **v1.2.1** | 🔐 **权限体系全面升级！** 访客 < 注册用户 < 管理员。官方题库仅管理员可重命名。删除双重认证。📋 **系统日志** SystemLog。📮 **用户反馈** 一键发邮件。⭐ **管理员官方题库**。📢 注册页域名公告。🔒 访客禁止改删。☁️ **跨设备数据恢复**（从云端拉取合并到本地）。♻️ **版本号自动化**（22 处硬编码改为 `{{ VERSION }}`）。🐛 **修复 deleteHistoryItem 索引漂移 Bug**。🧹 **统一操作入口**（6 个删除/清空函数收归 utils.js）。🧪 **自动化测试 46 个**（pytest，Sync API + 权限体系）。 |
-| **v1.1.0** | 🗄️ **Banks stored in PostgreSQL!** No more JSON files — data persists across Railway redeploys. Unified version number via `version.py`. |
-| **v1.0.2** | 📧 **Email verification working!** Custom domain + Resend API. Admin panel (user management / stats cards). Database auto-migration for `is_admin` column. Bug fix: switched from `urllib` to `requests` for Resend API. |
-| **v1.0.0** | 🎉 **Official release!** Railway deployment + PostgreSQL. Security overhaul: SECRET_KEY enforcement, server-side delete auth, login rate limiting (5/IP/5min), verification code rate limiting (3/email/10min), session protection "strong". UX: unified splash component, modal confirm dialogs, password strength indicator, stable option shuffle (non-resetting), fixed 7-day chart date matching. Performance: bank list cache (3s TTL). Bug fixes: reading mode now writes history. |
-| **v0.9.0** | Account system: register with email verification, login/logout, guest mode, forgot password, user center (stats/favorites/wrong book/history/settings), bilingual CN/EN, personal info edit, duplicate password confirmation, login redirect protection |
-| **v0.8.0** | Scrollable answer sheet, submit button in top bar, delete password, custom exam duration, announcement banner |
-| **v0.7.1** | Bank name truncation, duration moved to global settings, wrong book retry fix, timer display compacted |
-| **v0.7.0** | Reading mode, highlighter/underline, triple-engine, .txt upload, sort by name, duplicate detection, toast notifications |
-| **v0.6.0** | Code cleanup: dead code removal, dismissSplash unification, secret key warning, CSS cleanup |
-| **v0.5.0** | Reading mode, highlight/underline, triple-engine recognition |
-| **v0.4.0** | Vocabulary module (CET-6) |
-| **v0.3.0** | Welcome page, rename, type badges |
-| **v0.2.0** | AI text parsing, shuffled options, share results, search |
-| **v0.1.0** | Wrong book, favorites, statistics, timer, splash screen |
-| **v0.0.1** | Initial: PDF/DOCX upload, practice/exam modes, answer sheet |
 
 <hr>
 
 <h2 id="简体中文">🇨🇳 简体中文</h2>
 
-<h1 align="center">📝 刷题通 (Quiz Master) {{ VERSION_NAME }}</h1>
+<h1 align="center">📝 刷题通 (Quiz Master) v1.2.1</h1>
 
 <p align="center">
   <em>🎉 正式版发布 · 安全加固 · Railway 托管 · PostgreSQL 数据库</em>
@@ -196,28 +69,127 @@ python3 app.py
 
 在线地址：[quiz-app-production-9e7f.up.railway.app](https://quiz-app-production-9e7f.up.railway.app)
 
-Railway 环境变量要求同上 English 部分。
-
 ### 📜 更新日志
 
 | 版本 | 内容 |
 |------|------|
-| **v1.2.1** | 🔐 **权限体系全面升级！** 访客 < 注册用户 < 管理员三级权限。官方题库仅管理员可改名。删除双重认证（管理员输密码/用户输名称确认）。📋 **系统日志 SystemLog** 记录上传/登录/注册/删除等所有操作。📮 **用户反馈** 一键报告问题附带日志发到管理员邮箱。⭐ **管理员官方题库** 标记+管理。📢 注册页域名公告。🔒 访客禁止改删题库。多设备同时登录支持。 |
-| **v1.1.0** | 🗄️ **题库持久化到 PostgreSQL！** 新增 `QuestionBank` 表，题库不再依赖 `data/*.json` 文件，Railway Redeploy 不再丢数据。新增 `version.py` 统一版本号管理，所有模板通过 `{{ VERSION }}` 引用。 |
-| **v1.0.2** | 📧 **邮箱验证码打通！** 自定义域名 `quizmasterprogram.top` + Resend API 发信。管理员后台（`/admin`页面：用户管理/统计卡片/重置密码/删除）。数据库自动迁移 `is_admin` 列。Bug 修复：Railway 上 `urllib` 发 Resend 403 换 `requests` 解决、`DELETE_PASSWORD` 安全加固、考试倒计时 alert 改 Toast。 |
-| **v1.0.1** | 🛡️ **用户数据云端同步！** 登录用户的错题本、收藏、学习记录自动备份到服务器（PostgreSQL），换设备登录可恢复。新增 Sync API（9 个端点，CSRF 防护）。UI：下拉菜单展开动画（opacity+transform）、成绩分享保存为 PNG 图片（html2canvas 按需加载）。体验：上传题库新增"仅上传"模式、"不跳转"选项。Bug 修复：彻底解决删除错题/收藏/记录后刷新又回弹的问题（单向同步策略，本地为权威源）。 |
-| **v1.0.0** | 🎉 **正式版发布！** Railway + PostgreSQL 部署。安全大升级：SECRET_KEY 强制、服务端删除鉴权、登录限流(5次/IP/5分)、验证码限流(3次/邮箱/10分)、会话保护 strong。UX：统一启动画面、模态弹窗、密码强度条、稳定选项乱序、7日图表修复。性能：题库列表缓存(3秒)。Bug 修复：阅读模式写入历史。 |
-| **v0.9.0** | 账号系统：邮箱验证注册、登录/登出、访客模式、忘记密码、个人中心（统计/收藏/错题/记录/设置）、中英文切换、个人信息修改、双重密码认定、登录跳转保护 |
-| **v0.8.0** | 答题卡滚动、交卷按钮顶栏、删除密码、自定义时长、公告横幅 |
-| **v0.7.1** | 名称截断、时长移至设置、错题重练修复、计时精简 |
-| **v0.7.0** | 阅读模式、荧光/下划线、三引擎、.txt上传、排序、重复检测、Toast |
-| **v0.6.0** | 代码清理、密钥警告、CSS清理 |
-| **v0.5.0** | 阅读模式、荧光标注、三引擎识别 |
-| **v0.4.0** | 背单词（CET-6） |
-| **v0.3.0** | 欢迎页、重命名、题型标识 |
-| **v0.2.0** | AI 解析、乱序、分享、搜索 |
-| **v0.1.0** | 错题本、收藏、统计、倒计时 |
-| **v0.0.1** | 初始版本 |
+| **v1.2.1** | 🔐 **权限体系全面升级！** 访客 < 注册用户 < 管理员三级权限。官方题库仅管理员可改名。删除双重认证（管理员输密码/用户输名称确认）。📋 **系统日志 SystemLog**。📮 **用户反馈** 一键报告问题发邮件。⭐ **管理员官方题库**。📢 注册页域名公告。🔒 访客禁止改删。☁️ **跨设备数据恢复**（从云端拉取合并到本地）。♻️ **版本号自动化**（22 处硬编码改为 `{{ VERSION }}`）。🐛 **修复 deleteHistoryItem 索引漂移 Bug**。🧹 **统一操作入口**（6 个删除/清空函数收归 utils.js）。🧪 **自动化测试 46 个**（pytest，Sync API + 权限体系）。 |
+| **v1.1.0** | 🗄️ **题库持久化到 PostgreSQL！** 新增 `QuestionBank` 表，题库不再依赖 `data/*.json` 文件。统一版本号管理。 |
+| **v1.0.2** | 📧 **邮箱验证码打通！** 自定义域名 + Resend API。管理员后台（用户管理/统计卡片）。数据库自动迁移。 |
+| **v1.0.1** | 🛡️ **用户数据云端同步！** 错题本/收藏/学习记录自动备份到服务器。Sync API + CSRF 防护。 |
+| **v1.0.0** | 🎉 **正式版发布！** Railway + PostgreSQL 部署。安全大升级。 |
+| **v0.9.0** | 账号系统 · 邮箱验证注册 · 用户中心 · 中英文切换 · 忘记密码 |
+| **v0.0.1** | 初始版本：PDF/DOCX 上传 · 练习/考试模式 · 答题卡 |
+
+<hr>
+
+<h2 id="english">🇬🇧 English</h2>
+
+<h1 align="center">📝 Quiz Master v1.2.1</h1>
+
+<p align="center">
+  <em>A lightweight, feature-rich quiz web application with AI-powered parsing, reading comprehension mode, and smart annotation tools.</em><br>
+  <em>"Turn any study material into an interactive quiz in seconds."</em>
+</p>
+
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.9%2B-blue" alt="Python"></a>
+  <a href="https://flask.palletsprojects.com/"><img src="https://img.shields.io/badge/Flask-3.0-green" alt="Flask"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow" alt="License"></a>
+  <a href="https://quiz-app-production-9e7f.up.railway.app"><img src="https://img.shields.io/badge/Live-Online-brightgreen" alt="Live"></a>
+  <a href="https://github.com/PengjinHao-cell/Quiz-App"><img src="https://img.shields.io/badge/GitHub-Repo-181717" alt="GitHub"></a>
+</p>
+
+<p align="center">
+  🔗 <strong><a href="https://quiz-app-production-9e7f.up.railway.app">🌐 Live → quiz-app-production-9e7f.up.railway.app</a></strong><br>
+  <sub>🚀 v1.2.1 · Hosted on Railway · PostgreSQL</sub>
+</p>
+
+### ✨ Features
+
+**📤 Import** — PDF / DOCX / TXT upload · AI text paste · Built-in banks · Vocabulary
+
+**🔐 Account System** — Register with email verification · Login/Logout · Guest mode · Forgot password via email · Session persistence · Remember me · Login rate limiting
+
+**👤 User Center** — Personal dashboard with stats · Favorites · Wrong book · Study history · Settings (exam duration, language)
+
+**🌐 Bilingual** — Full Chinese/English UI switch · System text only (questions unchanged)
+
+**🧠 Smart Detection** — Triple-engine: Reading / Party format / Standard format
+
+**📚 Bank Management** — Rename · Type badges · Sort by name · Duplicate detection · Delete (password protected)
+
+**🧠 Quiz Modes** — Practice (instant feedback) · Exam (timed, scored, custom duration) · Shuffled options · Answer sheet · Keyboard shortcuts · Modal confirm dialogs
+
+**📖 Reading Comprehension** — Dual-panel layout · Highlight 🖍 · Underline ＿ · Passage count · History saved to localStorage
+
+**📊 Learning Tools** — Wrong book · Favorites · Statistics · History · Share results · 7-day activity chart
+
+**🎨 UX** — Toast notifications · Unified splash screen · Search · Responsive design · Announcement banner · Password strength indicator
+
+### 🛠 Tech Stack
+
+**Python 3 + Flask** · Vanilla HTML/CSS/JS · **PostgreSQL** (via SQLAlchemy) · PyPDF2 / pymupdf / python-docx · DeepSeek API
+
+**Hosting:** [Railway](https://railway.app) · **Version Control:** [GitHub](https://github.com/PengjinHao-cell/Quiz-App)
+
+### 🔐 Security
+
+| Item | Detail |
+|------|--------|
+| **Password storage** | Hashed with `pbkdf2:sha256` (Werkzeug). Plaintext never stored. |
+| **Password transmission** | Over HTTPS (Railway). POST body JSON, never in URL. |
+| **Session** | Flask signed cookies (SECRET_KEY). `session_protection = "strong"`. Optional "Remember me" (14-day cookie). |
+| **Login rate limit** | 5 failed attempts per IP per 5 minutes → 5 min cooldown. |
+| **Verification code** | 3 failed attempts per email per 10 min → lockout. 5 min code expiry. |
+| **Secret key** | Required via `SECRET_KEY` env var. App refuses to start with default in production. |
+| **Delete auth** | Server-side `DELETE_PASSWORD` env var. Front-end hardcoded password removed. |
+| **Guest mode** | No login required. All guest data is public. |
+| **XSS protection** | `escapeHTML()` on all user-generated content in templates. |
+
+### 🚀 Quick Start
+
+```bash
+git clone https://github.com/PengjinHao-cell/Quiz-App.git
+cd quiz-app
+pip install -r requirements.txt
+cp .env.example .env
+# Set SECRET_KEY, DATABASE_URL, ADMIN_USERNAME, ADMIN_PASSWORD, etc.
+python3 app.py
+# → http://localhost:5050
+```
+
+### 🌐 Deployment (Railway)
+
+This project is live on Railway with PostgreSQL:
+
+```
+https://quiz-app-production-9e7f.up.railway.app
+```
+
+Required Railway Variables:
+
+| Variable | Description |
+|----------|-------------|
+| `SECRET_KEY` | Flask session signing key (run `openssl rand -hex 32`) |
+| `DATABASE_URL` | Auto-injected by Railway PostgreSQL plugin |
+| `ADMIN_USERNAME` | Optional: auto-create admin on first boot |
+| `ADMIN_PASSWORD` | Optional: admin password |
+| `DELETE_PASSWORD` | Password required to delete question banks |
+| `DEEPSEEK_API_KEY` | For AI text parsing |
+| `SMTP_*` | For email verification codes |
+
+### 📜 Changelog
+
+| Version | Highlights |
+|---------|-----------|
+| **v1.2.1** | 🔐 **Full permission system!** Guest < User < Admin. Official banks admin-only. Delete: admin=password, user=name confirm. 📋 **SystemLog**. 📮 **User feedback** via email. ⭐ **Official banks**. ☁️ **Cross-device data restore** (pull from server). ♻️ **Version auto-busting** (22 hardcoded `v=X` → `{{ VERSION }}`). 🐛 **Fixed deleteHistoryItem index shift bug**. 🧹 **Unified operations** (6 delete/clear functions moved to utils.js). 🧪 **46 automated tests** (pytest, Sync API + permissions). |
+| **v1.1.0** | 🗄️ **Banks stored in PostgreSQL!** No more JSON files. Unified version number. |
+| **v1.0.2** | 📧 **Email verification working!** Custom domain + Resend API. Admin panel. DB auto-migration. |
+| **v1.0.1** | 🛡️ **Cloud sync for user data!** Wrong/favorites/history backed up to PostgreSQL. Sync API + CSRF. |
+| **v1.0.0** | 🎉 **Official release!** Railway + PostgreSQL. Security overhaul. |
+| **v0.9.0** | Account system · Email verification · User center · Bilingual CN/EN · Forgot password |
+| **v0.0.1** | Initial: PDF/DOCX upload · Practice/Exam modes · Answer sheet |
 
 <hr>
 
