@@ -199,6 +199,7 @@ Railway 环境变量要求同上 English 部分。
 
 | 版本 | 内容 |
 |------|------|
+| **v1.0.1** | 🛡️ **用户数据云端同步！** 登录用户的错题本、收藏、学习记录自动备份到服务器（PostgreSQL），换设备登录可恢复。新增 Sync API（9 个端点，CSRF 防护）。UI：下拉菜单展开动画（opacity+transform）、成绩分享保存为 PNG 图片（html2canvas 按需加载）。体验：上传题库新增"仅上传"模式、"不跳转"选项。Bug 修复：彻底解决删除错题/收藏/记录后刷新又回弹的问题（单向同步策略，本地为权威源）。 |
 | **v1.0.0** | 🎉 **正式版发布！** Railway + PostgreSQL 部署。安全大升级：SECRET_KEY 强制、服务端删除鉴权、登录限流(5次/IP/5分)、验证码限流(3次/邮箱/10分)、会话保护 strong。UX：统一启动画面、模态弹窗、密码强度条、稳定选项乱序、7日图表修复。性能：题库列表缓存(3秒)。Bug 修复：阅读模式写入历史。 |
 | **v0.9.0** | 账号系统：邮箱验证注册、登录/登出、访客模式、忘记密码、个人中心（统计/收藏/错题/记录/设置）、中英文切换、个人信息修改、双重密码认定、登录跳转保护 |
 | **v0.8.0** | 答题卡滚动、交卷按钮顶栏、删除密码、自定义时长、公告横幅 |
@@ -216,7 +217,7 @@ Railway 环境变量要求同上 English 部分。
 
 <h2 id="繁體中文">🇭🇰 繁體中文</h2>
 
-<h1 align="center">📝 刷題通 (Quiz Master) v1.0.0</h1>
+<h1 align="center">📝 刷題通 (Quiz Master) v1.0.1</h1>
 
 <p align="center">
   <em>正式版發佈 · 安全加固 · Railway 託管 · PostgreSQL 數據庫</em>
@@ -253,5 +254,5 @@ python3 app.py
 <p align="center">
   <a href="https://github.com/PengjinHao-cell/Quiz-App">📦 GitHub</a> ·
   <a href="https://quiz-app-production-9e7f.up.railway.app">🌐 Live Demo</a><br>
-  <sub>Made with ❤️ by PengjinHao · © 2026 Quiz Master · v1.0.0</sub>
+  <sub>Made with ❤️ by PengjinHao · © 2026 Quiz Master · v1.0.1</sub>
 </p>
