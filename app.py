@@ -39,7 +39,7 @@ if app.secret_key == DEFAULT_SECRET:
 
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
-login_manager.session_protection = "strong"  # 防止会话伪造
+login_manager.session_protection = "basic"  # 允许多设备同时登录，防止会话伪造
 login_manager.remember_cookie_duration = datetime.timedelta(days=14)  # "记住我"有效期
 login_manager.init_app(app)
 
