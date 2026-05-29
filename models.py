@@ -53,3 +53,107 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return f"<User {self.username}>"
+
+
+# ========== 用户云端同步模型 ==========
+
+class WrongAnswer(db.Model):
+    """错题本（云端同步）"""
+    __tablename__ = "wrong_answers"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    question_key = db.Column(db.String(256), nullable=False)  # "{bank_id}_{question_id}"
+    bank_id = db.Column(db.String(64), nullable=False)
+    bank_name = db.Column(db.String(256), default="")
+    question_id = db.Column(db.String(64), nullable=False)
+    question_text = db.Column(db.Text, default="")
+    question_options = db.Column(db.Text, default="{}")  # JSON
+    correct_answer = db.Column(db.String(64), default="")
+    user_wrong_answer = db.Column(db.String(64), default="")
+    question_type = db.Column(db.String(16), default="single")
+    wrong_count = db.Column(db.Integer, default=1)
+    last_wrong_time = db.Column(db.String(64), default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "question_key", name="uq_user_wrong"),
+    )
+
+    def to_dict(self):
+        return {
+            "bank_id": self.bank_id,
+            "bank_name": self.bank_name,
+            "question_id": self.question_id,
+            "question_text": self.question_text,
+            "question_options": self.question_options,
+            "correct_answer": self.correct_answer,
+            "user_wrong_answer": self.user_wrong_answer,
+            "type": self.question_type,
+            "wrong_count": self.wrong_count,
+            "last_wrong_time": self.last_wrong_time,
+        }
+
+
+class Favorite(db.Model):
+    """收藏（云端同步）"""
+    __tablename__ = "favorites"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    question_key = db.Column(db.String(256), nullable=False)
+    bank_id = db.Column(db.String(64), nullable=False)
+    bank_name = db.Column(db.String(256), default="")
+    question_id = db.Column(db.String(64), nullable=False)
+    question_text = db.Column(db.Text, default="")
+    question_options = db.Column(db.Text, default="{}")
+    answer = db.Column(db.String(64), default="")
+    question_type = db.Column(db.String(16), default="single")
+    added_time = db.Column(db.String(64), default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "question_key", name="uq_user_fav"),
+    )
+
+    def to_dict(self):
+        return {
+            "bank_id": self.bank_id,
+            "bank_name": self.bank_name,
+            "question_id": self.question_id,
+            "question_text": self.question_text,
+            "question_options": self.question_options,
+            "answer": self.answer,
+            "type": self.question_type,
+            "added_time": self.added_time,
+        }
+
+
+class StudyHistory(db.Model):
+    """学习记录（云端同步）"""
+    __tablename__ = "study_history"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    record_id = db.Column(db.String(32), nullable=False)  # 客户端生成的唯一 ID
+    bank_id = db.Column(db.String(64), nullable=False)
+    bank_name = db.Column(db.String(256), default="")
+    mode = db.Column(db.String(16), default="practice")  # practice / exam
+    score = db.Column(db.Float, default=0)
+    correct = db.Column(db.Integer, default=0)
+    total = db.Column(db.Integer, default=0)
+    answers_json = db.Column(db.Text, default="{}")  # 详细答题 JSON
+    time_label = db.Column(db.String(64), default="")  # 客户端时间
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.record_id,
+            "bank_id": self.bank_id,
+            "bank_name": self.bank_name,
+            "mode": self.mode,
+            "score": self.score,
+            "correct": self.correct,
+            "total": self.total,
+            "time": self.time_label,
+        }

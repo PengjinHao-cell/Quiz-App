@@ -17,10 +17,10 @@ import time as _time
 import urllib.request
 import threading
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
-from flask_login import LoginManager, current_user
+from flask_login import LoginManager, current_user, login_required
 from werkzeug.utils import secure_filename
 from parser import parse_file, create_sample_questions
-from models import db, User
+from models import db, User, WrongAnswer, Favorite, StudyHistory
 from auth import auth_bp
 
 app = Flask(__name__)
@@ -48,6 +48,14 @@ def session_timeout_check():
     """会话超时检查：非活动超过 24 小时（未勾选记住我）自动登出"""
     # 交给 Flask-Login 的 session_protection 处理
     pass
+
+
+@app.before_request
+def _sync_csrf_check():
+    """轻量 CSRF 防护：所有 /api/sync/ POST/DELETE 需带 X-Requested-By: QuizApp"""
+    if request.path.startswith("/api/sync/") and request.method in ("POST", "DELETE", "PUT", "PATCH"):
+        if request.headers.get("X-Requested-By") != "QuizApp":
+            return jsonify({"error": "CSRF 校验失败，缺少 X-Requested-By 头部"}), 403
 
 
 @login_manager.user_loader
@@ -1093,6 +1101,251 @@ def api_vocab_batch():
     """批量生成更多词汇（用 AI 扩展词库）"""
     # TODO: 实现批量词汇生成（需提前提取 parse_with_llm 到独立模块避免自导入）
     return jsonify({"error": "此功能开发中"}), 501
+
+
+# =========================== 用户数据云端同步 API ===========================
+# 登录用户可将错题本/收藏/学习记录同步到服务器，跨设备可用
+# CSRF 防护：所有 POST/DELETE 端点需携带 X-Requested-By: QuizApp 头部
+
+def _check_sync_csrf():
+    """轻量 CSRF 防护：要求请求头 X-Requested-By: QuizApp"""
+    if request.method in ("GET", "HEAD", "OPTIONS"):
+        return True
+    return request.headers.get("X-Requested-By") == "QuizApp"
+
+@app.route("/api/sync/all", methods=["GET"])
+@login_required
+def api_sync_all():
+    """拉取用户全部云端数据"""
+    user_id = current_user.id
+
+    wrong_answers = WrongAnswer.query.filter_by(user_id=user_id).all()
+    favorites = Favorite.query.filter_by(user_id=user_id).all()
+    histories = StudyHistory.query.filter_by(user_id=user_id)\
+        .order_by(StudyHistory.created_at.desc()).limit(50).all()
+
+    wrong_book = {}
+    for wa in wrong_answers:
+        wrong_book[wa.question_key] = wa.to_dict()
+
+    fav_book = {}
+    for f in favorites:
+        fav_book[f.question_key] = f.to_dict()
+
+    history_list = [h.to_dict() for h in histories]
+
+    return jsonify({
+        "wrong_book": wrong_book,
+        "favorites": fav_book,
+        "history": history_list,
+    })
+
+
+@app.route("/api/sync/wrong-book", methods=["POST"])
+@login_required
+def api_sync_wrong_book():
+    """批量同步错题本"""
+    user_id = current_user.id
+    data = request.get_json()
+    if not data or "items" not in data:
+        return jsonify({"error": "缺少 items"}), 400
+
+    for item in data["items"]:
+        question_key = item.get("question_key", "")
+        if not question_key:
+            continue
+
+        existing = WrongAnswer.query.filter_by(
+            user_id=user_id, question_key=question_key
+        ).first()
+
+        if existing:
+            existing.wrong_count = item.get("wrong_count", existing.wrong_count)
+            existing.user_wrong_answer = item.get("user_wrong_answer", existing.user_wrong_answer)
+            existing.last_wrong_time = item.get("last_wrong_time", existing.last_wrong_time)
+        else:
+            wa = WrongAnswer(
+                user_id=user_id,
+                question_key=question_key,
+                bank_id=item.get("bank_id", ""),
+                bank_name=item.get("bank_name", ""),
+                question_id=item.get("question_id", ""),
+                question_text=item.get("question_text", ""),
+                question_options=item.get("question_options", "{}"),
+                correct_answer=item.get("correct_answer", ""),
+                user_wrong_answer=item.get("user_wrong_answer", ""),
+                question_type=item.get("type", "single"),
+                wrong_count=item.get("wrong_count", 1),
+                last_wrong_time=item.get("last_wrong_time", ""),
+            )
+            db.session.add(wa)
+
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@app.route("/api/sync/wrong-book", methods=["DELETE"])
+@login_required
+def api_delete_wrong_book():
+    """删除指定错题"""
+    user_id = current_user.id
+    data = request.get_json()
+    question_key = data.get("question_key", "") if data else ""
+
+    if not question_key:
+        return jsonify({"error": "缺少 question_key"}), 400
+
+    WrongAnswer.query.filter_by(
+        user_id=user_id, question_key=question_key
+    ).delete()
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@app.route("/api/sync/wrong-book/clear", methods=["POST"])
+@login_required
+def api_clear_wrong_book():
+    """清空所有错题"""
+    WrongAnswer.query.filter_by(user_id=current_user.id).delete()
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@app.route("/api/sync/favorites", methods=["POST"])
+@login_required
+def api_sync_favorites():
+    """批量同步收藏"""
+    user_id = current_user.id
+    data = request.get_json()
+    if not data or "items" not in data:
+        return jsonify({"error": "缺少 items"}), 400
+
+    for item in data["items"]:
+        question_key = item.get("question_key", "")
+        if not question_key:
+            continue
+
+        existing = Favorite.query.filter_by(
+            user_id=user_id, question_key=question_key
+        ).first()
+
+        if not existing:
+            fav = Favorite(
+                user_id=user_id,
+                question_key=question_key,
+                bank_id=item.get("bank_id", ""),
+                bank_name=item.get("bank_name", ""),
+                question_id=item.get("question_id", ""),
+                question_text=item.get("question_text", ""),
+                question_options=item.get("question_options", "{}"),
+                answer=item.get("answer", ""),
+                question_type=item.get("type", "single"),
+                added_time=item.get("added_time", ""),
+            )
+            db.session.add(fav)
+
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@app.route("/api/sync/favorites", methods=["DELETE"])
+@login_required
+def api_delete_favorite():
+    """取消收藏"""
+    user_id = current_user.id
+    data = request.get_json()
+    question_key = data.get("question_key", "") if data else ""
+
+    if not question_key:
+        return jsonify({"error": "缺少 question_key"}), 400
+
+    Favorite.query.filter_by(
+        user_id=user_id, question_key=question_key
+    ).delete()
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@app.route("/api/sync/favorites/clear", methods=["POST"])
+@login_required
+def api_clear_favorites():
+    """清空所有收藏"""
+    Favorite.query.filter_by(user_id=current_user.id).delete()
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@app.route("/api/sync/history", methods=["POST"])
+@login_required
+def api_sync_history():
+    """同步学习记录"""
+    user_id = current_user.id
+    data = request.get_json()
+    if not data or "items" not in data:
+        return jsonify({"error": "缺少 items"}), 400
+
+    for item in data["items"]:
+        record_id = item.get("id", "")
+        if not record_id:
+            continue
+
+        existing = StudyHistory.query.filter_by(
+            user_id=user_id, record_id=record_id
+        ).first()
+
+        if not existing:
+            sh = StudyHistory(
+                user_id=user_id,
+                record_id=record_id,
+                bank_id=item.get("bank_id", ""),
+                bank_name=item.get("bank_name", ""),
+                mode=item.get("mode", "practice"),
+                score=item.get("score", 0),
+                correct=item.get("correct", 0),
+                total=item.get("total", 0),
+                answers_json=item.get("answers_json", "{}"),
+                time_label=item.get("time", ""),
+            )
+            db.session.add(sh)
+
+    # 保持最多 200 条
+    count = StudyHistory.query.filter_by(user_id=user_id).count()
+    if count > 200:
+        excess = StudyHistory.query.filter_by(user_id=user_id)\
+            .order_by(StudyHistory.created_at.asc())\
+            .limit(count - 200).all()
+        for e in excess:
+            db.session.delete(e)
+
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@app.route("/api/sync/history", methods=["DELETE"])
+@login_required
+def api_delete_history():
+    """删除单条学习记录"""
+    user_id = current_user.id
+    data = request.get_json()
+    record_id = data.get("id", "") if data else ""
+
+    if not record_id:
+        return jsonify({"error": "缺少 id"}), 400
+
+    StudyHistory.query.filter_by(
+        user_id=user_id, record_id=record_id
+    ).delete()
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@app.route("/api/sync/history/clear", methods=["POST"])
+@login_required
+def api_clear_history():
+    """清空所有学习记录"""
+    StudyHistory.query.filter_by(user_id=current_user.id).delete()
+    db.session.commit()
+    return jsonify({"success": True})
 
 
 # =========================== 启动 ===========================

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>刷题通</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=4) }}">
 </head>
 <body>
     {% include '_splash.html' %}
@@ -63,7 +63,7 @@
                     <span class="avatar-name" style="font-size:0.8rem;">访客模式</span>
                     <span class="avatar-arrow">▾</span>
                 </div>
-                <div class="user-dropdown" id="user-dropdown" style="display:none;">
+                <div class="user-dropdown" id="user-dropdown">
                     <div class="dropdown-header">👤 访客模式</div>
                     <a class="dropdown-item" href="{{ url_for('auth.login') }}" style="color:#a0aec0;">📊 学习统计</a>
                     <a class="dropdown-item" href="{{ url_for('auth.login') }}" style="color:#a0aec0;">⭐ 收藏本</a>
@@ -78,7 +78,7 @@
                     <span class="avatar-name">{{ current_user.username }}</span>
                     <span class="avatar-arrow">▾</span>
                 </div>
-                <div class="user-dropdown" id="user-dropdown" style="display:none;">
+                <div class="user-dropdown" id="user-dropdown">
                     <div class="dropdown-header">{{ current_user.username }}</div>
                     <a class="dropdown-item" href="/user#stats">📊 学习统计</a>
                     <a class="dropdown-item" href="/user#favorites">⭐ 收藏本</a>
@@ -244,6 +244,10 @@
                             <input type="radio" name="mode" value="exam"> 考试模式
                             <span class="mode-hint">（隐藏答案，交卷后出分）</span>
                         </label>
+                        <label style="opacity:0.7;">
+                            <input type="radio" name="mode" value="direct"> 仅上传
+                            <span class="mode-hint">（解析后不跳转）</span>
+                        </label>
                     </div>
                     <div class="form-row">
                         <button type="submit" class="btn btn-primary btn-large" id="upload-btn">
@@ -260,10 +264,13 @@
                     <textarea id="ai-text-input" class="ai-textarea"
                               placeholder="粘贴题目文本，AI 自动识别题型和答案...&#10;&#10;【单选/多选/判断/填空】直接粘贴，每行一题：&#10;1、中国共产党成立于哪一年？&#10;A、1919年 B、1920年 C、1921年 D、1922年&#10;答案：C&#10;&#10;2、以下哪些是马克思主义的来源？&#10;A、德国古典哲学 B、英国古典政治经济学 C、法国空想社会主义 D、美国实用主义&#10;答案：ABC&#10;&#10;3、光年是时间单位。&#10;A、正确 B、错误&#10;答案：B&#10;&#10;4、Python 中用于定义函数的关键字是 ____。&#10;答案：def&#10;&#10;【阅读理解】粘贴文章 + 题目，AI 自动识别为阅读模式：&#10;In recent years, AI has transformed many industries.&#10;The impact of artificial intelligence on healthcare...&#10;1. What is the main topic of the passage?&#10;A. Education B. Healthcare C. AI transformation D. Economy&#10;答案：C&#10;2. According to the passage, AI has transformed...&#10;A. Only healthcare B. Many industries C. No industries D. Education&#10;答案：B"></textarea>
                 </div>
-                <div class="form-row">
+                <div class="form-row" style="align-items:center;gap:12px;">
                     <button class="btn btn-primary btn-large" id="ai-parse-btn" onclick="handleAiParse()">
                         🤖 AI 智能解析
                     </button>
+                    <label style="font-size:0.85rem;color:#64748b;cursor:pointer;user-select:none;white-space:nowrap;">
+                        <input type="checkbox" id="ai-stay-check"> 不跳转
+                    </label>
                 </div>
                 <div id="ai-parse-msg" class="msg"></div>
             </div>
@@ -283,7 +290,10 @@
         </footer>
     </div>
 
-    <script src="{{ url_for('static', filename='utils.js', v=2) }}"></script>
-    <script src="{{ url_for('static', filename='app.js', v=3) }}"></script>
+    <script>
+        window._IS_LOGGED_IN = {% if current_user.is_authenticated and not is_guest %}true{% else %}false{% endif %};
+    </script>
+    <script src="{{ url_for('static', filename='utils.js', v=4) }}"></script>
+    <script src="{{ url_for('static', filename='app.js', v=4) }}"></script>
 </body>
 </html>

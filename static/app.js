@@ -10,10 +10,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (uploadForm) {
         uploadForm.addEventListener("submit", handleUpload);
     }
-    renderStats();
-    renderHistory();
-    renderFavorites();
-    renderWrongBook();
+
+    // 登录用户：从服务器拉取云端数据合并到 localStorage
+    loadServerData().then(() => {
+        renderStats();
+        renderHistory();
+        renderFavorites();
+        renderWrongBook();
+    });
+
     initAnnouncement();
 
     // 有题库时显示搜索区
@@ -35,6 +40,31 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(dismissSplash, 400);
 });
 
+// ========== 云端数据加载（登录用户） ==========
+
+/**
+ * 从服务器拉取用户的错题本/收藏/历史记录，合并到 localStorage
+ */
+async function loadServerData() {
+    if (!isLoggedIn()) return;
+
+    try {
+        const res = await fetch("/api/sync/all");
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // 仅记录同步状态到控制台，不做数据合并
+        // 错题/收藏/历史数据的同步方向：本地 → 服务器（备份用途）
+        const wbCount = Object.keys(data.wrong_book || {}).length;
+        const favCount = Object.keys(data.favorites || {}).length;
+        const histCount = (data.history || []).length;
+        if (wbCount > 0 || favCount > 0 || histCount > 0) {
+            console.log(`☁️ 服务器已有备份数据: ${wbCount}错题 ${favCount}收藏 ${histCount}条记录`);
+        }
+    } catch (_) {
+        // 静默失败，不影响本地使用
+    }
+}
 
 
 // ---------- 文件上传 ----------
@@ -96,6 +126,16 @@ function handleUpload(e) {
                 if (data.duplicate_warning) {
                     showToast(data.duplicate_warning, "warning");
                 }
+
+                if (mode === "direct") {
+                    // 仅上传模式：不跳转，显示成功信息，刷新题库列表
+                    showMessage(`✅ 上传成功！共 ${data.question_count} 道题`, "success");
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = "🚀 上传并开始刷题";
+                    setTimeout(() => location.reload(), 1200);
+                    return;
+                }
+
                 showMessage(`解析成功！共 ${data.question_count} 道题，即将跳转...`, "success");
                 setTimeout(() => {
                     window.location.href = data.redirect;
@@ -344,6 +384,17 @@ function handleAiParse() {
         })
         .then((data) => {
             if (data.success && data.redirect) {
+                const stay = document.getElementById("ai-stay-check");
+                if (stay && stay.checked) {
+                    // 不跳转模式
+                    msgDiv.className = "msg success";
+                    msgDiv.textContent = `✅ AI 解析成功！共 ${data.question_count} 道题`;
+                    btn.disabled = false;
+                    btn.textContent = "🤖 AI 智能解析";
+                    setTimeout(() => location.reload(), 1200);
+                    return;
+                }
+
                 msgDiv.className = "msg success";
                 msgDiv.textContent = `✅ AI 解析成功！共 ${data.question_count} 道题，即将跳转...`;
                 setTimeout(() => {
@@ -448,7 +499,7 @@ function collapseSection(el, callback) {
 function toggleUserDropdown() {
     const dd = document.getElementById("user-dropdown");
     if (!dd) return;
-    dd.style.display = dd.style.display === "none" ? "block" : "none";
+    dd.classList.toggle("open");
 }
 
 // 点击其他地方关闭下拉
@@ -456,7 +507,7 @@ document.addEventListener("click", function(e) {
     const menu = document.getElementById("user-menu");
     const dd = document.getElementById("user-dropdown");
     if (menu && dd && !menu.contains(e.target)) {
-        dd.style.display = "none";
+        dd.classList.remove("open");
     }
 });
 
@@ -852,11 +903,15 @@ function deleteHistoryItem(idx) {
         }
 
         if (idx >= 0 && idx < history.length) {
+            const deletedId = history[idx].id;
             history.splice(idx, 1);
             localStorage.setItem("quizHistory", JSON.stringify(history));
             renderStats();
             renderHistory();
             showToast("答题记录已删除", "success");
+            // 加入删除黑名单 + 同步服务器
+            _markDeleted("hist", deletedId);
+            deleteHistoryFromServer(deletedId);
         }
     }, 300);
 }
@@ -867,6 +922,7 @@ function clearHistory() {
     renderStats();
     renderHistory();
     showToast("答题记录已清空", "success");
+    clearHistoryOnServer();
 }
 
 // ---------- 题目收藏 ----------
@@ -959,6 +1015,7 @@ function clearFavorites() {
     localStorage.removeItem(FAVORITE_KEY);
     renderFavorites();
     showToast("收藏已清空", "success");
+    clearFavoritesOnServer();
 }
 
 // ---------- 错题本 ----------
@@ -1072,6 +1129,7 @@ function clearWrongBook() {
     localStorage.removeItem(WRONG_BOOK_KEY);
     renderWrongBook();
     showToast("错题本已清空", "success");
+    clearWrongBookOnServer();
 }
 
 

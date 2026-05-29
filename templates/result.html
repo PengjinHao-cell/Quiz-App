@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>答题结果</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=4) }}">
 </head>
 <body>
     {% set splash_icon = '📊' %}
@@ -29,16 +29,30 @@
             <div class="result-actions">
                 <a href="{{ url_for('app_main') }}" class="btn btn-primary">返回题库列表</a>
                 <button class="btn btn-secondary" onclick="window.history.back()">返回刷题页</button>
-                <button class="btn btn-exam" onclick="copyResult()">📤 复制成绩分享</button>
+                <button class="btn btn-exam" onclick="copyResult()">📤 复制文本</button>
+                <button class="btn btn-primary" onclick="saveAsImage()">📸 保存为图片</button>
             </div>
             <div id="share-msg" class="msg" style="display:none; margin-top:12px;"></div>
+
+            <!-- 图片分享专用容器（隐藏，截图时临时显示） -->
+            <div id="share-card" style="position:fixed;left:-9999px;top:0;width:480px;padding:32px;background:#fff;border-radius:16px;font-family:-apple-system,'Microsoft YaHei',sans-serif;">
+                <div style="text-align:center;margin-bottom:20px;">
+                    <div style="font-size:2rem;">📝 Quiz Master</div>
+                    <div style="color:#94a3b8;font-size:0.8rem;">刷题通 · 轻量级智能刷题平台</div>
+                </div>
+                <div id="share-card-body"></div>
+                <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:0.75rem;">
+                    quiz-app-production-9e7f.up.railway.app
+                </div>
+            </div>
         </main>
     </div>
 
     <script>
+        window._IS_LOGGED_IN = {% if current_user.is_authenticated %}true{% else %}false{% endif %};
         const RESULT_BANK_ID = "{{ bank_id }}";
     </script>
-    <script src="{{ url_for('static', filename='utils.js', v=2) }}"></script>
-    <script src="{{ url_for('static', filename='result.js', v=2) }}"></script>
+    <script src="{{ url_for('static', filename='utils.js', v=4) }}"></script>
+    <script src="{{ url_for('static', filename='result.js', v=4) }}"></script>
 </body>
 </html>
