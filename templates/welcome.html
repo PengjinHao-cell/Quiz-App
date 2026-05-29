@@ -36,7 +36,7 @@
         <div class="welcome-divider">{% if lang == 'en' %}or{% else %}或者{% endif %}</div>
         <a href="{{ url_for('app_main') }}?guest=1" class="welcome-guest">👤 {% if lang == 'en' %}Guest Mode (no login){% else %}访客模式体验（无需注册）{% endif %}</a>
         <a href="{{ url_for('agreement') }}" class="welcome-agreement">📋 {% if lang == 'en' %}User Agreement{% else %}用户协议{% endif %}</a>
-        <div class="welcome-footer">Quiz Master v1.0.0</div>
+        <div class="welcome-footer">Quiz Master v1.0.2</div>
         <div style="position:fixed;bottom:20px;right:20px;z-index:100;">
             <a href="/set-lang/zh" style="display:inline-block;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:0.8rem;{% if lang=='zh' %}background:#3b82f6;color:#fff;{% else %}background:#e2e8f0;color:#94a3b8;{% endif %}margin-right:4px;transition:all 0.2s;">中文</a>
             <a href="/set-lang/en" style="display:inline-block;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:0.8rem;{% if lang=='en' %}background:#3b82f6;color:#fff;{% else %}background:#e2e8f0;color:#94a3b8;{% endif %}transition:all 0.2s;">EN</a>
