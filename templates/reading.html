@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>阅读理解 - {{ bank_name }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=3) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=VERSION) }}">
     <style>
         .reading-layout { display: flex; gap: 20px; align-items: flex-start; min-height: 70vh; }
         .reading-passage { flex: 1.2; background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow-y: auto; max-height: 80vh; position: sticky; top: 24px; }
@@ -145,8 +145,8 @@
             passageCount: {{ passage_count }}
         };
     </script>
-    <script src="{{ url_for('static', filename='utils.js', v=4) }}"></script>
-    <script src="{{ url_for('static', filename='reading.js', v=4) }}"></script>
+    <script src="{{ url_for('static', filename='utils.js', v=VERSION) }}"></script>
+    <script src="{{ url_for('static', filename='reading.js', v=VERSION) }}"></script>
 
 <script>
 /**

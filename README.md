@@ -113,7 +113,7 @@ Required Railway Variables:
 
 | Version | Highlights |
 |---------|-----------|
-| **v1.2.1** | 🔐 **权限体系全面升级！** 访客 < 注册用户 < 管理员。官方题库仅管理员可重命名。删除：管理员输密码，普通用户输名称确认（双重认证）。📋 **系统日志** SystemLog 表记录所有操作。📮 **用户反馈** 一键报告问题，附带日志发到管理员邮箱。⭐ **管理员官方题库** 标记+管理。📢 注册页域名公告。🔒 访客禁止改删题库。支持多设备同时登录。 |
+| **v1.2.1** | 🔐 **权限体系全面升级！** 访客 < 注册用户 < 管理员。官方题库仅管理员可重命名。删除双重认证。📋 **系统日志** SystemLog。📮 **用户反馈** 一键发邮件。⭐ **管理员官方题库**。📢 注册页域名公告。🔒 访客禁止改删。☁️ **跨设备数据恢复**（从云端拉取合并到本地）。♻️ **版本号自动化**（22 处硬编码改为 `{{ VERSION }}`）。🐛 **修复 deleteHistoryItem 索引漂移 Bug**。🧹 **统一操作入口**（6 个删除/清空函数收归 utils.js）。🧪 **自动化测试 46 个**（pytest，Sync API + 权限体系）。 |
 | **v1.1.0** | 🗄️ **Banks stored in PostgreSQL!** No more JSON files — data persists across Railway redeploys. Unified version number via `version.py`. |
 | **v1.0.2** | 📧 **Email verification working!** Custom domain + Resend API. Admin panel (user management / stats cards). Database auto-migration for `is_admin` column. Bug fix: switched from `urllib` to `requests` for Resend API. |
 | **v1.0.0** | 🎉 **Official release!** Railway deployment + PostgreSQL. Security overhaul: SECRET_KEY enforcement, server-side delete auth, login rate limiting (5/IP/5min), verification code rate limiting (3/email/10min), session protection "strong". UX: unified splash component, modal confirm dialogs, password strength indicator, stable option shuffle (non-resetting), fixed 7-day chart date matching. Performance: bank list cache (3s TTL). Bug fixes: reading mode now writes history. |

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if lang == 'en' %}Quiz{% else %}刷题{% endif %} - {{ bank_name }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=4) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=VERSION) }}">
     <style>
         /* 题库名称过长时截断 */
         .quiz-info h1 {
@@ -137,8 +137,8 @@
         <span class="hl-quiz-clear" onclick="clearQuizHighlights()">✕ 清除</span>
     </div>
 
-    <script src="{{ url_for('static', filename='utils.js', v=4) }}"></script>
-    <script src="{{ url_for('static', filename='quiz.js', v=4) }}"></script>
+    <script src="{{ url_for('static', filename='utils.js', v=VERSION) }}"></script>
+    <script src="{{ url_for('static', filename='quiz.js', v=VERSION) }}"></script>
 
 <script>
 /**
