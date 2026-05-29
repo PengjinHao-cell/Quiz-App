@@ -30,7 +30,9 @@ SMTP_PASS = os.environ.get("SMTP_PASS", "")
 # 打印当前 SMTP 配置（隐藏密码）
 _smtp_display = f"{SMTP_USER} @ {SMTP_HOST}:{SMTP_PORT}"
 if SMTP_PASS:
-    print(f"📧  SMTP 已配置: {_smtp_display}")
+    import sys as _sys
+    _sys.stderr.write(f"📧 SMTP: {_smtp_display}\n")
+    _sys.stderr.flush()
 else:
     print(f"⚠️  SMTP 未配置 (无 SMTP_PASS)")
 
@@ -90,11 +92,12 @@ def build_email_content(code: str, username: str) -> str:
 def send_verify_email(to_email: str, code: str, username: str) -> bool:
     """发送验证码邮件（同步发送，3 秒超时）
     
-    返回 True 表示发送成功，False 表示发送失败（此时调用方应将验证码显示在页面上作为保底）。
+    返回 True 表示发送成功，False 表示发送失败。
     """
     global _global_last_sent
     import sys as _sys
     import socket as _socket
+    import traceback as _tb
 
     _socket.setdefaulttimeout(3)
 
@@ -118,18 +121,20 @@ def send_verify_email(to_email: str, code: str, username: str) -> bool:
                 server.sendmail(SMTP_USER, [to_email], msg.as_string())
 
         _global_last_sent = time.time()
-        print(f"✅ 邮件发送成功: {to_email}")
+        _sys.stderr.write(f"✅ 邮件发送成功: {to_email}\n")
+        _sys.stderr.flush()
         return True
 
-    except smtplib.SMTPAuthenticationError:
-        print(f"❌ 邮件认证失败: SMTP 用户名或密码错误 (user={SMTP_USER})")
-        print(f"   提示: 确保 SMTP_PASS 是「授权码」而非邮箱登录密码")
+    except smtplib.SMTPAuthenticationError as _e:
+        _sys.stderr.write(f"❌ 邮件认证失败: {_e}\n")
+        _sys.stderr.write(f"    user={SMTP_USER} @ {SMTP_HOST}:{SMTP_PORT}\n")
+        _sys.stderr.write(f"    App Password 可能错误，请重新生成\n")
+        _sys.stderr.flush()
         return False
-    except Exception as e:
-        print(f"❌ SMTP 发送失败 ({type(e).__name__}): {e}")
-        print(f"   提示: 云服务器 IP 被 SMTP 屏蔽，更换 SMTP 可解决：")
-        print(f"         SendGrid: smtp.sendgrid.net:587 (免费)")
-        print(f"         Gmail:    smtp.gmail.com:587 (需 App Password)")
+    except Exception as _e:
+        _sys.stderr.write(f"❌ SMTP 发送失败 ({type(_e).__name__}): {_e}\n")
+        _tb.print_exc(file=_sys.stderr)
+        _sys.stderr.flush()
         return False
 
 
