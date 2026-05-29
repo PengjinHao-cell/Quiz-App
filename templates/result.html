@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>答题结果</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=4) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=VERSION) }}">
 </head>
 <body>
     {% set splash_icon = '📊' %}
@@ -52,7 +52,7 @@
         window._IS_LOGGED_IN = {% if current_user.is_authenticated %}true{% else %}false{% endif %};
         const RESULT_BANK_ID = "{{ bank_id }}";
     </script>
-    <script src="{{ url_for('static', filename='utils.js', v=4) }}"></script>
-    <script src="{{ url_for('static', filename='result.js', v=4) }}"></script>
+    <script src="{{ url_for('static', filename='utils.js', v=VERSION) }}"></script>
+    <script src="{{ url_for('static', filename='result.js', v=VERSION) }}"></script>
 </body>
 </html>

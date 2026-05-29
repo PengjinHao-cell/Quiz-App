@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if lang == 'en' %}User Center{% else %}用户中心{% endif %} - 刷题通</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=4) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=VERSION) }}">
     <style>
         .user-layout { display: flex; gap: 24px; align-items: flex-start; min-height: 70vh; }
         .user-sidebar { width: 200px; flex-shrink: 0; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 12px 0; position: sticky; top: 24px; }
@@ -56,6 +56,8 @@
                 <a class="user-sidebar-item" href="#history" onclick="switchTab('history')">📜 <span>{% if lang == 'en' %}History{% else %}学习记录{% endif %}</span></a>
                 <div class="user-sidebar-divider"></div>
                 <a class="user-sidebar-item" href="#settings" onclick="switchTab('settings')">⚙️ <span>{% if lang == 'en' %}Settings{% else %}设置{% endif %}</span></a>
+                <div class="user-sidebar-divider"></div>
+                <a class="user-sidebar-item" href="#" onclick="handleRestore(); return false;">☁️ <span>{% if lang == 'en' %}Restore from Cloud{% else %}从云端恢复{% endif %}</span></a>
             </nav>
 
             <!-- 右侧内容区 -->
@@ -66,7 +68,7 @@
         {% endif %}
     </div>
 
-    <script src="{{ url_for('static', filename='utils.js', v=4) }}"></script>
+    <script src="{{ url_for('static', filename='utils.js', v=VERSION) }}"></script>
     <script>
         // 全局错误捕获
         window.onerror = function(msg, url, line) {
@@ -181,13 +183,7 @@
                     setTimeout(() => { card.remove(); }, 350);
                 }
             });
-            setTimeout(() => {
-                const book = getFavorites();
-                delete book[key];
-                saveFavorites(book);
-                _markDeleted("fav", key);
-                deleteFavoriteFromServer(key);
-            }, 50);
+            setTimeout(() => { removeFavoriteItem(key); }, 50);
         }
         function clearAllFavorites() {
             if (!confirm(USER_LANG==='en'?'Clear all favorites?':'确定清空所有收藏吗？')) return;
@@ -196,8 +192,7 @@
             content.style.opacity = "0";
             content.style.transform = "translateY(-10px)";
             setTimeout(() => {
-                localStorage.removeItem(FAVORITE_KEY);
-                clearFavoritesOnServer();
+                clearAllFavoritesLocal();
                 content.style.transition = "none";
                 content.style.opacity = "";
                 content.style.transform = "";
@@ -256,8 +251,7 @@
             content.style.opacity = "0";
             content.style.transform = "translateY(-10px)";
             setTimeout(() => {
-                localStorage.removeItem(WRONG_BOOK_KEY);
-                clearWrongBookOnServer();
+                clearAllWrongBookLocal();
                 content.style.transition = "none";
                 content.style.opacity = "";
                 content.style.transform = "";
@@ -278,18 +272,19 @@
                     const h = history[i];
                     const r = h.total > 0 ? Math.round(h.correct / h.total * 100) : 0;
                     let grade = r >= 80 ? "🟢" : r >= 50 ? "🟡" : "🔴";
-                    html += `<div id="hist-item-${i}" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:0.85rem;transition:all 0.3s ease;">
+                    const hid = h.id || `idx-${i}`;
+                    html += `<div id="hist-item-${hid}" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:0.85rem;transition:all 0.3s ease;">
                         <div><span style="font-weight:600;">${grade}</span> ${escapeHTML(h.bank_name || "")} · ${h.mode || ""} · ${h.time || ""}</div>
-                        <div style="display:flex;align-items:center;gap:8px;"><span>${h.correct}/${h.total} (${r}%)</span><button onclick="deleteHistoryItem(${i})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.8rem;padding:2px 6px;border-radius:4px;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">✕</button></div>
+                        <div style="display:flex;align-items:center;gap:8px;"><span>${h.correct}/${h.total} (${r}%)</span><button onclick="deleteHistoryItem('${hid}')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.8rem;padding:2px 6px;border-radius:4px;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">✕</button></div>
                     </div>`;
                 }
                 html += `</div>`;
             } catch(e) { html += `<p style="color:#a0aec0;">${t("noData")}</p>`; }
             container.innerHTML = html;
         }
-        function deleteHistoryItem(idx) {
+        function deleteHistoryItem(id) {
             if (!confirm(USER_LANG==='en'?'Delete this record?':'确定删除这条记录吗？')) return;
-            const row = document.getElementById(`hist-item-${idx}`);
+            const row = document.getElementById(`hist-item-${id}`);
             if (row) {
                 const h = row.offsetHeight;
                 row.style.boxSizing = "border-box";
@@ -309,14 +304,7 @@
                 setTimeout(() => {
                     row.remove();
                     try {
-                        let history = JSON.parse(localStorage.getItem("quizHistory") || "[]");
-                        if (idx >= 0 && idx < history.length) {
-                            const deletedId = history[idx].id;
-                            history.splice(idx, 1);
-                            localStorage.setItem("quizHistory", JSON.stringify(history));
-                            _markDeleted("hist", deletedId);
-                            deleteHistoryFromServer(deletedId);
-                        }
+                        removeHistoryItem(id);
                     } catch(_) {}
                 }, 350);
             }
@@ -328,8 +316,7 @@
             content.style.opacity = "0";
             content.style.transform = "translateY(-10px)";
             setTimeout(() => {
-                localStorage.removeItem("quizHistory");
-                clearHistoryOnServer();
+                clearAllHistoryLocal();
                 content.style.transition = "none";
                 content.style.opacity = "";
                 content.style.transform = "";
@@ -553,6 +540,12 @@
                     errEl.textContent = "❌ " + err.message;
                     btn.disabled = false; btn.textContent = USER_LANG==='en'?'Send Report':'发送报告';
                 });
+        }
+
+        async function handleRestore() {
+            await restoreFromServer();
+            const currentTab = location.hash.slice(1) || 'stats';
+            renderTab(currentTab);
         }
 
         function closeModal(id) {

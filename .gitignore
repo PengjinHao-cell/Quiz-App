@@ -17,8 +17,14 @@ build/
 uploads/
 instance/
 
+# pytest cache
+.pytest_cache/
+
+# pytest in-memory DB artifact
+:memory:
+
 # Debug / dev-only scripts (not needed at runtime)
-test_*.py
+/test_*.py
 analyze_*.py
 try_parse.py
 dump_raw.py

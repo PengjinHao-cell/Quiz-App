@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>刷题通</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=4) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=VERSION) }}">
 </head>
 <body>
     {% include '_splash.html' %}
@@ -304,7 +304,7 @@
         window._IS_LOGGED_IN = {% if current_user.is_authenticated and not is_guest %}true{% else %}false{% endif %};
         window._IS_ADMIN = {% if current_user.is_authenticated and current_user.is_admin %}true{% else %}false{% endif %};
     </script>
-    <script src="{{ url_for('static', filename='utils.js', v=4) }}"></script>
-    <script src="{{ url_for('static', filename='app.js', v=4) }}"></script>
+    <script src="{{ url_for('static', filename='utils.js', v=VERSION) }}"></script>
+    <script src="{{ url_for('static', filename='app.js', v=VERSION) }}"></script>
 </body>
 </html>

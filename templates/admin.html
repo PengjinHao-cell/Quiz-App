@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理后台 - Quiz Master</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=4) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=VERSION) }}">
     <style>
         .admin-wrap { max-width: 520px; margin: 0 auto; }
         .admin-wrap h1 { font-size: 1.4rem; color: #1e3a5f; margin-bottom: 4px; }
@@ -149,7 +149,7 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', filename='utils.js', v=4) }}"></script>
+    <script src="{{ url_for('static', filename='utils.js', v=VERSION) }}"></script>
     <script>
         // 入场
         document.addEventListener("DOMContentLoaded", () => setTimeout(dismissSplash, 400));

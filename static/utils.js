@@ -421,3 +421,193 @@ function clearHistoryOnServer() {
         headers: { "Content-Type": "application/json" },
     });
 }
+
+/**
+ * 从云端恢复数据到本地（跨设备数据恢复）
+ * 用于新设备/重装浏览器后，将服务器备份拉回 localStorage
+ * 依赖 showConfirmModal（utils.js）和 showToast（各页面自行定义）
+ */
+async function restoreFromServer() {
+    if (!isLoggedIn()) {
+        if (typeof showToast === "function") showToast(
+            (typeof USER_LANG !== "undefined" && USER_LANG === "en") ? "Please log in first" : "请先登录", "error"
+        );
+        return false;
+    }
+
+    try {
+        const res = await _syncFetchResult("/api/sync/all", { method: "GET" });
+        if (!res.ok) {
+            if (typeof showToast === "function") showToast(
+                (typeof USER_LANG !== "undefined" && USER_LANG === "en") ? "Failed to fetch cloud data" : "获取云端数据失败", "error"
+            );
+            return false;
+        }
+
+        const data = await res.json();
+        const wbCount = Object.keys(data.wrong_book || {}).length;
+        const favCount = Object.keys(data.favorites || {}).length;
+        const histCount = (data.history || []).length;
+
+        if (wbCount === 0 && favCount === 0 && histCount === 0) {
+            if (typeof showToast === "function") showToast(
+                (typeof USER_LANG !== "undefined" && USER_LANG === "en") ? "No cloud data to restore" : "云端没有可恢复的数据", "info"
+            );
+            return false;
+        }
+
+        // 确认弹窗
+        const _lang = (typeof USER_LANG !== "undefined" && USER_LANG === "en") ? "en" : "zh";
+        const confirmMsg = _lang === "en"
+            ? "Restore from cloud?"
+            : "从云端恢复数据？";
+        const confirmDetail = _lang === "en"
+            ? `This will merge ${wbCount} wrong answers, ${favCount} favorites, ${histCount} records into this device.\nLocal items with the same key will be overwritten.`
+            : `将从云端合并 ${wbCount} 道错题、${favCount} 个收藏、${histCount} 条记录到当前设备。\n本地的同名数据将被覆盖。`;
+
+        const confirmed = await showConfirmModal(confirmMsg, confirmDetail);
+        if (!confirmed) return false;
+
+        // ----- 恢复错题本 -----
+        if (wbCount > 0) {
+            const localBook = getWrongBook();
+            for (const [key, item] of Object.entries(data.wrong_book)) {
+                let options = item.question_options || "{}";
+                if (typeof options === "string") {
+                    try { options = JSON.parse(options); } catch { options = {}; }
+                }
+                localBook[key] = {
+                    bank_id: item.bank_id || "",
+                    bank_name: item.bank_name || "",
+                    question_id: item.question_id || "",
+                    question_text: item.question_text || "",
+                    question_options: options,
+                    correct_answer: item.correct_answer || "",
+                    user_wrong_answer: item.user_wrong_answer || "",
+                    type: item.type || "single",
+                    wrong_count: item.wrong_count || 1,
+                    last_wrong_time: item.last_wrong_time || "",
+                };
+            }
+            saveWrongBook(localBook);
+        }
+
+        // ----- 恢复收藏 -----
+        if (favCount > 0) {
+            const localFavs = getFavorites();
+            for (const [key, item] of Object.entries(data.favorites)) {
+                let options = item.question_options || "{}";
+                if (typeof options === "string") {
+                    try { options = JSON.parse(options); } catch { options = {}; }
+                }
+                localFavs[key] = {
+                    bank_id: item.bank_id || "",
+                    bank_name: item.bank_name || "",
+                    question_id: item.question_id || "",
+                    question_text: item.question_text || "",
+                    question_options: options,
+                    answer: item.answer || "",
+                    type: item.type || "single",
+                    added_time: item.added_time || "",
+                };
+            }
+            saveFavorites(localFavs);
+        }
+
+        // ----- 恢复学习记录 -----
+        if (histCount > 0) {
+            let localHistory = [];
+            try { localHistory = JSON.parse(localStorage.getItem("quizHistory") || "[]"); } catch { localHistory = []; }
+            const existingIds = new Set(localHistory.map(h => h.id).filter(Boolean));
+
+            for (const record of data.history) {
+                const rid = record.record_id || record.id || "";
+                if (!rid || existingIds.has(rid)) continue;
+                localHistory.push({
+                    id: rid,
+                    bank_id: record.bank_id || "",
+                    bank_name: record.bank_name || "",
+                    mode: record.mode || "practice",
+                    score: record.score || 0,
+                    correct: record.correct || 0,
+                    total: record.total || 0,
+                    details: record.answers_json || "{}",
+                    time: record.time_label || "",
+                });
+                existingIds.add(rid);
+            }
+
+            // 按时间倒序排列，上限 200 条
+            localHistory.sort((a, b) => (b.time || "").localeCompare(a.time || ""));
+            if (localHistory.length > 200) localHistory.length = 200;
+            localStorage.setItem("quizHistory", JSON.stringify(localHistory));
+        }
+
+        if (typeof showToast === "function") showToast(
+            _lang === "en"
+                ? `✅ Restored: ${wbCount} wrong, ${favCount} favorites, ${histCount} records`
+                : `✅ 恢复完成：${wbCount} 道错题、${favCount} 个收藏、${histCount} 条记录`,
+            "success"
+        );
+        return true;
+    } catch (e) {
+        if (typeof showToast === "function") showToast(
+            (typeof USER_LANG !== "undefined" && USER_LANG === "en") ? "Restore failed" : "恢复失败", "error"
+        );
+        return false;
+    }
+}
+
+// ========== 统一操作入口（本地 + 服务器同步） ==========
+
+/**
+ * 删除单条收藏（本地 + 服务器同步）
+ * 对应的渲染侧 deleteFavoriteItem(key) 只负责 UI 动画，数据操作委托给此函数
+ */
+function removeFavoriteItem(key) {
+    const book = getFavorites();
+    delete book[key];
+    saveFavorites(book);
+    _markDeleted("fav", key);
+    deleteFavoriteFromServer(key);
+}
+
+/**
+ * 删除单条学习记录（本地 + 服务器同步）
+ * 对应的渲染侧 deleteHistoryItem(id) 只负责 UI 动画，数据操作委托给此函数
+ */
+function removeHistoryItem(id) {
+    let history = [];
+    try { history = JSON.parse(localStorage.getItem("quizHistory") || "[]"); } catch { history = []; }
+    const idx = history.findIndex(h => (h.id || '') === id);
+    if (idx !== -1) {
+        history.splice(idx, 1);
+        localStorage.setItem("quizHistory", JSON.stringify(history));
+        _markDeleted("hist", id);
+        deleteHistoryFromServer(id);
+    }
+}
+
+/**
+ * 清空全部收藏（本地 + 服务器同步）
+ */
+function clearAllFavoritesLocal() {
+    localStorage.removeItem(FAVORITE_KEY);
+    clearFavoritesOnServer();
+}
+
+/**
+ * 清空全部错题（本地 + 服务器同步）
+ */
+function clearAllWrongBookLocal() {
+    localStorage.removeItem(WRONG_BOOK_KEY);
+    clearWrongBookOnServer();
+}
+
+/**
+ * 清空全部学习记录（本地 + 服务器同步）
+ */
+function clearAllHistoryLocal() {
+    localStorage.removeItem("quizHistory");
+    clearHistoryOnServer();
+}
