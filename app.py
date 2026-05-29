@@ -109,7 +109,10 @@ if DATABASE_URL.startswith("postgresql://"):
     # Railway PostgreSQL 要求 TLSv1.2+，配置 SSL 上下文
     _ssl_ctx = _ssl.create_default_context()
     _ssl_ctx.minimum_version = _ssl.TLSVersion.TLSv1_2
-    print("🗄️  使用数据库驱动: pg8000 (SSL: TLSv1.2+)")
+    # 不验证服务器证书（Railway 内部网络，自签名证书）
+    _ssl_ctx.check_hostname = False
+    _ssl_ctx.verify_mode = _ssl.CERT_NONE
+    print("🗄️  使用数据库驱动: pg8000 (SSL: TLSv1.2+, verify=no)")
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "connect_args": {"ssl_context": _ssl_ctx},
         "pool_size": 5,
