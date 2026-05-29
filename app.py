@@ -20,7 +20,8 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 from flask_login import LoginManager, current_user, login_required
 from werkzeug.utils import secure_filename
 from parser import parse_file, create_sample_questions
-from models import db, User, WrongAnswer, Favorite, StudyHistory
+from version import VERSION, VERSION_NAME
+from models import db, User, WrongAnswer, Favorite, StudyHistory, QuestionBank
 from auth import auth_bp
 
 app = Flask(__name__)
@@ -66,7 +67,7 @@ def load_user(user_id):
 @app.context_processor
 def inject_globals():
     """向所有模板注入全局变量"""
-    return {"lang": session.get("lang", "zh")}
+    return {"lang": session.get("lang", "zh"), "VERSION": VERSION, "VERSION_NAME": VERSION_NAME}
 
 
 app.register_blueprint(auth_bp)
@@ -158,7 +159,7 @@ if DATABASE_URL.startswith("postgresql"):
         print(f"🌐  TCP 连接到数据库失败: {_e}")
 
 def _run_migration():
-    """自动迁移：为已有数据库添加新字段"""
+    """自动迁移：添加新字段 + 导入 JSON 题库到数据库"""
     try:
         with app.app_context():
             engine = db.engine
@@ -188,14 +189,42 @@ def _run_migration():
                         conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE"))
                         conn.commit()
                         print("📦 迁移: 已添加 is_admin 列 (PostgreSQL)")
+
+            # 导入已有 JSON 题库到数据库
+            if os.path.isdir(DATA_FOLDER):
+                imported = 0
+                for fname in os.listdir(DATA_FOLDER):
+                    if not fname.endswith(".json"):
+                        continue
+                    bank_id = fname[:-5]
+                    if QuestionBank.query.get(bank_id):
+                        continue
+                    filepath = os.path.join(DATA_FOLDER, fname)
+                    with open(filepath, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    bank_type = data.get("type", "quiz")
+                    language = data.get("language", "zh") if bank_type == "reading" else "zh"
+                    qb = QuestionBank(
+                        id=bank_id,
+                        original_filename=data.get("original_filename", ""),
+                        upload_time=data.get("upload_time", ""),
+                        type=bank_type,
+                        language=language,
+                        data_json=json.dumps(data, ensure_ascii=False),
+                    )
+                    db.session.add(qb)
+                    db.session.commit()
+                    imported += 1
+                if imported:
+                    print(f"📦 迁移: 已导入 {imported} 个题库到数据库")
     except Exception as e:
-        print(f"⚠️  迁移检查失败（可忽略）: {e}")
+        print(f"⚠️  迁移失败（可忽略）: {e}")
 
 try:
     db.init_app(app)
-    _run_migration()
     with app.app_context():
         db.create_all()
+        _run_migration()
         _init_default_admin()
     print("✅ 数据库连接成功")
     try:
@@ -223,112 +252,85 @@ def allowed_file(filename: str) -> bool:
 
 def check_name_duplicate(name: str, exclude_id: str = ""):
     """
-    检查题库名称是否已存在。
-    
-    参数：
-        name: 要检查的名称
-        exclude_id: 排除的题库 ID（重命名时排除自身）
-    
-    返回：
-        如果重复：{"id": "xxx", "original_filename": "xxx", "time": "xxx"}
-        如果不重复：None
+    检查题库名称是否已存在（数据库版）。
+    返回：{"id", "original_filename", "upload_time"} 或 None
     """
     if not name:
         return None
-
-    for fname in os.listdir(DATA_FOLDER):
-        if not fname.endswith(".json"):
-            continue
-        try:
-            with open(os.path.join(DATA_FOLDER, fname), "r", encoding="utf-8") as f:
-                data = json.load(f)
-            bid = data.get("id", "")
-            if bid == exclude_id:
-                continue
-            if data.get("original_filename", "") == name:
-                return {
-                    "id": bid,
-                    "original_filename": name,
-                    "upload_time": data.get("upload_time", ""),
-                }
-        except Exception:
-            continue
+    qb = QuestionBank.query.filter(
+        QuestionBank.original_filename == name,
+        QuestionBank.id != exclude_id
+    ).first()
+    if qb:
+        data = json.loads(qb.data_json)
+        return {
+            "id": qb.id,
+            "original_filename": qb.original_filename,
+            "upload_time": data.get("upload_time", ""),
+        }
     return None
 
 
-# 题库列表缓存（避免每次请求都读磁盘）
+# 题库列表缓存（内存级，3秒 TTL）
 _bank_list_cache = {"data": None, "time": 0.0, "lock": threading.Lock()}
-_BANK_CACHE_TTL = 3.0  # 缓存有效期 3 秒
+_BANK_CACHE_TTL = 3.0
 
 def _invalidate_bank_cache():
-    """使题库列表缓存失效（上传/删除/重命名时调用）"""
     with _bank_list_cache["lock"]:
         _bank_list_cache["time"] = 0.0
 
 def load_bank_list() -> list:
-    """加载所有题库的元数据（含题型统计），带内存缓存"""
+    """从数据库加载题库列表（带内存缓存）"""
     now = _time.time()
     with _bank_list_cache["lock"]:
         if _bank_list_cache["data"] is not None and now - _bank_list_cache["time"] < _BANK_CACHE_TTL:
             return _bank_list_cache["data"]
 
+    records = QuestionBank.query.order_by(QuestionBank.original_filename.asc()).all()
     banks = []
-    if not os.path.isdir(DATA_FOLDER):
-        return banks
+    for qb in records:
+        try:
+            data = json.loads(qb.data_json)
+        except Exception:
+            continue
+        bank_type = qb.type
 
-    for fname in os.listdir(DATA_FOLDER):
-        if fname.endswith(".json"):
-            filepath = os.path.join(DATA_FOLDER, fname)
-            try:
-                with open(filepath, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                bank_type = data.get("type", "quiz")
+        if bank_type == "reading":
+            passages = data.get("passages", [])
+            total_q = sum(len(p.get("questions", [])) for p in passages)
+            banks.append({
+                "id": qb.id,
+                "type": "reading",
+                "language": qb.language,
+                "original_filename": qb.original_filename,
+                "upload_time": data.get("upload_time", ""),
+                "question_count": total_q,
+                "passage_count": len(passages),
+            })
+            continue
 
-                if bank_type == "reading":
-                    # 阅读理解：统计 passage 数量和题目总数
-                    passages = data.get("passages", [])
-                    total_q = sum(len(p.get("questions", [])) for p in passages)
-                    banks.append({
-                        "id": data.get("id", ""),
-                        "type": "reading",
-                        "language": data.get("language", "zh"),
-                        "original_filename": data.get("original_filename", ""),
-                        "upload_time": data.get("upload_time", ""),
-                        "question_count": total_q,
-                        "passage_count": len(passages),
-                    })
-                    continue
+        questions = data.get("questions", [])
+        if not questions:
+            continue
+        single_count = multi_count = judge_count = fill_count = 0
+        for q in questions:
+            t = detect_question_type(q)
+            if t == "single": single_count += 1
+            elif t == "multi": multi_count += 1
+            elif t == "judge": judge_count += 1
+            elif t == "fill": fill_count += 1
+        banks.append({
+            "id": qb.id,
+            "type": "quiz",
+            "original_filename": qb.original_filename,
+            "upload_time": data.get("upload_time", ""),
+            "question_count": len(questions),
+            "single_count": single_count,
+            "multi_count": multi_count,
+            "judge_count": judge_count,
+            "fill_count": fill_count,
+        })
 
-                questions = data.get("questions", [])
-                if not questions:
-                    continue
-                # 统计题型分布
-                single_count = multi_count = judge_count = fill_count = 0
-                for q in questions:
-                    t = detect_question_type(q)
-                    if t == "single":
-                        single_count += 1
-                    elif t == "multi":
-                        multi_count += 1
-                    elif t == "judge":
-                        judge_count += 1
-                    elif t == "fill":
-                        fill_count += 1
-                banks.append({
-                    "id": data.get("id", ""),
-                    "type": "quiz",
-                    "original_filename": data.get("original_filename", ""),
-                    "upload_time": data.get("upload_time", ""),
-                    "question_count": len(questions),
-                    "single_count": single_count,
-                    "multi_count": multi_count,
-                    "judge_count": judge_count,
-                    "fill_count": fill_count,
-                })
-            except Exception:
-                continue
-
-    # 按题库名称（original_filename）排序，不区分大小写
     banks.sort(key=lambda b: b.get("original_filename", "").lower())
     with _bank_list_cache["lock"]:
         _bank_list_cache["data"] = banks
@@ -337,13 +339,17 @@ def load_bank_list() -> list:
 
 
 def load_bank(bank_id: str) -> dict:
-    """根据题库 ID 加载完整数据"""
-    filepath = os.path.join(DATA_FOLDER, f"{bank_id}.json")
-    if not os.path.exists(filepath):
+    """从数据库加载题库"""
+    qb = QuestionBank.query.get(bank_id)
+    if not qb:
         raise FileNotFoundError(f"题库 {bank_id} 不存在")
-
-    with open(filepath, "r", encoding="utf-8") as f:
-        return json.load(f)
+    data = json.loads(qb.data_json)
+    data["id"] = qb.id
+    data["original_filename"] = qb.original_filename
+    data["type"] = qb.type
+    if qb.type == "reading":
+        data["language"] = qb.language
+    return data
 
 
 def detect_question_type(question: dict) -> str:
@@ -434,20 +440,35 @@ def sample_questions_proportional(questions: list, count: int) -> list:
 
 
 def save_bank(bank_id: str, data: dict):
-    """保存题库数据到 JSON 文件"""
-    filepath = os.path.join(DATA_FOLDER, f"{bank_id}.json")
-    with open(filepath, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    """保存题库到数据库"""
+    bank_type = data.get("type", "quiz")
+    language = data.get("language", "zh") if bank_type == "reading" else "zh"
+    qb = QuestionBank.query.get(bank_id)
+    if qb:
+        qb.original_filename = data.get("original_filename", qb.original_filename)
+        qb.type = bank_type
+        qb.language = language
+        qb.data_json = json.dumps(data, ensure_ascii=False)
+    else:
+        qb = QuestionBank(
+            id=bank_id,
+            original_filename=data.get("original_filename", ""),
+            upload_time=data.get("upload_time", ""),
+            type=bank_type,
+            language=language,
+            data_json=json.dumps(data, ensure_ascii=False),
+        )
+        db.session.add(qb)
+    db.session.commit()
 
 
 def delete_bank_files(bank_id: str):
-    """删除原始文件和 JSON 数据文件"""
-    data_path = os.path.join(DATA_FOLDER, f"{bank_id}.json")
-    if os.path.exists(data_path):
-        # 尝试获取原始文件名
+    """从数据库删除题库"""
+    qb = QuestionBank.query.get(bank_id)
+    if qb:
+        # 尝试删除对应的上传文件
         try:
-            with open(data_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+            data = json.loads(qb.data_json)
             orig_name = data.get("original_filename", "")
             if orig_name:
                 upload_path = os.path.join(UPLOAD_FOLDER, f"{bank_id}_{orig_name}")
@@ -455,7 +476,8 @@ def delete_bank_files(bank_id: str):
                     os.remove(upload_path)
         except Exception:
             pass
-        os.remove(data_path)
+        db.session.delete(qb)
+        db.session.commit()
 
 
 # =========================== 页面路由 ===========================
@@ -1423,22 +1445,18 @@ def api_admin_stats():
     """数据概览"""
     user_count = User.query.count()
 
-    # 题库统计
-    bank_count = 0
+    # 题库统计（从数据库查询）
+    bank_count = QuestionBank.query.count()
     total_questions = 0
-    if os.path.isdir(DATA_FOLDER):
-        for fname in os.listdir(DATA_FOLDER):
-            if fname.endswith(".json"):
-                bank_count += 1
-                try:
-                    with open(os.path.join(DATA_FOLDER, fname), "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                    if data.get("type") == "reading":
-                        total_questions += sum(len(p.get("questions", [])) for p in data.get("passages", []))
-                    else:
-                        total_questions += len(data.get("questions", []))
-                except Exception:
-                    pass
+    for qb in QuestionBank.query.all():
+        try:
+            data = json.loads(qb.data_json)
+            if qb.type == "reading":
+                total_questions += sum(len(p.get("questions", [])) for p in data.get("passages", []))
+            else:
+                total_questions += len(data.get("questions", []))
+        except Exception:
+            pass
 
     # 答题记录统计
     history_count = StudyHistory.query.count()

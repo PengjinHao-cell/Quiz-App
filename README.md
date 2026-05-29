@@ -2,7 +2,7 @@
   <strong>🇬🇧 English</strong> · <strong><a href="#简体中文">🇨🇳 简体中文</a></strong> · <strong><a href="#繁體中文">🇭🇰 繁體中文</a></strong>
 </p>
 
-<h1 align="center">📝 Quiz Master v1.0.2</h1>
+<h1 align="center">📝 Quiz Master v1.1.0</h1>
 
 <p align="center">
   <em>A lightweight, feature-rich quiz web application with AI-powered parsing, reading comprehension mode, and smart annotation tools.</em><br>
@@ -19,7 +19,7 @@
 
 <p align="center">
   🔗 <strong><a href="https://quiz-app-production-9e7f.up.railway.app">🌐 Live → quiz-app-production-9e7f.up.railway.app</a></strong><br>
-  <sub>🚀 v1.0.2 · 托管于 Railway · PostgreSQL 数据库</sub>
+  <sub>🚀 v1.1.0 · 托管于 Railway · PostgreSQL 数据库</sub>
 </p>
 
 <hr>
@@ -113,6 +113,8 @@ Required Railway Variables:
 
 | Version | Highlights |
 |---------|-----------|
+| **v1.1.0** | 🗄️ **Banks stored in PostgreSQL!** No more JSON files — data persists across Railway redeploys. Unified version number via `version.py`. |
+| **v1.0.2** | 📧 **Email verification working!** Custom domain + Resend API. Admin panel (user management / stats cards). Database auto-migration for `is_admin` column. Bug fix: switched from `urllib` to `requests` for Resend API. |
 | **v1.0.0** | 🎉 **Official release!** Railway deployment + PostgreSQL. Security overhaul: SECRET_KEY enforcement, server-side delete auth, login rate limiting (5/IP/5min), verification code rate limiting (3/email/10min), session protection "strong". UX: unified splash component, modal confirm dialogs, password strength indicator, stable option shuffle (non-resetting), fixed 7-day chart date matching. Performance: bank list cache (3s TTL). Bug fixes: reading mode now writes history. |
 | **v0.9.0** | Account system: register with email verification, login/logout, guest mode, forgot password, user center (stats/favorites/wrong book/history/settings), bilingual CN/EN, personal info edit, duplicate password confirmation, login redirect protection |
 | **v0.8.0** | Scrollable answer sheet, submit button in top bar, delete password, custom exam duration, announcement banner |
@@ -130,7 +132,7 @@ Required Railway Variables:
 
 <h2 id="简体中文">🇨🇳 简体中文</h2>
 
-<h1 align="center">📝 刷题通 (Quiz Master) v1.0.0</h1>
+<h1 align="center">📝 刷题通 (Quiz Master) {{ VERSION_NAME }}</h1>
 
 <p align="center">
   <em>🎉 正式版发布 · 安全加固 · Railway 托管 · PostgreSQL 数据库</em>
@@ -199,6 +201,7 @@ Railway 环境变量要求同上 English 部分。
 
 | 版本 | 内容 |
 |------|------|
+| **v1.1.0** | 🗄️ **题库持久化到 PostgreSQL！** 新增 `QuestionBank` 表，题库不再依赖 `data/*.json` 文件，Railway Redeploy 不再丢数据。新增 `version.py` 统一版本号管理，所有模板通过 `{{ VERSION }}` 引用。 |
 | **v1.0.2** | 📧 **邮箱验证码打通！** 自定义域名 `quizmasterprogram.top` + Resend API 发信。管理员后台（`/admin`页面：用户管理/统计卡片/重置密码/删除）。数据库自动迁移 `is_admin` 列。Bug 修复：Railway 上 `urllib` 发 Resend 403 换 `requests` 解决、`DELETE_PASSWORD` 安全加固、考试倒计时 alert 改 Toast。 |
 | **v1.0.1** | 🛡️ **用户数据云端同步！** 登录用户的错题本、收藏、学习记录自动备份到服务器（PostgreSQL），换设备登录可恢复。新增 Sync API（9 个端点，CSRF 防护）。UI：下拉菜单展开动画（opacity+transform）、成绩分享保存为 PNG 图片（html2canvas 按需加载）。体验：上传题库新增"仅上传"模式、"不跳转"选项。Bug 修复：彻底解决删除错题/收藏/记录后刷新又回弹的问题（单向同步策略，本地为权威源）。 |
 | **v1.0.0** | 🎉 **正式版发布！** Railway + PostgreSQL 部署。安全大升级：SECRET_KEY 强制、服务端删除鉴权、登录限流(5次/IP/5分)、验证码限流(3次/邮箱/10分)、会话保护 strong。UX：统一启动画面、模态弹窗、密码强度条、稳定选项乱序、7日图表修复。性能：题库列表缓存(3秒)。Bug 修复：阅读模式写入历史。 |
@@ -218,7 +221,7 @@ Railway 环境变量要求同上 English 部分。
 
 <h2 id="繁體中文">🇭🇰 繁體中文</h2>
 
-<h1 align="center">📝 刷題通 (Quiz Master) v1.0.2</h1>
+<h1 align="center">📝 刷題通 (Quiz Master) v1.1.0</h1>
 
 <p align="center">
   <em>正式版發佈 · 安全加固 · Railway 託管 · PostgreSQL 數據庫</em>
@@ -255,5 +258,5 @@ python3 app.py
 <p align="center">
   <a href="https://github.com/PengjinHao-cell/Quiz-App">📦 GitHub</a> ·
   <a href="https://quiz-app-production-9e7f.up.railway.app">🌐 Live Demo</a><br>
-  <sub>Made with ❤️ by PengjinHao · © 2026 Quiz Master · v1.0.2</sub>
+  <sub>Made with ❤️ by PengjinHao · © 2026 Quiz Master · v1.1.0</sub>
 </p>

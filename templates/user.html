@@ -389,7 +389,7 @@
                 <option value="en" ${USER_LANG==='en'?'selected':''}>${t("langEn")}</option>
             </select><span class="settings-hint">${USER_LANG==='en'?'Reload to take effect':'切换后刷新页面生效'}</span></div>`;
 
-            html += `<div style="margin-top:24px;padding-top:20px;border-top:1px solid #e2e8f0;font-size:0.8rem;color:#94a3b8;">Quiz Master v1.0.2</div>`;
+            html += `<div style="margin-top:24px;padding-top:20px;border-top:1px solid #e2e8f0;font-size:0.8rem;color:#94a3b8;">Quiz Master {{ VERSION_NAME }}</div>`;
             container.innerHTML = html;
         }
 
