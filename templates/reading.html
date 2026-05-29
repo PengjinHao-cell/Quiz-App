@@ -145,8 +145,8 @@
             passageCount: {{ passage_count }}
         };
     </script>
-    <script src="{{ url_for('static', filename='utils.js', v=2) }}"></script>
-    <script src="{{ url_for('static', filename='reading.js', v=2) }}"></script>
+    <script src="{{ url_for('static', filename='utils.js', v=4) }}"></script>
+    <script src="{{ url_for('static', filename='reading.js', v=4) }}"></script>
 
 <script>
 /**
@@ -343,6 +343,8 @@
 
     // 初始化时恢复标注
     loadHighlights();
+
+    window._IS_LOGGED_IN = {% if current_user.is_authenticated %}true{% else %}false{% endif %};
 })();
 </script>
 </body>

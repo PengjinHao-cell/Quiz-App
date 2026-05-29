@@ -241,6 +241,9 @@ function saveReadingHistory(correct, total, score) {
     history.unshift(record);
     if (history.length > 50) history = history.slice(0, 50);
     localStorage.setItem("quizHistory", JSON.stringify(history));
+
+    // 登录用户同步到服务器
+    syncHistoryToServer(record);
 }
 
 function updateReadingProgress() {

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if lang == 'en' %}Register{% else %}注册{% endif %} - Quiz Master</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=4) }}">
     <style>
         .auth-wrap { max-width: 400px; margin: 60px auto; padding: 32px; background: #fff; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); text-align: center; }
         .auth-wrap h1 { font-size: 1.5rem; margin-bottom: 8px; color: #2d3748; }
@@ -68,7 +68,7 @@
             <a href="/set-lang/zh" style="display:inline-block;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:0.8rem;{% if lang=='zh' %}background:#3b82f6;color:#fff;{% else %}background:#e2e8f0;color:#94a3b8;{% endif %}margin-right:4px;transition:all 0.2s;">中文</a>
             <a href="/set-lang/en" style="display:inline-block;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:0.8rem;{% if lang=='en' %}background:#3b82f6;color:#fff;{% else %}background:#e2e8f0;color:#94a3b8;{% endif %}transition:all 0.2s;">EN</a>
         </div>
-    <script src="{{ url_for('static', filename='utils.js', v=2) }}"></script>
+    <script src="{{ url_for('static', filename='utils.js', v=4) }}"></script>
     <script>
         document.addEventListener("DOMContentLoaded", () => setTimeout(dismissSplash, 400));
 

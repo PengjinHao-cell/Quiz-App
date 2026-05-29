@@ -47,6 +47,7 @@ function saveToHistory(data, quizMode, bankName) {
         correct: data.correct,
         total: data.total,
         time: new Date().toLocaleString("zh-CN", { hourCycle: "h23" }),
+        details: data.details || [],
     };
 
     let history = [];
@@ -64,6 +65,9 @@ function saveToHistory(data, quizMode, bankName) {
     }
 
     localStorage.setItem("quizHistory", JSON.stringify(history));
+
+    // 登录用户同步到服务器
+    syncHistoryToServer(record);
 }
 
 // 存储当前结果供分享使用
@@ -222,5 +226,95 @@ function showShareMsg(msg) {
     setTimeout(() => {
         el.style.display = "none";
     }, 3000);
+}
+
+// ---------- 分享为图片（按需加载 html2canvas） ----------
+
+function saveAsImage() {
+    if (!_lastResult) return;
+
+    // 动态加载 html2canvas（不阻塞页面初始化）
+    if (typeof html2canvas === "undefined") {
+        const btn = document.querySelector(".result-actions .btn-primary:last-child");
+        if (btn) { btn.disabled = true; btn.textContent = "⏳ 加载中..."; }
+
+        const script = document.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+        script.onload = () => {
+            if (btn) { btn.disabled = false; btn.textContent = "📸 保存为图片"; }
+            _doSaveAsImage();
+        };
+        script.onerror = () => {
+            if (btn) { btn.disabled = false; btn.textContent = "📸 保存为图片"; }
+            showShareMsg("❌ 图片库加载失败，请检查网络后重试");
+        };
+        document.head.appendChild(script);
+        return;
+    }
+
+    _doSaveAsImage();
+}
+
+function _doSaveAsImage() {
+    const { data, quizMode, bankName } = _lastResult;
+    const { total, correct, score } = data;
+
+    let level, levelClass;
+    if (score >= 90) { level = "优秀 🎉"; levelClass = "#38a169"; }
+    else if (score >= 70) { level = "良好 👍"; levelClass = "#3182ce"; }
+    else if (score >= 60) { level = "及格 💪"; levelClass = "#d69e2e"; }
+    else { level = "需加强 📚"; levelClass = "#e53e3e"; }
+
+    const modeText = quizMode === "exam" ? "考试模式" : "练习模式";
+
+    const body = document.getElementById("share-card-body");
+    body.innerHTML = `
+        <div style="text-align:center;margin-bottom:16px;">
+            <div style="font-size:3rem;font-weight:800;color:${levelClass};">
+                ${score}<span style="font-size:1.2rem;color:#94a3b8;"> 分</span>
+            </div>
+            <div style="font-size:1.1rem;font-weight:600;color:#2d3748;margin-top:4px;">${level}</div>
+        </div>
+        <div style="background:#f7fafc;border-radius:12px;padding:16px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                <span style="color:#64748b;">题库</span>
+                <span style="color:#2d3748;font-weight:600;">${escapeHTML(bankName || "未知")}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                <span style="color:#64748b;">模式</span>
+                <span style="color:#2d3748;font-weight:600;">${modeText}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+                <span style="color:#64748b;">正确</span>
+                <span style="color:#2d3748;font-weight:600;">${correct} / ${total} 题</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+                <span style="color:#64748b;">正确率</span>
+                <span style="color:#2d3748;font-weight:600;">${total > 0 ? Math.round(correct / total * 100) : 0}%</span>
+            </div>
+        </div>
+        <div style="margin-top:12px;background:#e2e8f0;border-radius:8px;height:10px;overflow:hidden;">
+            <div style="height:100%;border-radius:8px;background:${levelClass};width:${total > 0 ? Math.round(correct / total * 100) : 0}%;transition:width 0.5s;"></div>
+        </div>
+    `;
+
+    const card = document.getElementById("share-card");
+
+    setTimeout(() => {
+        html2canvas(card, {
+            scale: 2,
+            backgroundColor: "#ffffff",
+            useCORS: true,
+            logging: false,
+        }).then((canvas) => {
+            const link = document.createElement("a");
+            link.download = `quiz-result-${Date.now()}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            showShareMsg("✅ 成绩图片已保存！");
+        }).catch(() => {
+            showShareMsg("❌ 图片生成失败，请使用复制文本分享");
+        });
+    }, 100);
 }
 

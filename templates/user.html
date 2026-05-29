@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if lang == 'en' %}User Center{% else %}用户中心{% endif %} - 刷题通</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=4) }}">
     <style>
         .user-layout { display: flex; gap: 24px; align-items: flex-start; min-height: 70vh; }
         .user-sidebar { width: 200px; flex-shrink: 0; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 12px 0; position: sticky; top: 24px; }
@@ -66,7 +66,7 @@
         {% endif %}
     </div>
 
-    <script src="{{ url_for('static', filename='utils.js', v=3) }}"></script>
+    <script src="{{ url_for('static', filename='utils.js', v=4) }}"></script>
     <script>
         // 全局错误捕获
         window.onerror = function(msg, url, line) {
@@ -185,6 +185,8 @@
                 const book = getFavorites();
                 delete book[key];
                 saveFavorites(book);
+                _markDeleted("fav", key);
+                deleteFavoriteFromServer(key);
             }, 50);
         }
         function clearAllFavorites() {
@@ -195,6 +197,7 @@
             content.style.transform = "translateY(-10px)";
             setTimeout(() => {
                 localStorage.removeItem(FAVORITE_KEY);
+                clearFavoritesOnServer();
                 content.style.transition = "none";
                 content.style.opacity = "";
                 content.style.transform = "";
@@ -254,6 +257,7 @@
             content.style.transform = "translateY(-10px)";
             setTimeout(() => {
                 localStorage.removeItem(WRONG_BOOK_KEY);
+                clearWrongBookOnServer();
                 content.style.transition = "none";
                 content.style.opacity = "";
                 content.style.transform = "";
@@ -302,14 +306,16 @@
                 row.style.marginTop = "0";
                 row.style.marginBottom = "0";
                 row.style.borderWidth = "0";
-                // 动画结束后移除 DOM + 更新数据，下方元素自然上移
                 setTimeout(() => {
                     row.remove();
                     try {
                         let history = JSON.parse(localStorage.getItem("quizHistory") || "[]");
                         if (idx >= 0 && idx < history.length) {
+                            const deletedId = history[idx].id;
                             history.splice(idx, 1);
                             localStorage.setItem("quizHistory", JSON.stringify(history));
+                            _markDeleted("hist", deletedId);
+                            deleteHistoryFromServer(deletedId);
                         }
                     } catch(_) {}
                 }, 350);
@@ -323,6 +329,7 @@
             content.style.transform = "translateY(-10px)";
             setTimeout(() => {
                 localStorage.removeItem("quizHistory");
+                clearHistoryOnServer();
                 content.style.transition = "none";
                 content.style.opacity = "";
                 content.style.transform = "";

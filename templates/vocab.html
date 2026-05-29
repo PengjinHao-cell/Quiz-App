@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>背单词 - 刷题通</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=4) }}">
     <style>
         .vocab-header { display: flex; align-items: center; gap: 16px; background: white; border-radius: 12px; padding: 16px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
         .vocab-header-left { display: flex; align-items: center; gap: 12px; }
@@ -65,7 +65,7 @@
         </main>
     </div>
 
-    <script src="{{ url_for('static', filename='utils.js', v=2) }}"></script>
+    <script src="{{ url_for('static', filename='utils.js', v=4) }}"></script>
     <script>
         let words = [];
         let currentIndex = 0;

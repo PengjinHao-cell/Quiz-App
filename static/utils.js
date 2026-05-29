@@ -113,6 +113,8 @@ function addToWrongBook(question, userAnswer, bankId, bankName) {
     }
 
     saveWrongBook(book);
+    // 登录用户同步到服务器
+    syncWrongBookToServer();
 }
 
 /** 从错题本移除一道题 */
@@ -120,6 +122,10 @@ function removeFromWrongBook(key) {
     const book = getWrongBook();
     delete book[key];
     saveWrongBook(book);
+    // 加入删除黑名单，防止刷新后被服务器加回来
+    _markDeleted("wrong", key);
+    // 登录用户同步到服务器
+    deleteWrongBookFromServer(key);
 }
 
 /** 按题库分组统计错题数 */
@@ -167,6 +173,10 @@ function toggleFavorite(question, bankId, bankName) {
     if (book[key]) {
         delete book[key];
         saveFavorites(book);
+        // 加入删除黑名单
+        _markDeleted("fav", key);
+        // 登录用户同步到服务器
+        deleteFavoriteFromServer(key);
         return false;
     } else {
         book[key] = {
@@ -180,6 +190,8 @@ function toggleFavorite(question, bankId, bankName) {
             added_time: new Date().toLocaleString("zh-CN"),
         };
         saveFavorites(book);
+        // 登录用户同步到服务器
+        syncFavoritesToServer();
         return true;
     }
 }
@@ -207,4 +219,201 @@ function groupFavorites() {
         groups[gKey].questions.push({ key, ...item });
     }
     return groups;
+}
+
+// ========== 删除黑名单（防止服务器数据回弹） ==========
+// 本地删除了但服务器还没同步完的 key，刷新时不会从服务器加回来
+const _DELETED_KEYS_KEY = "_deletedSyncKeys";
+
+function _getDeletedKeys() {
+    try {
+        return JSON.parse(localStorage.getItem(_DELETED_KEYS_KEY)) || {};
+    } catch { return {}; }
+}
+
+function _saveDeletedKeys(keys) {
+    // 清理超过1小时的旧记录
+    const now = Date.now();
+    for (const [k, t] of Object.entries(keys)) {
+        if (now - t > 3600000) delete keys[k];
+    }
+    localStorage.setItem(_DELETED_KEYS_KEY, JSON.stringify(keys));
+}
+
+function _markDeleted(type, key) {
+    const keys = _getDeletedKeys();
+    keys[`${type}:${key}`] = Date.now();
+    _saveDeletedKeys(keys);
+}
+
+function _isDeleted(type, key) {
+    const keys = _getDeletedKeys();
+    return `${type}:${key}` in keys;
+}
+
+function _unmarkDeleted(type, key) {
+    const keys = _getDeletedKeys();
+    delete keys[`${type}:${key}`];
+    _saveDeletedKeys(keys);
+}
+
+// ========== 云端同步（登录用户自动推送到服务器） ==========
+
+/**
+ * 检测当前用户是否已登录（由模板注入的全局变量判断）
+ */
+function isLoggedIn() {
+    return typeof window._IS_LOGGED_IN !== "undefined" && window._IS_LOGGED_IN === true;
+}
+
+/**
+ * 带 CSRF 防护头的 fetch 封装（fire-and-forget，不关心结果）
+ */
+function _syncFetch(url, options) {
+    options.headers = options.headers || {};
+    options.headers["X-Requested-By"] = "QuizApp";
+    fetch(url, options).catch(() => {});
+}
+
+/**
+ * 带 CSRF 防护头的 fetch（关心结果）
+ */
+function _syncFetchResult(url, options) {
+    options.headers = options.headers || {};
+    options.headers["X-Requested-By"] = "QuizApp";
+    return fetch(url, options);
+}
+
+/**
+ * 同步错题本到服务器
+ */
+function syncWrongBookToServer() {
+    if (!isLoggedIn()) return;
+    const book = getWrongBook();
+    const items = Object.entries(book).map(([key, item]) => ({
+        question_key: key,
+        ...item,
+        question_options: JSON.stringify(item.question_options || {}),
+    }));
+    if (items.length === 0) return;
+    _syncFetch("/api/sync/wrong-book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+    });
+}
+
+/**
+ * 从服务器删除指定错题
+ */
+function deleteWrongBookFromServer(questionKey) {
+    if (!isLoggedIn()) return;
+    _syncFetchResult("/api/sync/wrong-book", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question_key: questionKey }),
+    }).then(() => _unmarkDeleted("wrong", questionKey))
+    .catch(() => {});
+}
+
+/**
+ * 清空服务器上的全部错题
+ */
+function clearWrongBookOnServer() {
+    if (!isLoggedIn()) return;
+    _syncFetch("/api/sync/wrong-book/clear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+    });
+}
+
+/**
+ * 同步收藏到服务器
+ */
+function syncFavoritesToServer() {
+    if (!isLoggedIn()) return;
+    const book = getFavorites();
+    const items = Object.entries(book).map(([key, item]) => ({
+        question_key: key,
+        ...item,
+        question_options: JSON.stringify(item.question_options || {}),
+    }));
+    if (items.length === 0) return;
+    _syncFetch("/api/sync/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+    });
+}
+
+/**
+ * 清空服务器全部收藏
+ */
+function clearFavoritesOnServer() {
+    if (!isLoggedIn()) return;
+    _syncFetch("/api/sync/favorites/clear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+    });
+}
+
+/**
+ * 从服务器取消收藏
+ */
+function deleteFavoriteFromServer(questionKey) {
+    if (!isLoggedIn()) return;
+    _syncFetchResult("/api/sync/favorites", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question_key: questionKey }),
+    }).then(() => _unmarkDeleted("fav", questionKey))
+    .catch(() => {});
+}
+
+/**
+ * 同步学习记录到服务器
+ */
+function syncHistoryToServer(record) {
+    if (!isLoggedIn()) return;
+    const answersJson = record.answers_json || (record.details ? JSON.stringify(record.details) : "{}");
+    const item = {
+        id: record.id,
+        bank_id: record.bank_id || "",
+        bank_name: record.bank_name || "",
+        mode: record.mode || "practice",
+        score: record.score || 0,
+        correct: record.correct || 0,
+        total: record.total || 0,
+        answers_json: answersJson,
+        time: record.time || new Date().toLocaleString("zh-CN", { hourCycle: "h23" }),
+    };
+    _syncFetch("/api/sync/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: [item] }),
+    });
+}
+
+/**
+ * 从服务器删除单条学习记录
+ */
+function deleteHistoryFromServer(recordId) {
+    if (!isLoggedIn()) return;
+    _syncFetchResult("/api/sync/history", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: recordId }),
+    }).then(() => _unmarkDeleted("hist", recordId))
+    .catch(() => {});
+}
+
+/**
+ * 清空服务器全部学习记录
+ */
+function clearHistoryOnServer() {
+    if (!isLoggedIn()) return;
+    _syncFetch("/api/sync/history/clear", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+    });
 }
