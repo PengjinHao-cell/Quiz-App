@@ -861,11 +861,14 @@ def api_rename_bank(bank_id):
     if len(new_name) > 100:
         return jsonify({"error": "名称过长"}), 400
 
+    # 访客不可重命名
+    if not current_user.is_authenticated:
+        return jsonify({"error": "请登录后重命名题库"}), 403
     # 检查是否官方题库（仅管理员可重命名）
     qb = QuestionBank.query.get(bank_id)
     if not qb:
         return jsonify({"error": "题库不存在"}), 404
-    if qb.is_official and not (current_user.is_authenticated and getattr(current_user, "is_admin", False)):
+    if qb.is_official and not getattr(current_user, "is_admin", False):
         return jsonify({"error": "官方题库不可重命名"}), 403
 
     # 检查新名称是否与其他题库重名
@@ -887,6 +890,10 @@ def api_delete_bank(bank_id):
     - 普通用户：需输入题库名称确认（双重认证）
     """
     data = request.get_json() or {}
+    # 访客不可删除
+    if not current_user.is_authenticated:
+        return jsonify({"error": "请登录后删除题库"}), 403
+
     qb = QuestionBank.query.get(bank_id)
     if not qb:
         return jsonify({"error": "题库不存在"}), 404
