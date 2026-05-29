@@ -473,9 +473,10 @@
             if (!file) return;
             const formData = new FormData();
             formData.append("file", file);
+            formData.append("mode", "direct");
             const btn = document.getElementById("official-upload-btn");
             btn.disabled = true; btn.textContent = "⏳ 上传中...";
-            fetch("/api/admin/upload-official", {
+            fetch("/upload", {
                 method: "POST",
                 body: formData,
             })

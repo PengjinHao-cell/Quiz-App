@@ -266,6 +266,10 @@ function isLoggedIn() {
     return typeof window._IS_LOGGED_IN !== "undefined" && window._IS_LOGGED_IN === true;
 }
 
+function isAdmin() {
+    return typeof window._IS_ADMIN !== "undefined" && window._IS_ADMIN === true;
+}
+
 /**
  * 带 CSRF 防护头的 fetch 封装（fire-and-forget，不关心结果）
  */
