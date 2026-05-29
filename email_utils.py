@@ -105,9 +105,17 @@ def send_verify_email(to_email: str, code: str, username: str) -> bool:
         msg["To"] = to_email
         msg.attach(MIMEText(build_email_content(code, username), "html", "utf-8"))
 
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=3) as server:
-            server.login(SMTP_USER, SMTP_PASS)
-            server.sendmail(SMTP_USER, [to_email], msg.as_string())
+        if SMTP_PORT == 465:
+            # 直连 SSL（如 QQ邮箱、yeah.net）
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=3) as server:
+                server.login(SMTP_USER, SMTP_PASS)
+                server.sendmail(SMTP_USER, [to_email], msg.as_string())
+        else:
+            # STARTTLS（如 Gmail 587、SendGrid 587）
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=3) as server:
+                server.starttls()
+                server.login(SMTP_USER, SMTP_PASS)
+                server.sendmail(SMTP_USER, [to_email], msg.as_string())
 
         _global_last_sent = time.time()
         print(f"✅ 邮件发送成功: {to_email}")
