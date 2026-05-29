@@ -718,8 +718,10 @@ function startExamTimer(totalQuestions) {
         if (timeRemaining <= 0 && timeRemaining > -10) {
             clearInterval(examTimer);
             examTimer = null;
-            alert("⏰ 时间到！正在自动交卷...");
-            submitExam();
+            if (typeof showToast === "function") {
+                showToast("⏰ 时间到！正在自动交卷...", "warning");
+            }
+            setTimeout(() => submitExam(), 300);
         }
     }, 1000);
 }

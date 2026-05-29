@@ -157,8 +157,43 @@ if DATABASE_URL.startswith("postgresql"):
     except Exception as _e:
         print(f"🌐  TCP 连接到数据库失败: {_e}")
 
+def _run_migration():
+    """自动迁移：为已有数据库添加新字段"""
+    try:
+        with app.app_context():
+            engine = db.engine
+            # 检查 users 表是否有 is_admin 列
+            if DATABASE_URL.startswith("sqlite"):
+                import sqlite3
+                db_path = DATABASE_URL.replace("sqlite:///", "")
+                if not os.path.isabs(db_path):
+                    db_path = os.path.join(BASE_DIR, db_path)
+                conn = sqlite3.connect(db_path)
+                c = conn.cursor()
+                c.execute("PRAGMA table_info(users)")
+                cols = [row[1] for row in c.fetchall()]
+                if "is_admin" not in cols:
+                    c.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0")
+                    conn.commit()
+                    print("📦 迁移: 已添加 is_admin 列 (SQLite)")
+                conn.close()
+            elif DATABASE_URL.startswith("postgresql"):
+                from sqlalchemy import text
+                with engine.connect() as conn:
+                    result = conn.execute(text(
+                        "SELECT column_name FROM information_schema.columns "
+                        "WHERE table_name='users' AND column_name='is_admin'"
+                    ))
+                    if result.fetchone() is None:
+                        conn.execute(text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE"))
+                        conn.commit()
+                        print("📦 迁移: 已添加 is_admin 列 (PostgreSQL)")
+    except Exception as e:
+        print(f"⚠️  迁移检查失败（可忽略）: {e}")
+
 try:
     db.init_app(app)
+    _run_migration()
     with app.app_context():
         db.create_all()
         _init_default_admin()
@@ -801,9 +836,14 @@ def api_delete_bank(bank_id):
     pwd = data.get("password", "")
     expected = os.environ.get("DELETE_PASSWORD", "")
     if not expected:
-        # 开发环境默认密码
-        expected = "224070"
-    if pwd != expected:
+        # 未设置 DELETE_PASSWORD 时，仅管理员可删除
+        if current_user.is_authenticated and getattr(current_user, "is_admin", False):
+            expected = current_user.password_hash  # 用管理员密码哈希鉴权
+            if not current_user.check_password(pwd):
+                return jsonify({"error": "删除密码错误"}), 403
+        else:
+            return jsonify({"error": "删除密码错误"}), 403
+    elif pwd != expected:
         return jsonify({"error": "删除密码错误"}), 403
     delete_bank_files(bank_id)
     _invalidate_bank_cache()
@@ -1103,8 +1143,9 @@ def api_vocab_words():
 @app.route("/api/vocab/batch", methods=["POST"])
 def api_vocab_batch():
     """批量生成更多词汇（用 AI 扩展词库）"""
-    # TODO: 实现批量词汇生成（需提前提取 parse_with_llm 到独立模块避免自导入）
-    return jsonify({"error": "此功能开发中"}), 501
+    # 功能待实现：需先用 DeepSeek API 生成词汇并写入 vocab_cet6.json
+    # 当前返回提示信息
+    return jsonify({"error": "词汇扩展功能开发中，请先使用内置 CET-6 词库"}), 501
 
 
 # =========================== 用户数据云端同步 API ===========================
