@@ -36,6 +36,12 @@
         <div class="auth-wrap">
             <h1>📝 {% if lang == 'en' %}Register{% else %}注册{% endif %}</h1>
             <p>{% if lang == 'en' %}Create your Quiz Master account<br>Your data will be saved to the cloud.{% else %}创建你的刷题通账号<br>注册后数据将保存到云端，换设备不丢失{% endif %}</p>
+
+            <!-- 域名公告 -->
+            <div class="auth-error" style="color:#d69e2e;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:0.8rem;text-align:left;line-height:1.5;">
+                📢 {% if lang == 'en' %}Due to the domain being newly registered, QQ-based emails (e.g. @qq.com) may not receive verification codes. Please use other email addresses.{% else %}由于域名较新，暂不支持 QQ 类邮箱注册（如 @qq.com），请使用其他邮箱。{% endif %}
+            </div>
+
             <div class="auth-error" id="auth-error"></div>
             <input type="text" class="auth-field" id="username" placeholder="{% if lang == 'en' %}Username (letters & numbers){% else %}用户名（字母数字）{% endif %}" autocomplete="username" autofocus>
             <input type="email" class="auth-field" id="email" placeholder="{% if lang == 'en' %}Email{% else %}邮箱{% endif %}" autocomplete="email">
