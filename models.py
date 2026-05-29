@@ -158,3 +158,17 @@ class StudyHistory(db.Model):
             "total": self.total,
             "time": self.time_label,
         }
+
+
+class QuestionBank(db.Model):
+    """题库（存储在数据库，解决 Railway 部署丢数据问题）"""
+    __tablename__ = "question_banks"
+
+    id = db.Column(db.String(32), primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    original_filename = db.Column(db.String(256), default="")
+    upload_time = db.Column(db.String(64), default="")
+    type = db.Column(db.String(16), default="quiz")  # "quiz" or "reading"
+    language = db.Column(db.String(8), default="zh")
+    data_json = db.Column(db.Text, default="{}")  # 完整题库 JSON
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
