@@ -389,6 +389,18 @@
                 <option value="en" ${USER_LANG==='en'?'selected':''}>${t("langEn")}</option>
             </select><span class="settings-hint">${USER_LANG==='en'?'Reload to take effect':'切换后刷新页面生效'}</span></div>`;
 
+            // 日志与反馈
+            html += `<div style="margin-top:20px;padding-top:20px;border-top:1px solid #e2e8f0;">
+                <h3 style="font-size:1rem;color:#2d3748;margin-bottom:12px;">📋 ${USER_LANG==='en'?'Logs & Feedback':'日志与反馈'}</h3>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <a href="/api/logs/user/export" class="btn btn-secondary btn-small" style="font-size:0.8rem;text-decoration:none;" download>📥 ${USER_LANG==='en'?'Export My Logs':'导出我的日志'}</a>
+                    <button class="btn btn-small btn-primary" style="font-size:0.8rem;" onclick="showReportModal()">📮 ${USER_LANG==='en'?'Report Issue':'报告问题'}</button>
+                </div>
+                <div style="margin-top:12px;font-size:0.75rem;color:#94a3b8;">
+                    ${USER_LANG==='en'?'Logs help us debug issues. Export your logs and send them to the admin, or click "Report Issue" to send directly.':'日志帮助排查问题。你可以导出日志自行查看，或点击"报告问题"直接发送给管理员。'}
+                </div>
+            </div>`;
+
             html += `<div style="margin-top:24px;padding-top:20px;border-top:1px solid #e2e8f0;font-size:0.8rem;color:#94a3b8;">Quiz Master {{ VERSION_NAME }}</div>`;
             container.innerHTML = html;
         }
@@ -497,6 +509,65 @@
         function switchLang() {
             const val = document.getElementById("setting-lang").value;
             window.location.href = `/user?lang=${val}`;
+        }
+
+        // ---------- 报告问题 ----------
+        function showReportModal() {
+            const overlay = document.createElement("div");
+            overlay.className = "modal-overlay";
+            overlay.id = "report-modal";
+            overlay.innerHTML = `
+                <div class="modal-box" style="max-width:450px;">
+                    <h3 style="margin-bottom:16px;">📮 ${USER_LANG==='en'?'Report Issue':'报告问题'}</h3>
+                    <p style="color:#64748b;font-size:0.85rem;margin-bottom:12px;">${USER_LANG==='en'?'Describe the issue you encountered. Your recent logs will be attached automatically.':'请描述你遇到的问题，最近的日志会自动附带。'}</p>
+                    <textarea id="report-desc" style="width:100%;padding:12px;border:2px solid #e2e8f0;border-radius:10px;font-size:0.9rem;min-height:100px;box-sizing:border-box;font-family:inherit;" placeholder="${USER_LANG==='en'?'e.g. Uploading a PDF bank shows success but no questions appear...':'例如：上传 PDF 题库后显示成功但没有题目出现...'}"></textarea>
+                    <div id="report-err" style="color:#e53e3e;font-size:0.8rem;min-height:1.2em;margin-top:4px;"></div>
+                    <div class="modal-actions" style="margin-top:12px;">
+                        <button style="background:#e2e8f0;color:#64748b;" onclick="closeModal('report-modal')">${USER_LANG==='en'?'Cancel':'取消'}</button>
+                        <button id="report-submit-btn" style="background:#e53e3e;color:#fff;" onclick="submitReport()">📮 ${USER_LANG==='en'?'Send Report':'发送报告'}</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => document.getElementById("report-desc").focus(), 200);
+        }
+
+        function submitReport() {
+            const desc = document.getElementById("report-desc").value.trim();
+            const errEl = document.getElementById("report-err");
+            const btn = document.getElementById("report-submit-btn");
+            if (!desc || desc.length < 10) { errEl.textContent = USER_LANG==='en'?'Please describe the issue (min 10 characters)':'请详细描述问题（至少10个字符）'; return; }
+            btn.disabled = true; btn.textContent = USER_LANG==='en'?'Sending...':'发送中...';
+            fetch("/api/logs/user/report", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ description: desc }),
+            })
+                .then(async res => {
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+                    closeModal("report-modal");
+                    showToast(data.message || "✅ 已发送", "success");
+                })
+                .catch(err => {
+                    errEl.textContent = "❌ " + err.message;
+                    btn.disabled = false; btn.textContent = USER_LANG==='en'?'Send Report':'发送报告';
+                });
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) { el.style.opacity = "0"; setTimeout(() => el.remove(), 200); }
+        }
+
+        function showToast(msg, type) {
+            const existing = document.querySelector(".toast-fixed");
+            if (existing) existing.remove();
+            const el = document.createElement("div");
+            el.className = `toast-fixed toast-${type}`;
+            el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => { el.style.opacity = "0"; el.style.transition = "opacity 0.3s"; setTimeout(() => el.remove(), 350); }, 3000);
         }
 
         // ---------- 初始化 ----------

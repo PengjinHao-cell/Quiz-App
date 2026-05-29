@@ -74,6 +74,7 @@
         <div style="display:flex;gap:8px;margin-bottom:20px;">
             <button class="btn btn-primary" id="tab-users-btn" onclick="switchAdminTab('users')" style="font-size:0.85rem;">👥 用户管理</button>
             <button class="btn btn-secondary" id="tab-banks-btn" onclick="switchAdminTab('banks')" style="font-size:0.85rem;">📚 题库管理</button>
+            <button class="btn btn-secondary" id="tab-logs-btn" onclick="switchAdminTab('logs')" style="font-size:0.85rem;">📋 运行日志</button>
         </div>
 
         <div id="admin-tab-users">
@@ -109,12 +110,34 @@
         </div>
     </div>
 
+    <!-- 运行日志 -->
+    <div id="admin-tab-logs" style="display:none;">
+        <div class="admin-table-wrap">
+            <div style="padding:12px 16px;border-bottom:1px solid #e2e8f0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <span style="font-size:0.85rem;color:#64748b;font-weight:600;">📋 运行日志</span>
+                <select id="log-level-filter" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:0.78rem;" onchange="loadLogs()">
+                    <option value="">全部级别</option>
+                    <option value="error">错误</option>
+                    <option value="warning">警告</option>
+                    <option value="info">信息</option>
+                </select>
+                <select id="log-source-filter" style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:0.78rem;" onchange="loadLogs()">
+                    <option value="">全部来源</option>
+                </select>
+                <button class="btn btn-small btn-secondary" onclick="loadLogs()" style="font-size:0.75rem;">🔄 刷新</button>
+            </div>
+            <div id="log-list" style="max-height:500px;overflow-y:auto;font-size:0.8rem;font-family:monospace;padding:4px 0;">
+                <div style="padding:20px;text-align:center;color:#94a3b8;">加载中...</div>
+            </div>
+        </div>
+    </div>
+
     <!-- 题库管理 -->
     <div id="admin-tab-banks" style="display:none;">
         <div class="admin-table-wrap" style="margin-bottom:20px;">
             <div style="padding:16px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
                 <h3 style="font-size:1rem;color:#2d3748;margin:0;">📚 所有题库</h3>
-                <button class="btn btn-primary btn-small" onclick="document.getElementById('official-upload-input').click()" style="font-size:0.8rem;">📤 上传并标记为官方</button>
+                <button class="btn btn-primary btn-small" id="official-upload-btn" onclick="document.getElementById('official-upload-input').click()" style="font-size:0.8rem;">📤 上传并标记为官方</button>
                 <input type="file" id="official-upload-input" accept=".pdf,.docx,.txt" hidden onchange="uploadOfficialBank(this)">
             </div>
             <table class="admin-table">
@@ -344,12 +367,61 @@
         function switchAdminTab(tab) {
             document.getElementById("admin-tab-users").style.display = tab === "users" ? "block" : "none";
             document.getElementById("admin-tab-banks").style.display = tab === "banks" ? "block" : "none";
+            document.getElementById("admin-tab-logs").style.display = tab === "logs" ? "block" : "none";
             const btnU = document.getElementById("tab-users-btn");
             const btnB = document.getElementById("tab-banks-btn");
+            const btnL = document.getElementById("tab-logs-btn");
             btnU.className = tab === "users" ? "btn btn-primary" : "btn btn-secondary";
             btnB.className = tab === "banks" ? "btn btn-primary" : "btn btn-secondary";
+            btnL.className = tab === "logs" ? "btn btn-primary" : "btn btn-secondary";
             if (tab === "banks") loadBanks();
+            if (tab === "logs") loadLogs();
         }
+
+        // ---------- 运行日志 ----------
+        async function loadLogs() {
+            const list = document.getElementById("log-list");
+            const level = document.getElementById("log-level-filter").value;
+            const source = document.getElementById("log-source-filter").value;
+            let url = "/api/admin/logs?limit=300";
+            if (level) url += "&level=" + level;
+            if (source) url += "&source=" + source;
+            try {
+                const res = await fetch(url);
+                if (!res.ok) { list.innerHTML = '<div style="padding:20px;text-align:center;color:#e53e3e;">❌ 加载失败</div>'; return; }
+                const data = await res.json();
+
+                // 填充来源筛选
+                const sourceSelect = document.getElementById("log-source-filter");
+                const currentSource = sourceSelect.value;
+                sourceSelect.innerHTML = '<option value="">全部来源</option>';
+                (data.sources || []).forEach(s => {
+                    sourceSelect.innerHTML += `<option value="${escapeHTML(s)}" ${s === currentSource ? 'selected' : ''}>${escapeHTML(s)}</option>`;
+                });
+
+                const logs = data.logs || [];
+                if (logs.length === 0) { list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;">暂无日志</div>'; return; }
+                let html = "";
+                logs.forEach(l => {
+                    const levelColors = {error: "#e53e3e", warning: "#d69e2e", info: "#3182ce"};
+                    const color = levelColors[l.level] || "#94a3b8";
+                    const userInfo = l.username ? `${l.username}${l.user_id ? `(#${l.user_id})` : ''}` : '';
+                    html += `<div style="padding:6px 14px;border-bottom:1px solid #f1f5f9;display:flex;gap:8px;align-items:flex-start;">
+                        <span style="color:${color};font-weight:600;flex-shrink:0;width:48px;">${l.level.toUpperCase()}</span>
+                        <span style="color:#94a3b8;flex-shrink:0;width:130px;">${l.time || '--'}</span>
+                        <span style="color:#64748b;flex-shrink:0;width:70px;">${escapeHTML(l.source)}</span>
+                        <span style="color:#2d3748;flex:1;">${escapeHTML(l.message)}</span>
+                        ${userInfo ? `<span style="color:#94a3b8;flex-shrink:0;font-size:0.75rem;">${escapeHTML(userInfo)}</span>` : ''}
+                    </div>`;
+                    if (l.detail) {
+                        html += `<div style="padding:2px 14px 6px 200px;color:#94a3b8;font-size:0.75rem;border-bottom:1px solid #f1f5f9;">${escapeHTML(l.detail)}</div>`;
+                    }
+                });
+                list.innerHTML = html;
+            } catch(e) { list.innerHTML = '<div style="padding:20px;text-align:center;color:#e53e3e;">❌ 网络错误</div>'; }
+        }
+
+
 
         // ---------- 题库管理 ----------
         async function loadBanks() {
@@ -401,7 +473,7 @@
             if (!file) return;
             const formData = new FormData();
             formData.append("file", file);
-            const btn = document.querySelector('[onclick*="official-upload-input"]');
+            const btn = document.getElementById("official-upload-btn");
             btn.disabled = true; btn.textContent = "⏳ 上传中...";
             fetch("/api/admin/upload-official", {
                 method: "POST",
