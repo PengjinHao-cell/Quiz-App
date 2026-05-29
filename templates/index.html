@@ -278,6 +278,15 @@
 
 
 
+        <!-- 管理后台入口（仅管理员可见） -->
+        {% if current_user.is_authenticated and current_user.is_admin %}
+        <div style="text-align:center;margin-bottom:12px;">
+            <a href="{{ url_for('admin_page') }}" class="btn btn-secondary" style="padding:8px 24px;border-radius:10px;font-size:0.85rem;">
+                ⚙️ 管理后台
+            </a>
+        </div>
+        {% endif %}
+
         <!-- 页脚 -->
         <footer class="app-footer">
             <div class="footer-item">📧 联系作者：<a href="mailto:QuizMasterProgram@yeah.net">QuizMasterProgram@yeah.net</a> — 有问题欢迎交流</div>
