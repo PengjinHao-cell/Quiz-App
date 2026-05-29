@@ -1498,7 +1498,14 @@ def api_admin_upload_official():
     try:
         parsed = parse_file(filepath, original_filename)
     except Exception as e:
+        if os.path.exists(filepath):
+            os.remove(filepath)
         return jsonify({"error": f"解析失败: {str(e)}"}), 500
+
+    if not parsed:
+        if os.path.exists(filepath):
+            os.remove(filepath)
+        return jsonify({"error": "文件中未检测到题目，请检查文件格式"}), 400
 
     if isinstance(parsed, dict) and parsed.get("type") == "reading":
         lang = parsed.get("language", "zh")
