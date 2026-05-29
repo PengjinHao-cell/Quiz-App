@@ -148,6 +148,41 @@ def store_code(email: str, code: str):
     }
 
 
+def send_error_report(username: str, email: str, description: str, log_text: str) -> bool:
+    """发送用户问题报告到管理员邮箱"""
+    if not RESEND_API_KEY:
+        return False
+
+    html = f"""<html><body style="font-family:-apple-system,'Microsoft YaHei',sans-serif;padding:20px;">
+    <h2 style="color:#e53e3e;">📮 用户问题报告</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:0.9rem;">
+        <tr><td style="padding:8px;background:#f7fafc;font-weight:600;">用户</td><td style="padding:8px;">{username}</td></tr>
+        <tr><td style="padding:8px;background:#f7fafc;font-weight:600;">邮箱</td><td style="padding:8px;">{email}</td></tr>
+    </table>
+    <h3 style="margin-top:20px;">问题描述</h3>
+    <pre style="background:#f7fafc;padding:12px;border-radius:8px;font-size:0.85rem;white-space:pre-wrap;">{description}</pre>
+    <h3>最近日志</h3>
+    <pre style="background:#f7fafc;padding:12px;border-radius:8px;font-size:0.8rem;color:#64748b;">{log_text}</pre>
+    <p style="color:#94a3b8;font-size:0.8rem;margin-top:20px;">来自 Quiz Master 用户反馈系统</p>
+    </body></html>"""
+
+    try:
+        resp = requests.post(
+            "https://api.resend.com/emails",
+            json={
+                "from": "noreply@quizmasterprogram.top",
+                "to": ["QuizMasterProgram@yeah.net"],
+                "subject": f"📮 用户问题报告 — {username}",
+                "html": html,
+            },
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
+            timeout=10,
+        )
+        return resp.ok
+    except Exception:
+        return False
+
+
 def verify_code(email: str, code: str) -> bool:
     """验证验证码是否正确且在有效期内"""
     if email not in _verify_codes:

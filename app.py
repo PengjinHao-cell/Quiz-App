@@ -21,7 +21,7 @@ from flask_login import LoginManager, current_user, login_required
 from werkzeug.utils import secure_filename
 from parser import parse_file, create_sample_questions
 from version import VERSION, VERSION_NAME
-from models import db, User, WrongAnswer, Favorite, StudyHistory, QuestionBank
+from models import db, User, WrongAnswer, Favorite, StudyHistory, QuestionBank, SystemLog
 from auth import auth_bp
 
 app = Flask(__name__)
@@ -609,6 +609,7 @@ def upload():
         }
         save_bank(bank_id, bank_data)
         _invalidate_bank_cache()
+        add_log("info", "上传", f"上传题库: {original_filename}", user_id=getattr(current_user, 'id', None), username=getattr(current_user, 'username', 'guest'))
         dup = check_name_duplicate(original_filename, exclude_id=bank_id)
         resp = {
             "success": True,
@@ -883,6 +884,7 @@ def api_delete_bank(bank_id):
         return jsonify({"error": "删除密码错误"}), 403
     delete_bank_files(bank_id)
     _invalidate_bank_cache()
+    add_log("warning", "删除题库", f"删除题库 {bank_id}", user_id=getattr(current_user, 'id', None), username=getattr(current_user, 'username', ''))
     return jsonify({"success": True})
 
 
@@ -1444,6 +1446,119 @@ def admin_required(f):
     return decorated
 
 
+# =========================== 系统日志 ===========================
+
+def add_log(level, source, message, detail="", user_id=None, username="", ip=""):
+    """写入系统日志"""
+    try:
+        log = SystemLog(
+            level=level, source=source, message=str(message)[:500],
+            detail=str(detail)[:2000] if detail else "",
+            user_id=user_id, username=str(username)[:64],
+            ip_address=ip,
+        )
+        db.session.add(log)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+@app.route("/api/logs/user")
+@login_required
+def api_user_logs():
+    """用户查看自己的日志"""
+    limit = min(int(request.args.get("limit", 50)), 200)
+    logs = SystemLog.query.filter_by(user_id=current_user.id)\
+        .order_by(SystemLog.created_at.desc()).limit(limit).all()
+    return jsonify({
+        "logs": [{
+            "id": l.id, "level": l.level, "source": l.source,
+            "message": l.message, "detail": l.detail,
+            "time": l.created_at.strftime("%Y-%m-%d %H:%M:%S") if l.created_at else "",
+        } for l in logs]
+    })
+
+
+@app.route("/api/logs/user/export")
+@login_required
+def api_user_logs_export():
+    """用户导出自己的日志为文本"""
+    logs = SystemLog.query.filter_by(user_id=current_user.id)\
+        .order_by(SystemLog.created_at.desc()).limit(200).all()
+    lines = [f"Quiz Master 日志导出 — 用户: {current_user.username}"]
+    lines.append("=" * 50)
+    for l in reversed(logs):
+        t = l.created_at.strftime("%Y-%m-%d %H:%M:%S") if l.created_at else "--"
+        lines.append(f"[{t}] [{l.level.upper()}] {l.source}: {l.message}")
+        if l.detail:
+            lines.append(f"  详情: {l.detail}")
+    text = "\n".join(lines)
+    return text, 200, {"Content-Type": "text/plain; charset=utf-8",
+                        "Content-Disposition": f"attachment; filename=quiz_logs_{current_user.username}.txt"}
+
+
+@app.route("/api/logs/user/report", methods=["POST"])
+@login_required
+def api_user_report():
+    """用户报告问题 → 发邮件给管理员"""
+    data = request.get_json() or {}
+    description = (data.get("description") or "").strip()
+    if not description or len(description) < 10:
+        return jsonify({"error": "请详细描述问题（至少10个字符）"}), 400
+
+    # 收集最近日志
+    logs = SystemLog.query.filter_by(user_id=current_user.id)\
+        .order_by(SystemLog.created_at.desc()).limit(20).all()
+    log_text = "\n".join([
+        f"  [{l.created_at.strftime('%H:%M:%S')}] {l.source}: {l.message}"
+        for l in reversed(logs)
+    ]) if logs else "  (无日志记录)"
+
+    # 构建邮件
+    from email_utils import send_error_report
+    ok = send_error_report(
+        username=current_user.username,
+        email=current_user.email or "未设置",
+        description=description,
+        log_text=log_text,
+    )
+    if ok:
+        add_log("info", "反馈", f"用户提交了问题报告", user_id=current_user.id, username=current_user.username)
+        return jsonify({"success": True, "message": "✅ 问题已发送给管理员，我们会尽快处理"})
+    else:
+        return jsonify({"error": "邮件发送失败，请稍后重试或直接联系管理员"}), 500
+
+
+@app.route("/api/admin/logs")
+@login_required
+@admin_required
+def api_admin_logs():
+    """管理员查看全部日志"""
+    level = request.args.get("level", "")
+    source = request.args.get("source", "")
+    limit = min(int(request.args.get("limit", 200)), 500)
+
+    query = SystemLog.query
+    if level:
+        query = query.filter(SystemLog.level == level)
+    if source:
+        query = query.filter(SystemLog.source == source)
+    logs = query.order_by(SystemLog.created_at.desc()).limit(limit).all()
+
+    return jsonify({
+        "logs": [{
+            "id": l.id, "level": l.level, "source": l.source,
+            "message": l.message, "detail": l.detail,
+            "user_id": l.user_id, "username": l.username,
+            "ip": l.ip_address,
+            "time": l.created_at.strftime("%Y-%m-%d %H:%M:%S") if l.created_at else "",
+        } for l in logs],
+        "sources": [r[0] for r in SystemLog.query.with_entities(SystemLog.source).distinct().all() if r[0]],
+    })
+
+
+# =========================== 管理后台 ===========================
+
 @app.route("/admin")
 @login_required
 @admin_required
@@ -1640,6 +1755,7 @@ def api_admin_delete_user(user_id):
     db.session.delete(user)
     db.session.commit()
 
+    add_log("warning", "管理员", f"管理员删除了用户: {username}", user_id=current_user.id, username=current_user.username)
     return jsonify({"success": True, "message": f"用户「{username}」已删除"})
 
 

@@ -173,3 +173,18 @@ class QuestionBank(db.Model):
     data_json = db.Column(db.Text, default="{}")  # 完整题库 JSON
     is_official = db.Column(db.Boolean, default=False)  # 管理员标记的官方题库
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class SystemLog(db.Model):
+    """系统运行日志"""
+    __tablename__ = "system_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    level = db.Column(db.String(16), default="info")  # info / warning / error
+    source = db.Column(db.String(64), default="")      # 来源（如"上传""登录""解析"）
+    message = db.Column(db.String(512), default="")
+    detail = db.Column(db.Text, default="")            # 详细错误信息
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True, index=True)
+    username = db.Column(db.String(64), default="")
+    ip_address = db.Column(db.String(64), default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

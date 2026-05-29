@@ -135,6 +135,9 @@ def register():
     db.session.commit()
 
     login_user(user)
+    # 写日志（延迟导入避免循环）
+    from app import add_log
+    add_log("info", "注册", f"用户注册: {user.username}", user_id=user.id, username=user.username)
     return jsonify({"success": True, "username": user.username})
 
 
@@ -195,6 +198,8 @@ def login():
 
     _record_login_attempt(client_ip, True)
     login_user(user, remember=bool(remember))
+    from app import add_log
+    add_log("info", "登录", f"用户登录: {user.username}", user_id=user.id, username=user.username)
     return jsonify({"success": True, "username": user.username})
 
 
