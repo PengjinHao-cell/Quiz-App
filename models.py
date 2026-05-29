@@ -171,4 +171,5 @@ class QuestionBank(db.Model):
     type = db.Column(db.String(16), default="quiz")  # "quiz" or "reading"
     language = db.Column(db.String(8), default="zh")
     data_json = db.Column(db.Text, default="{}")  # 完整题库 JSON
+    is_official = db.Column(db.Boolean, default=False)  # 管理员标记的官方题库
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

@@ -140,6 +140,7 @@
                             <div class="bank-details">
                                 <div class="bank-name-row">
                                     <span class="bank-name" id="bname-{{ bank.id }}" title="{{ bank.original_filename }}">{{ bank.original_filename }}</span>
+                                    {% if bank.is_official %}<span style="display:inline-block;background:#ebf8ff;color:#2563eb;font-size:0.7rem;padding:1px 7px;border-radius:4px;font-weight:600;margin-left:6px;vertical-align:middle;">⭐ 官方</span>{% endif %}
                                     <button class="btn-rename" onclick="renameBank('{{ bank.id }}')" title="重命名">✏️</button>
                                 </div>
                                 <span class="bank-meta">

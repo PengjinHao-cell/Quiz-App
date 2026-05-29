@@ -70,7 +70,13 @@
             <h1>⚙️ 管理后台</h1>
         </header>
 
-        <div class="admin-wrap">
+        <!-- 标签切换 -->
+        <div style="display:flex;gap:8px;margin-bottom:20px;">
+            <button class="btn btn-primary" id="tab-users-btn" onclick="switchAdminTab('users')" style="font-size:0.85rem;">👥 用户管理</button>
+            <button class="btn btn-secondary" id="tab-banks-btn" onclick="switchAdminTab('banks')" style="font-size:0.85rem;">📚 题库管理</button>
+        </div>
+
+        <div id="admin-tab-users">
             <!-- 统计卡片 -->
             <div class="stats-grid" id="stats-grid">
                 <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-number" id="stat-users">-</div><div class="stat-label">注册用户</div></div>
@@ -100,6 +106,23 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    <!-- 题库管理 -->
+    <div id="admin-tab-banks" style="display:none;">
+        <div class="admin-table-wrap" style="margin-bottom:20px;">
+            <div style="padding:16px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+                <h3 style="font-size:1rem;color:#2d3748;margin:0;">📚 所有题库</h3>
+                <button class="btn btn-primary btn-small" onclick="document.getElementById('official-upload-input').click()" style="font-size:0.8rem;">📤 上传并标记为官方</button>
+                <input type="file" id="official-upload-input" accept=".pdf,.docx,.txt" hidden onchange="uploadOfficialBank(this)">
+            </div>
+            <table class="admin-table">
+                <thead><tr>
+                    <th>题库名</th><th>类型</th><th>题数</th><th>上传时间</th><th>状态</th><th>操作</th>
+                </tr></thead>
+                <tbody id="bank-tbody"><tr class="empty-row"><td colspan="6">加载中...</td></tr></tbody>
+            </table>
         </div>
     </div>
 
@@ -316,6 +339,83 @@
                 setTimeout(() => e.target.remove(), 200);
             }
         });
+
+        // ---------- 标签切换 ----------
+        function switchAdminTab(tab) {
+            document.getElementById("admin-tab-users").style.display = tab === "users" ? "block" : "none";
+            document.getElementById("admin-tab-banks").style.display = tab === "banks" ? "block" : "none";
+            const btnU = document.getElementById("tab-users-btn");
+            const btnB = document.getElementById("tab-banks-btn");
+            btnU.className = tab === "users" ? "btn btn-primary" : "btn btn-secondary";
+            btnB.className = tab === "banks" ? "btn btn-primary" : "btn btn-secondary";
+            if (tab === "banks") loadBanks();
+        }
+
+        // ---------- 题库管理 ----------
+        async function loadBanks() {
+            const tbody = document.getElementById("bank-tbody");
+            try {
+                const res = await fetch("/api/admin/banks");
+                if (!res.ok) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">❌ 加载失败</td></tr>'; return; }
+                const data = await res.json();
+                const banks = data.banks || [];
+                if (banks.length === 0) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">暂无题库</td></tr>'; return; }
+                let html = "";
+                banks.forEach(b => {
+                    const badge = b.is_official
+                        ? '<span style="background:#ebf8ff;color:#2563eb;font-size:0.7rem;padding:2px 8px;border-radius:4px;font-weight:600;">⭐ 官方</span>'
+                        : '<span style="background:#f3f4f6;color:#9ca3af;font-size:0.7rem;padding:2px 8px;border-radius:4px;">普通</span>';
+                    html += `<tr>
+                        <td><strong>${escapeHTML(b.original_filename)}</strong></td>
+                        <td>${b.type === "reading" ? "📖 阅读" : "📝 刷题"}</td>
+                        <td>${b.question_count}</td>
+                        <td>${escapeHTML(b.upload_time || "-")}</td>
+                        <td>${badge}</td>
+                        <td>
+                            <button class="${b.is_official ? 'btn-small btn-danger-outline' : 'btn-small btn-primary'}" onclick="toggleOfficial('${b.id}')" style="font-size:0.75rem;padding:4px 10px;">
+                                ${b.is_official ? '取消官方' : '设为官方'}
+                            </button>
+                        </td>
+                    </tr>`;
+                });
+                tbody.innerHTML = html;
+            } catch(e) { tbody.innerHTML = '<tr class="empty-row"><td colspan="6">❌ 网络错误</td></tr>'; }
+        }
+
+        function toggleOfficial(bankId) {
+            fetch(`/api/admin/banks/${bankId}/toggle-official`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+            })
+                .then(async res => {
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+                    showToast(data.is_official ? "⭐ 已设为官方题库" : "已取消官方标记", "success");
+                    loadBanks();
+                })
+                .catch(err => showToast("❌ " + err.message, "error"));
+        }
+
+        function uploadOfficialBank(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append("file", file);
+            const btn = document.querySelector('[onclick*="official-upload-input"]');
+            btn.disabled = true; btn.textContent = "⏳ 上传中...";
+            fetch("/api/admin/upload-official", {
+                method: "POST",
+                body: formData,
+            })
+                .then(async res => {
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error);
+                    showToast(`✅ 已上传并标记为官方题库（${data.question_count}题）`, "success");
+                    loadBanks();
+                })
+                .catch(err => showToast("❌ " + err.message, "error"))
+                .finally(() => { btn.disabled = false; btn.textContent = "📤 上传并标记为官方"; input.value = ""; });
+        }
 
         // 初始化
         loadAdminData();
