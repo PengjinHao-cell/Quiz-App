@@ -3,8 +3,13 @@
 - User: 用户表
 """
 import re
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from flask_login import UserMixin
+
+
+def beijing_now():
+    """返回北京时间（UTC+8）"""
+    return datetime.now(timezone(timedelta(hours=8))).replace(tzinfo=None)
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 
@@ -19,7 +24,7 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(64), unique=True, nullable=False, index=True)
     email = db.Column(db.String(120), unique=True, nullable=True)
     password_hash = db.Column(db.String(256), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=beijing_now)
     is_admin = db.Column(db.Boolean, default=False)
 
     def set_password(self, password: str):
@@ -75,7 +80,7 @@ class WrongAnswer(db.Model):
     question_type = db.Column(db.String(16), default="single")
     wrong_count = db.Column(db.Integer, default=1)
     last_wrong_time = db.Column(db.String(64), default="")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=beijing_now)
 
     __table_args__ = (
         db.UniqueConstraint("user_id", "question_key", name="uq_user_wrong"),
@@ -111,7 +116,7 @@ class Favorite(db.Model):
     answer = db.Column(db.String(64), default="")
     question_type = db.Column(db.String(16), default="single")
     added_time = db.Column(db.String(64), default="")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=beijing_now)
 
     __table_args__ = (
         db.UniqueConstraint("user_id", "question_key", name="uq_user_fav"),
@@ -145,7 +150,7 @@ class StudyHistory(db.Model):
     total = db.Column(db.Integer, default=0)
     answers_json = db.Column(db.Text, default="{}")  # 详细答题 JSON
     time_label = db.Column(db.String(64), default="")  # 客户端时间
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=beijing_now)
 
     def to_dict(self):
         return {
@@ -172,7 +177,7 @@ class QuestionBank(db.Model):
     language = db.Column(db.String(8), default="zh")
     data_json = db.Column(db.Text, default="{}")  # 完整题库 JSON
     is_official = db.Column(db.Boolean, default=False)  # 管理员标记的官方题库
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=beijing_now)
 
 
 class SystemLog(db.Model):
@@ -187,4 +192,4 @@ class SystemLog(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True, index=True)
     username = db.Column(db.String(64), default="")
     ip_address = db.Column(db.String(64), default="")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=beijing_now)
