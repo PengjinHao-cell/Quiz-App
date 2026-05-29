@@ -87,7 +87,7 @@ def send_verify_email(to_email: str, code: str, username: str) -> bool:
     html_content = build_email_content(code, username)
 
     payload = json.dumps({
-        "from": "onboarding@resend.dev",
+        "from": "Quiz Master <noreply@quizmasterprogram.top>",
         "to": [to_email],
         "subject": f"📝 Quiz Master 验证码 / Verification Code — {code}",
         "html": html_content,
