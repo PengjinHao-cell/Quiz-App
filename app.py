@@ -191,6 +191,18 @@ def _run_migration():
                         print("📦 迁移: 已添加 is_admin 列 (PostgreSQL)")
 
             # 导入已有 JSON 题库到数据库
+            # 检查 question_banks 表是否有 is_official 列
+            try:
+                from sqlalchemy import text as _t
+                with engine.connect() as _c:
+                    _r = _c.execute(_t("SELECT column_name FROM information_schema.columns WHERE table_name='question_banks' AND column_name='is_official'"))
+                    if _r.fetchone() is None:
+                        _c.execute(_t("ALTER TABLE question_banks ADD COLUMN is_official BOOLEAN DEFAULT FALSE"))
+                        _c.commit()
+                        print("📦 迁移: 已添加 is_official 列 (question_banks)")
+            except Exception:
+                pass  # SQLite 用 PRAGMA 方式略过，db.create_all() 会处理
+
             if os.path.isdir(DATA_FOLDER):
                 imported = 0
                 for fname in os.listdir(DATA_FOLDER):
@@ -306,6 +318,7 @@ def load_bank_list() -> list:
                 "upload_time": data.get("upload_time", ""),
                 "question_count": total_q,
                 "passage_count": len(passages),
+                "is_official": qb.is_official,
             })
             continue
 
@@ -329,6 +342,7 @@ def load_bank_list() -> list:
             "multi_count": multi_count,
             "judge_count": judge_count,
             "fill_count": fill_count,
+            "is_official": qb.is_official,
         })
 
     banks.sort(key=lambda b: b.get("original_filename", "").lower())
@@ -1436,6 +1450,87 @@ def admin_required(f):
 def admin_page():
     """管理后台页面"""
     return render_template("admin.html")
+
+
+@app.route("/api/admin/banks")
+@login_required
+@admin_required
+def api_admin_banks():
+    """管理员查看所有题库（含官方标记）"""
+    banks = load_bank_list()
+    return jsonify({"banks": banks})
+
+
+@app.route("/api/admin/banks/<bank_id>/toggle-official", methods=["POST"])
+@login_required
+@admin_required
+def api_admin_toggle_official(bank_id):
+    """切换题库官方标记"""
+    qb = QuestionBank.query.get(bank_id)
+    if not qb:
+        return jsonify({"error": "题库不存在"}), 404
+    qb.is_official = not qb.is_official
+    db.session.commit()
+    _invalidate_bank_cache()
+    return jsonify({"success": True, "is_official": qb.is_official})
+
+
+@app.route("/api/admin/upload-official", methods=["POST"])
+@login_required
+@admin_required
+def api_admin_upload_official():
+    """管理员上传题库（自动标记为官方）"""
+    # 复用文件上传逻辑，但标记为官方
+    file = request.files.get("file")
+    if not file or file.filename == "":
+        return jsonify({"error": "请选择文件"}), 400
+
+    from werkzeug.utils import secure_filename as _sf
+    original_filename = _sf(file.filename)
+    ext = original_filename.rsplit(".", 1)[1].lower() if "." in original_filename else ""
+    if ext not in ALLOWED_EXTENSIONS:
+        return jsonify({"error": "仅支持 PDF、DOCX、TXT 格式"}), 400
+
+    bank_id = uuid.uuid4().hex[:12]
+    filepath = os.path.join(UPLOAD_FOLDER, f"{bank_id}_{original_filename}")
+    file.save(filepath)
+
+    try:
+        parsed = parse_file(filepath, original_filename)
+    except Exception as e:
+        return jsonify({"error": f"解析失败: {str(e)}"}), 500
+
+    if isinstance(parsed, dict) and parsed.get("type") == "reading":
+        lang = parsed.get("language", "zh")
+        bank_data = {
+            "id": bank_id, "type": "reading", "language": lang,
+            "original_filename": original_filename,
+            "upload_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "passages": parsed.get("passages", []),
+        }
+        save_bank(bank_id, bank_data)
+        # 标记为官方
+        qb = QuestionBank.query.get(bank_id)
+        if qb:
+            qb.is_official = True
+            db.session.commit()
+        _invalidate_bank_cache()
+        total_q = sum(len(p.get("questions", [])) for p in bank_data["passages"])
+        return jsonify({"success": True, "bank_id": bank_id, "question_count": total_q})
+
+    questions = parsed if isinstance(parsed, list) else []
+    bank_data = {
+        "id": bank_id, "original_filename": original_filename,
+        "upload_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "questions": questions,
+    }
+    save_bank(bank_id, bank_data)
+    qb = QuestionBank.query.get(bank_id)
+    if qb:
+        qb.is_official = True
+        db.session.commit()
+    _invalidate_bank_cache()
+    return jsonify({"success": True, "bank_id": bank_id, "question_count": len(questions)})
 
 
 @app.route("/api/admin/stats")
