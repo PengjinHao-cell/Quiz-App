@@ -91,8 +91,12 @@ def _init_default_admin():
     try:
         existing = User.query.filter_by(username=username).first()
         if existing:
+            if not existing.is_admin:
+                existing.is_admin = True
+                db.session.commit()
+                print(f"✅ 用户「{username}」已升级为管理员")
             return
-        user = User(username=username, email=f"{username}@quizmaster.app")
+        user = User(username=username, email=f"{username}@quizmaster.app", is_admin=True)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
@@ -1346,6 +1350,136 @@ def api_clear_history():
     StudyHistory.query.filter_by(user_id=current_user.id).delete()
     db.session.commit()
     return jsonify({"success": True})
+
+
+# =========================== 管理后台 API ===========================
+
+def admin_required(f):
+    """装饰器：仅管理员可访问"""
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not current_user.is_authenticated or not getattr(current_user, "is_admin", False):
+            if request.path.startswith("/api/"):
+                return jsonify({"error": "需要管理员权限"}), 403
+            return redirect(url_for("app_main"))
+        return f(*args, **kwargs)
+    return decorated
+
+
+@app.route("/admin")
+@login_required
+@admin_required
+def admin_page():
+    """管理后台页面"""
+    return render_template("admin.html")
+
+
+@app.route("/api/admin/stats")
+@login_required
+@admin_required
+def api_admin_stats():
+    """数据概览"""
+    user_count = User.query.count()
+
+    # 题库统计
+    bank_count = 0
+    total_questions = 0
+    if os.path.isdir(DATA_FOLDER):
+        for fname in os.listdir(DATA_FOLDER):
+            if fname.endswith(".json"):
+                bank_count += 1
+                try:
+                    with open(os.path.join(DATA_FOLDER, fname), "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    if data.get("type") == "reading":
+                        total_questions += sum(len(p.get("questions", [])) for p in data.get("passages", []))
+                    else:
+                        total_questions += len(data.get("questions", []))
+                except Exception:
+                    pass
+
+    # 答题记录统计
+    history_count = StudyHistory.query.count()
+    wrong_count = WrongAnswer.query.count()
+
+    return jsonify({
+        "user_count": user_count,
+        "bank_count": bank_count,
+        "total_questions": total_questions,
+        "history_count": history_count,
+        "wrong_count": wrong_count,
+    })
+
+
+@app.route("/api/admin/users")
+@login_required
+@admin_required
+def api_admin_users():
+    """用户列表"""
+    users = User.query.order_by(User.created_at.desc()).all()
+    return jsonify({
+        "users": [{
+            "id": u.id,
+            "username": u.username,
+            "email": u.email or "",
+            "created_at": u.created_at.strftime("%Y-%m-%d %H:%M") if u.created_at else "",
+            "is_admin": bool(u.is_admin),
+            "wrong_count": WrongAnswer.query.filter_by(user_id=u.id).count(),
+            "history_count": StudyHistory.query.filter_by(user_id=u.id).count(),
+        } for u in users]
+    })
+
+
+@app.route("/api/admin/users/<int:user_id>/reset-password", methods=["POST"])
+@login_required
+@admin_required
+def api_admin_reset_password(user_id):
+    """重置用户密码"""
+    data = request.get_json()
+    new_password = (data or {}).get("new_password", "").strip()
+
+    err = User.validate_password(new_password)
+    if err:
+        return jsonify({"error": err}), 400
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "用户不存在"}), 404
+
+    user.set_password(new_password)
+    db.session.commit()
+    return jsonify({"success": True, "message": f"用户「{user.username}」密码已重置"})
+
+
+@app.route("/api/admin/users/<int:user_id>", methods=["DELETE"])
+@login_required
+@admin_required
+def api_admin_delete_user(user_id):
+    """删除用户"""
+    if user_id == current_user.id:
+        return jsonify({"error": "不能删除自己的账号"}), 400
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "用户不存在"}), 404
+
+    # 检查是不是最后一个管理员
+    if user.is_admin:
+        admin_count = User.query.filter_by(is_admin=True).count()
+        if admin_count <= 1:
+            return jsonify({"error": "不能删除最后一个管理员"}), 400
+
+    username = user.username
+
+    # 级联删除关联数据
+    WrongAnswer.query.filter_by(user_id=user_id).delete()
+    Favorite.query.filter_by(user_id=user_id).delete()
+    StudyHistory.query.filter_by(user_id=user_id).delete()
+    db.session.delete(user)
+    db.session.commit()
+
+    return jsonify({"success": True, "message": f"用户「{username}」已删除"})
 
 
 # =========================== 启动 ===========================

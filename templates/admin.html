@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - Quiz Master</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=4) }}">
+    <style>
+        .admin-wrap { max-width: 960px; margin: 0 auto; }
+        .admin-wrap h1 { font-size: 1.4rem; color: #1e3a5f; margin-bottom: 4px; }
+        .admin-wrap .subtitle { font-size: 0.85rem; color: #94a3b8; margin-bottom: 24px; }
+
+        /* 统计卡片 */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 28px; }
+        .stat-card { background: #fff; border-radius: 12px; padding: 20px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); animation: slideUp 0.4s ease both; }
+        .stat-card:nth-child(1) { animation-delay: 0.05s; }
+        .stat-card:nth-child(2) { animation-delay: 0.1s; }
+        .stat-card:nth-child(3) { animation-delay: 0.15s; }
+        .stat-card:nth-child(4) { animation-delay: 0.2s; }
+        .stat-card:nth-child(5) { animation-delay: 0.25s; }
+        .stat-icon { font-size: 1.6rem; margin-bottom: 6px; }
+        .stat-number { font-size: 1.8rem; font-weight: 800; color: #2d3748; }
+        .stat-label { font-size: 0.8rem; color: #94a3b8; margin-top: 2px; }
+
+        /* 用户表格 */
+        .admin-table-wrap { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; animation: slideUp 0.4s ease 0.3s both; }
+        .admin-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .admin-table th { background: #f8fafc; color: #64748b; font-weight: 600; padding: 12px 14px; text-align: left; border-bottom: 2px solid #e2e8f0; }
+        .admin-table td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #4a5568; }
+        .admin-table tr:last-child td { border-bottom: none; }
+        .admin-table tr { transition: all 0.3s ease; }
+        .admin-table tr:hover { background: #fafbff; }
+
+        .badge-admin { display: inline-block; background: #ebf4ff; color: #3182ce; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+        .badge-user { display: inline-block; background: #f3f4f6; color: #9ca3af; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; }
+
+        .admin-actions { display: flex; gap: 6px; }
+        .admin-actions button { padding: 4px 10px; border-radius: 6px; font-size: 0.78rem; cursor: pointer; border: none; transition: all 0.15s; }
+        .btn-reset-pwd { background: #ebf4ff; color: #3182ce; }
+        .btn-reset-pwd:hover { background: #dbeafe; }
+        .btn-delete-user { background: #fef2f2; color: #e53e3e; }
+        .btn-delete-user:hover { background: #fee2e2; }
+
+        .empty-row td { text-align: center; color: #a0aec0; padding: 32px; }
+
+        /* 模态框 */
+        .modal-overlay { position: fixed; inset: 0; z-index: 10000; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; animation: fadeInModal 0.2s ease; }
+        .modal-box { background: #fff; border-radius: 16px; padding: 28px 32px; max-width: 380px; width: 90%; box-shadow: 0 12px 40px rgba(0,0,0,0.2); animation: slideUpModal 0.25s ease; }
+        .modal-box h3 { font-size: 1.1rem; color: #2d3748; margin-bottom: 16px; }
+        .modal-box input { width: 100%; padding: 10px 14px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 0.9rem; margin-bottom: 12px; box-sizing: border-box; }
+        .modal-box input:focus { outline: none; border-color: #3182ce; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+        .modal-actions button { padding: 8px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; }
+
+        @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUpModal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        .toast-fixed { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 99999; padding: 12px 24px; border-radius: 10px; font-size: 0.85rem; font-weight: 500; color: #fff; animation: fadeInModal 0.2s ease; }
+        .toast-success { background: #38a169; }
+        .toast-error { background: #e53e3e; }
+    </style>
+</head>
+<body>
+    {% include '_splash.html' %}
+
+    <div class="container">
+        <header class="quiz-header">
+            <a href="{{ url_for('app_main') }}" class="btn btn-back">← 返回主页</a>
+            <h1>⚙️ 管理后台</h1>
+        </header>
+
+        <div class="admin-wrap">
+            <!-- 统计卡片 -->
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-number" id="stat-users">-</div><div class="stat-label">注册用户</div></div>
+                <div class="stat-card"><div class="stat-icon">📚</div><div class="stat-number" id="stat-banks">-</div><div class="stat-label">题库总数</div></div>
+                <div class="stat-card"><div class="stat-icon">📝</div><div class="stat-number" id="stat-questions">-</div><div class="stat-label">题目总数</div></div>
+                <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-number" id="stat-history">-</div><div class="stat-label">答题记录</div></div>
+                <div class="stat-card"><div class="stat-icon">❌</div><div class="stat-number" id="stat-wrong">-</div><div class="stat-label">错题总数</div></div>
+            </div>
+
+            <!-- 用户列表 -->
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>用户名</th>
+                            <th>邮箱</th>
+                            <th>注册时间</th>
+                            <th>角色</th>
+                            <th>错题</th>
+                            <th>答题</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-tbody">
+                        <tr class="empty-row"><td colspan="8">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='utils.js', v=4) }}"></script>
+    <script>
+        // 入场
+        document.addEventListener("DOMContentLoaded", () => setTimeout(dismissSplash, 400));
+
+        // ---------- 数据加载 ----------
+        async function loadAdminData() {
+            try {
+                const [statsRes, usersRes] = await Promise.all([
+                    fetch("/api/admin/stats"),
+                    fetch("/api/admin/users"),
+                ]);
+                if (!statsRes.ok || !usersRes.ok) {
+                    document.getElementById("user-tbody").innerHTML =
+                        '<tr class="empty-row"><td colspan="8">❌ 加载失败，请确认管理员权限</td></tr>';
+                    return;
+                }
+                const stats = await statsRes.json();
+                const users = await usersRes.json();
+
+                // 统计卡片数字动画
+                animateNumber("stat-users", stats.user_count);
+                animateNumber("stat-banks", stats.bank_count);
+                animateNumber("stat-questions", stats.total_questions);
+                animateNumber("stat-history", stats.history_count);
+                animateNumber("stat-wrong", stats.wrong_count);
+
+                // 用户列表
+                renderUsers(users.users);
+            } catch (e) {
+                document.getElementById("user-tbody").innerHTML =
+                    '<tr class="empty-row"><td colspan="8">❌ 网络错误</td></tr>';
+            }
+        }
+
+        function animateNumber(elId, target) {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            const duration = 600;
+            const start = performance.now();
+            function step(now) {
+                const p = Math.min((now - start) / duration, 1);
+                const current = Math.round(p * target);
+                el.textContent = current.toLocaleString();
+                if (p < 1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        }
+
+        function renderUsers(users) {
+            const tbody = document.getElementById("user-tbody");
+            if (!users || users.length === 0) {
+                tbody.innerHTML = '<tr class="empty-row"><td colspan="8">暂无用户</td></tr>';
+                return;
+            }
+            let html = "";
+            users.forEach(u => {
+                const badge = u.is_admin
+                    ? '<span class="badge-admin">管理员</span>'
+                    : '<span class="badge-user">用户</span>';
+                html += `<tr id="user-row-${u.id}">
+                    <td>${u.id}</td>
+                    <td><strong>${escapeHTML(u.username)}</strong></td>
+                    <td>${escapeHTML(u.email)}</td>
+                    <td>${escapeHTML(u.created_at)}</td>
+                    <td>${badge}</td>
+                    <td>${u.wrong_count}</td>
+                    <td>${u.history_count}</td>
+                    <td>
+                        <div class="admin-actions">
+                            <button class="btn-reset-pwd" onclick="showResetPwdModal(${u.id}, '${escapeHTML(u.username)}')">🔑 重置密码</button>
+                            ${u.is_admin ? '' : `<button class="btn-delete-user" onclick="confirmDeleteUser(${u.id}, '${escapeHTML(u.username)}')">🗑 删除</button>`}
+                        </div>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        // ---------- 重置密码 ----------
+        let _resetTargetId = null;
+
+        function showResetPwdModal(userId, username) {
+            _resetTargetId = userId;
+            const overlay = document.createElement("div");
+            overlay.className = "modal-overlay";
+            overlay.id = "pwd-modal";
+            overlay.innerHTML = `
+                <div class="modal-box">
+                    <h3>🔑 重置密码 — ${escapeHTML(username)}</h3>
+                    <input type="password" id="new-pwd-input" placeholder="输入新密码（≥6位，含字母+数字+特殊字符）" autocomplete="new-password">
+                    <input type="password" id="new-pwd-input2" placeholder="再次输入新密码" autocomplete="new-password">
+                    <div id="pwd-modal-err" style="color:#e53e3e;font-size:0.8rem;min-height:1.2em;"></div>
+                    <div class="modal-actions">
+                        <button style="background:#e2e8f0;color:#64748b;" onclick="closeModal('pwd-modal')">取消</button>
+                        <button style="background:#3182ce;color:#fff;" onclick="submitResetPwd()">确认重置</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => document.getElementById("new-pwd-input").focus(), 100);
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) { el.style.opacity = "0"; setTimeout(() => el.remove(), 200); }
+        }
+
+        function submitResetPwd() {
+            const pwd = document.getElementById("new-pwd-input").value;
+            const pwd2 = document.getElementById("new-pwd-input2").value;
+            const errEl = document.getElementById("pwd-modal-err");
+
+            if (!pwd || pwd.length < 6) { errEl.textContent = "密码至少 6 个字符"; return; }
+            if (pwd !== pwd2) { errEl.textContent = "两次密码不一致"; return; }
+
+            fetch(`/api/admin/users/${_resetTargetId}/reset-password`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ new_password: pwd }),
+            })
+                .then(async res => {
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "重置失败");
+                    return data;
+                })
+                .then(data => {
+                    closeModal("pwd-modal");
+                    showToast(data.message || "密码已重置", "success");
+                })
+                .catch(err => {
+                    errEl.textContent = "❌ " + err.message;
+                });
+        }
+
+        // ---------- 删除用户 ----------
+        function confirmDeleteUser(userId, username) {
+            const overlay = document.createElement("div");
+            overlay.className = "modal-overlay";
+            overlay.id = "delete-modal";
+            overlay.innerHTML = `
+                <div class="modal-box" style="text-align:center;">
+                    <div style="font-size:2.5rem;margin-bottom:12px;">⚠️</div>
+                    <h3 style="margin-bottom:8px;">确认删除用户</h3>
+                    <p style="color:#64748b;font-size:0.9rem;margin-bottom:4px;">将删除用户 <strong>${escapeHTML(username)}</strong></p>
+                    <p style="color:#e53e3e;font-size:0.8rem;">及其所有错题、收藏、学习记录</p>
+                    <p style="color:#94a3b8;font-size:0.8rem;margin-top:8px;">此操作不可撤销</p>
+                    <div class="modal-actions" style="justify-content:center;margin-top:20px;">
+                        <button style="background:#e2e8f0;color:#64748b;" onclick="closeModal('delete-modal')">取消</button>
+                        <button style="background:#e53e3e;color:#fff;" onclick="submitDeleteUser(${userId})">确认删除</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        function submitDeleteUser(userId) {
+            fetch(`/api/admin/users/${userId}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+            })
+                .then(async res => {
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error || "删除失败");
+                    return data;
+                })
+                .then(data => {
+                    closeModal("delete-modal");
+                    // 行 collapse 动画
+                    const row = document.getElementById(`user-row-${userId}`);
+                    if (row) {
+                        const h = row.offsetHeight;
+                        row.style.boxSizing = "border-box";
+                        row.style.height = h + "px";
+                        row.style.overflow = "hidden";
+                        row.style.transition = "all 0.35s ease";
+                        void row.offsetHeight;
+                        row.style.height = "0";
+                        row.style.opacity = "0";
+                        row.style.padding = "0";
+                        row.style.borderWidth = "0";
+                        setTimeout(() => { row.remove(); }, 370);
+                    }
+                    showToast(data.message || "用户已删除", "success");
+                })
+                .catch(err => {
+                    closeModal("delete-modal");
+                    showToast("❌ " + err.message, "error");
+                });
+        }
+
+        // ---------- Toast ----------
+        function showToast(msg, type) {
+            const existing = document.querySelector(".toast-fixed");
+            if (existing) existing.remove();
+            const el = document.createElement("div");
+            el.className = `toast-fixed toast-${type}`;
+            el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = "0";
+                el.style.transition = "opacity 0.3s";
+                setTimeout(() => el.remove(), 350);
+            }, 3000);
+        }
+
+        // 点击遮罩关闭模态框
+        document.addEventListener("click", function(e) {
+            if (e.target.classList.contains("modal-overlay")) {
+                e.target.style.opacity = "0";
+                setTimeout(() => e.target.remove(), 200);
+            }
+        });
+
+        // 初始化
+        loadAdminData();
+    </script>
+</body>
+</html>
