@@ -151,8 +151,83 @@ function handleUpload(e) {
         });
 }
 
+// ---------- 模态框工具 ----------
+
+function _createModal(html) {
+    const overlay = document.createElement("div");
+    overlay.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;animation:fadeInModal 0.2s ease;";
+    const box = document.createElement("div");
+    box.style.cssText = "background:#fff;border-radius:16px;padding:28px 32px;max-width:420px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,0.2);animation:slideUpModal 0.25s ease;";
+    box.innerHTML = html;
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    if (!document.getElementById("modal-style-inj")) {
+        const s = document.createElement("style"); s.id = "modal-style-inj";
+        s.textContent = "@keyframes fadeInModal{from{opacity:0}to{opacity:1}}@keyframes slideUpModal{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}";
+        document.head.appendChild(s);
+    }
+    overlay.addEventListener("click", e => { if (e.target === overlay) _closeModal(overlay); });
+    return overlay;
+}
+function _closeModal(el) { el.style.opacity = "0"; setTimeout(() => el.remove(), 200); }
+
 // ---------- 删除题库 ----------
 
+function deleteBank(bankId, bankName, isOfficial) {
+    const isUserAdmin = typeof isAdmin === "function" && isAdmin();
+    let html;
+    if (isUserAdmin) {
+        html = `<div style="text-align:center;"><div style="font-size:2.5rem;margin-bottom:12px;">⚠️</div>
+            <h3 style="color:#2d3748;margin-bottom:8px;">删除题库</h3>
+            <p style="color:#64748b;font-size:0.9rem;margin-bottom:16px;">确认删除 <strong>${escapeHTML(bankName)}</strong></p>
+            <input type="password" id="del-inp" placeholder="输入管理员密码" style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:0.9rem;margin-bottom:8px;box-sizing:border-box;">
+            <div id="del-err" style="color:#e53e3e;font-size:0.8rem;min-height:1.2em;"></div>
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;">
+                <button style="padding:8px 24px;border:2px solid #e2e8f0;border-radius:8px;background:#fff;font-size:0.85rem;cursor:pointer;">取消</button>
+                <button style="padding:8px 24px;border:none;border-radius:8px;background:#e53e3e;color:#fff;font-size:0.85rem;cursor:pointer;" onclick="_delPwd('${bankId}')">确认删除</button>
+            </div></div>`;
+    } else {
+        html = `<div style="text-align:center;"><div style="font-size:2.5rem;margin-bottom:12px;">⚠️</div>
+            <h3 style="color:#2d3748;margin-bottom:8px;">双重确认删除</h3>
+            <p style="color:#64748b;font-size:0.85rem;margin-bottom:4px;">请输入题库名称以确认删除：</p>
+            <p style="color:#e53e3e;font-size:0.85rem;font-weight:600;margin-bottom:16px;">「${escapeHTML(bankName)}」</p>
+            <input type="text" id="del-inp" placeholder="在此输入题库名称" style="width:100%;padding:10px 14px;border:2px solid #e2e8f0;border-radius:10px;font-size:0.9rem;margin-bottom:8px;box-sizing:border-box;">
+            <div id="del-err" style="color:#e53e3e;font-size:0.8rem;min-height:1.2em;"></div>
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:16px;">
+                <button style="padding:8px 24px;border:2px solid #e2e8f0;border-radius:8px;background:#fff;font-size:0.85rem;cursor:pointer;">取消</button>
+                <button style="padding:8px 24px;border:none;border-radius:8px;background:#e53e3e;color:#fff;font-size:0.85rem;cursor:pointer;" onclick="_delName('${bankId}')">确认删除</button>
+            </div></div>`;
+    }
+    const m = _createModal(html);
+    setTimeout(() => { const i = document.getElementById("del-inp"); if(i) i.focus(); }, 100);
+}
+
+function _delPwd(bankId) {
+    const v = document.getElementById("del-inp").value, e = document.getElementById("del-err");
+    if (!v) { e.textContent = "请输入密码"; return; }
+    _delExec(bankId, {password: v}, e);
+}
+function _delName(bankId) {
+    const v = document.getElementById("del-inp").value.trim(), e = document.getElementById("del-err");
+    if (!v) { e.textContent = "请输入题库名称"; return; }
+    _delExec(bankId, {confirm_name: v}, e);
+}
+function _delExec(bankId, body, errEl) {
+    fetch(`/api/bank/${bankId}/delete`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) })
+        .then(async r => { const d = await r.json(); if(!r.ok) throw new Error(d.error); return d; })
+        .then(() => {
+            document.querySelectorAll('[style*="position:fixed"][style*="z-index:10000"]').forEach(_closeModal);
+            const card = document.getElementById(`bank-${bankId}`);
+            if (card) { const h = card.offsetHeight; card.style.boxSizing="border-box"; card.style.height=h+"px"; card.style.overflow="hidden"; card.style.transition="all 0.35s ease"; void card.offsetHeight; card.style.height="0"; card.style.opacity="0"; card.style.padding="0"; card.style.marginBottom="0"; card.style.borderWidth="0"; card.style.gap="0"; setTimeout(() => card.remove(), 350); }
+            const r = document.querySelectorAll(".bank-card").length - 1;
+            setTimeout(() => window.location.reload(), r <= 0 ? 500 : 3000);
+            showToast("题库已删除", "success");
+        })
+        .catch(err => { if(errEl) errEl.textContent = "❌ " + err.message; });
+}
+
+// ---------- 旧的删除题库（已替换为模态框版） ----------
+/*
 function deleteBank(bankId) {
     const pwd = prompt("⚠️ 删除题库需要管理员密码：");
     if (!pwd) return;
@@ -202,8 +277,7 @@ function deleteBank(bankId) {
             showMessage("删除失败：" + err.message, "error");
         });
 }
-
-// ---------- 示例题库 ----------
+*/
 
 function initSample() {
     const btn = document.querySelector(".empty-state .btn");

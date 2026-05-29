@@ -141,7 +141,7 @@
                                 <div class="bank-name-row">
                                     <span class="bank-name" id="bname-{{ bank.id }}" title="{{ bank.original_filename }}">{{ bank.original_filename }}</span>
                                     {% if bank.is_official %}<span style="display:inline-block;background:#ebf8ff;color:#2563eb;font-size:0.7rem;padding:1px 7px;border-radius:4px;font-weight:600;margin-left:6px;vertical-align:middle;">⭐ 官方</span>{% endif %}
-                                    <button class="btn-rename" onclick="renameBank('{{ bank.id }}')" title="重命名">✏️</button>
+                                    {% if not bank.is_official or current_user.is_admin %}<button class="btn-rename" onclick="renameBank('{{ bank.id }}')" title="重命名">✏️</button>{% endif %}
                                 </div>
                                 <span class="bank-meta">
                                     上传时间: {{ bank.upload_time }} &nbsp;|&nbsp;
@@ -194,7 +194,7 @@
                             <a href="#" class="btn btn-primary" onclick="startQuiz('{{ bank.id }}', 'practice')">练习模式</a>
                             <a href="#" class="btn btn-exam" onclick="startQuiz('{{ bank.id }}', 'exam')">考试模式</a>
                             {% endif %}
-                            <button class="btn btn-danger" onclick="deleteBank('{{ bank.id }}')">删除</button>
+                            <button class="btn btn-danger" onclick="deleteBank('{{ bank.id }}','{{ bank.original_filename|escape }}',{{ 'true' if bank.is_official else 'false' }})">删除</button>
                         </div>
                     </div>
                     {% endfor %}
@@ -302,6 +302,7 @@
 
     <script>
         window._IS_LOGGED_IN = {% if current_user.is_authenticated and not is_guest %}true{% else %}false{% endif %};
+        window._IS_ADMIN = {% if current_user.is_authenticated and current_user.is_admin %}true{% else %}false{% endif %};
     </script>
     <script src="{{ url_for('static', filename='utils.js', v=4) }}"></script>
     <script src="{{ url_for('static', filename='app.js', v=4) }}"></script>

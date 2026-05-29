@@ -589,6 +589,12 @@ def upload():
             "passages": parsed.get("passages", []),
         }
         save_bank(bank_id, bank_data)
+        # 管理员上传自动标记为官方
+        if current_user.is_authenticated and getattr(current_user, "is_admin", False):
+            qb = QuestionBank.query.get(bank_id)
+            if qb:
+                qb.is_official = True
+                db.session.commit()
         _invalidate_bank_cache()
         total_q = sum(len(p.get("questions", [])) for p in bank_data["passages"])
         dup = check_name_duplicate(original_filename, exclude_id=bank_id)
@@ -608,6 +614,11 @@ def upload():
             "questions": questions,
         }
         save_bank(bank_id, bank_data)
+        if current_user.is_authenticated and getattr(current_user, "is_admin", False):
+            qb = QuestionBank.query.get(bank_id)
+            if qb:
+                qb.is_official = True
+                db.session.commit()
         _invalidate_bank_cache()
         add_log("info", "上传", f"上传题库: {original_filename}", user_id=getattr(current_user, 'id', None), username=getattr(current_user, 'username', 'guest'))
         dup = check_name_duplicate(original_filename, exclude_id=bank_id)
@@ -842,7 +853,7 @@ def api_reading(bank_id):
 
 @app.route("/api/bank/<bank_id>/rename", methods=["POST"])
 def api_rename_bank(bank_id):
-    """重命名题库"""
+    """重命名题库（普通用户不可重命名官方题库）"""
     data = request.get_json()
     new_name = data.get("name", "").strip()
     if not new_name:
@@ -850,16 +861,19 @@ def api_rename_bank(bank_id):
     if len(new_name) > 100:
         return jsonify({"error": "名称过长"}), 400
 
+    # 检查是否官方题库（仅管理员可重命名）
+    qb = QuestionBank.query.get(bank_id)
+    if not qb:
+        return jsonify({"error": "题库不存在"}), 404
+    if qb.is_official and not (current_user.is_authenticated and getattr(current_user, "is_admin", False)):
+        return jsonify({"error": "官方题库不可重命名"}), 403
+
     # 检查新名称是否与其他题库重名
     dup = check_name_duplicate(new_name, exclude_id=bank_id)
     if dup:
         return jsonify({"error": f'该名称已被使用（题库「{dup["original_filename"]}」上传于 {dup["upload_time"]}）'}), 409
 
-    try:
-        bank = load_bank(bank_id)
-    except FileNotFoundError:
-        return jsonify({"error": "题库不存在"}), 404
-
+    bank = json.loads(qb.data_json)
     bank["original_filename"] = new_name
     save_bank(bank_id, bank)
     _invalidate_bank_cache()
@@ -868,23 +882,36 @@ def api_rename_bank(bank_id):
 
 @app.route("/api/bank/<bank_id>/delete", methods=["POST"])
 def api_delete_bank(bank_id):
-    """删除题库（需密码验证）"""
+    """删除题库
+    - 管理员：需 DELETE_PASSWORD 或管理员密码
+    - 普通用户：需输入题库名称确认（双重认证）
+    """
     data = request.get_json() or {}
-    pwd = data.get("password", "")
-    expected = os.environ.get("DELETE_PASSWORD", "")
-    if not expected:
-        # 未设置 DELETE_PASSWORD 时，仅管理员可删除
-        if current_user.is_authenticated and getattr(current_user, "is_admin", False):
-            expected = current_user.password_hash  # 用管理员密码哈希鉴权
+    qb = QuestionBank.query.get(bank_id)
+    if not qb:
+        return jsonify({"error": "题库不存在"}), 404
+
+    is_admin = current_user.is_authenticated and getattr(current_user, "is_admin", False)
+
+    if is_admin:
+        # 管理员：密码验证
+        pwd = data.get("password", "")
+        expected = os.environ.get("DELETE_PASSWORD", "")
+        if not expected:
+            expected = current_user.password_hash
             if not current_user.check_password(pwd):
                 return jsonify({"error": "删除密码错误"}), 403
-        else:
+        elif pwd != expected:
             return jsonify({"error": "删除密码错误"}), 403
-    elif pwd != expected:
-        return jsonify({"error": "删除密码错误"}), 403
+    else:
+        # 普通用户：输入题库名称确认
+        confirm_name = (data.get("confirm_name") or "").strip()
+        if confirm_name != qb.original_filename:
+            return jsonify({"error": "输入的题库名称不匹配"}), 403
+
     delete_bank_files(bank_id)
     _invalidate_bank_cache()
-    add_log("warning", "删除题库", f"删除题库 {bank_id}", user_id=getattr(current_user, 'id', None), username=getattr(current_user, 'username', ''))
+    add_log("warning", "删除题库", f"删除题库 {qb.original_filename}", user_id=getattr(current_user, 'id', None), username=getattr(current_user, 'username', ''))
     return jsonify({"success": True})
 
 
@@ -1590,69 +1617,7 @@ def api_admin_toggle_official(bank_id):
     return jsonify({"success": True, "is_official": qb.is_official})
 
 
-@app.route("/api/admin/upload-official", methods=["POST"])
-@login_required
-@admin_required
-def api_admin_upload_official():
-    """管理员上传题库（自动标记为官方）"""
-    # 复用文件上传逻辑，但标记为官方
-    file = request.files.get("file")
-    if not file or file.filename == "":
-        return jsonify({"error": "请选择文件"}), 400
-
-    from werkzeug.utils import secure_filename as _sf
-    original_filename = _sf(file.filename)
-    ext = original_filename.rsplit(".", 1)[1].lower() if "." in original_filename else ""
-    if ext not in ALLOWED_EXTENSIONS:
-        return jsonify({"error": "仅支持 PDF、DOCX、TXT 格式"}), 400
-
-    bank_id = uuid.uuid4().hex[:12]
-    filepath = os.path.join(UPLOAD_FOLDER, f"{bank_id}_{original_filename}")
-    file.save(filepath)
-
-    try:
-        parsed = parse_file(filepath, original_filename)
-    except Exception as e:
-        if os.path.exists(filepath):
-            os.remove(filepath)
-        return jsonify({"error": f"解析失败: {str(e)}"}), 500
-
-    if not parsed:
-        if os.path.exists(filepath):
-            os.remove(filepath)
-        return jsonify({"error": "文件中未检测到题目，请检查文件格式"}), 400
-
-    if isinstance(parsed, dict) and parsed.get("type") == "reading":
-        lang = parsed.get("language", "zh")
-        bank_data = {
-            "id": bank_id, "type": "reading", "language": lang,
-            "original_filename": original_filename,
-            "upload_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "passages": parsed.get("passages", []),
-        }
-        save_bank(bank_id, bank_data)
-        # 标记为官方
-        qb = QuestionBank.query.get(bank_id)
-        if qb:
-            qb.is_official = True
-            db.session.commit()
-        _invalidate_bank_cache()
-        total_q = sum(len(p.get("questions", [])) for p in bank_data["passages"])
-        return jsonify({"success": True, "bank_id": bank_id, "question_count": total_q})
-
-    questions = parsed if isinstance(parsed, list) else []
-    bank_data = {
-        "id": bank_id, "original_filename": original_filename,
-        "upload_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "questions": questions,
-    }
-    save_bank(bank_id, bank_data)
-    qb = QuestionBank.query.get(bank_id)
-    if qb:
-        qb.is_official = True
-        db.session.commit()
-    _invalidate_bank_cache()
-    return jsonify({"success": True, "bank_id": bank_id, "question_count": len(questions)})
+# 管理员上传复用主界面的 /upload 路由，自动根据 current_user.is_admin 标记官方
 
 
 @app.route("/api/admin/stats")
