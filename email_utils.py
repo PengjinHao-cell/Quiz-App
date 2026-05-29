@@ -1,18 +1,17 @@
 """
 邮件发送模块
-- SMTP 发送验证码邮件（凭据从环境变量读取）
-- 全局 90 秒发送间隔（所有用户共享，防止系统邮箱被封）
+- 通过 Resend API（HTTPS）发送验证码邮件
+- 不受 Railway SMTP 端口封锁影响（走 443 端口）
+- 全局 90 秒发送间隔
 - 中英双语邮件模板
 """
 import os
-import smtplib
+import json
 import random
 import time
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import urllib.request
 
 # ====== 配置（从环境变量读取，不上传 GitHub） ======
-# 本地开发时从 .env 加载
 _env_path = os.path.join(os.path.dirname(__file__), ".env")
 if os.path.exists(_env_path):
     with open(_env_path) as _f:
@@ -22,29 +21,16 @@ if os.path.exists(_env_path):
                 _k, _v = _line.split("=", 1)
                 os.environ.setdefault(_k.strip(), _v.strip().strip("\"'"))
 
-SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.yeah.net")
-SMTP_PORT = int(os.environ.get("SMTP_PORT", "465"))
-SMTP_USER = os.environ.get("SMTP_USER", "QuizMasterProgram@yeah.net")
-SMTP_PASS = os.environ.get("SMTP_PASS", "")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 
-# 打印当前 SMTP 配置（隐藏密码）
-_smtp_display = f"{SMTP_USER} @ {SMTP_HOST}:{SMTP_PORT}"
-if SMTP_PASS:
+if RESEND_API_KEY:
     import sys as _sys
-    _sys.stderr.write(f"📧 SMTP: {_smtp_display}\n")
+    _sys.stderr.write(f"📧 Resend API 已配置\n")
     _sys.stderr.flush()
 else:
-    print(f"⚠️  SMTP 未配置 (无 SMTP_PASS)")
-
-if not SMTP_PASS:
-    print("⚠️  SMTP_PASS 未设置，验证码邮件功能不可用")
-    print("   请设置以下环境变量启用邮件：")
-    print("     SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS")
-    print("   推荐免费 SMTP 服务（云服务器友好）：")
-    print("     - SendGrid:   smtp.sendgrid.net:587 (免费 100封/天)")
-    print("     - Mailgun:    smtp.mailgun.org:587 (免费 100封/天)")
-    print("     - Gmail:      smtp.gmail.com:587   (需 App Password)")
-    print("     - QQ邮箱:     smtp.qq.com:465      (需授权码)")
+    print("⚠️  RESEND_API_KEY 未设置，验证码邮件功能不可用")
+    print("   去 https://resend.com 注册免费账号获取 API Key")
+    print("   免费套餐: 100封/天，无需信用卡")
 
 # ====== 全局限流 ======
 # 不管哪个邮箱，90 秒内只能发一封邮件，防止系统邮箱被频繁调用封号
@@ -90,49 +76,49 @@ def build_email_content(code: str, username: str) -> str:
 
 
 def send_verify_email(to_email: str, code: str, username: str) -> bool:
-    """发送验证码邮件（同步发送，3 秒超时）
-    
-    返回 True 表示发送成功，False 表示发送失败。
-    """
+    """通过 Resend API 发送验证码邮件（HTTPS，不受 SMTP 端口封锁影响）"""
     global _global_last_sent
     import sys as _sys
-    import socket as _socket
-    import traceback as _tb
 
-    _socket.setdefaulttimeout(3)
+    if not RESEND_API_KEY:
+        _sys.stderr.write("❌ RESEND_API_KEY 未配置\n")
+        return False
+
+    html_content = build_email_content(code, username)
+
+    payload = json.dumps({
+        "from": "Quiz Master <onboarding@resend.dev>",
+        "to": [to_email],
+        "subject": f"📝 Quiz Master 验证码 / Verification Code — {code}",
+        "html": html_content,
+    }).encode("utf-8")
 
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"📝 Quiz Master 验证码 / Verification Code — {code}"
-        msg["From"] = SMTP_USER
-        msg["To"] = to_email
-        msg.attach(MIMEText(build_email_content(code, username), "html", "utf-8"))
-
-        if SMTP_PORT == 465:
-            # 直连 SSL（如 QQ邮箱、yeah.net）
-            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=3) as server:
-                server.login(SMTP_USER, SMTP_PASS)
-                server.sendmail(SMTP_USER, [to_email], msg.as_string())
-        else:
-            # STARTTLS（如 Gmail 587、SendGrid 587）
-            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=3) as server:
-                server.starttls()
-                server.login(SMTP_USER, SMTP_PASS)
-                server.sendmail(SMTP_USER, [to_email], msg.as_string())
+        req = urllib.request.Request(
+            "https://api.resend.com/emails",
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+            _sys.stderr.write(f"✅ 邮件发送成功: {to_email} (id={body.get('id','')})\n")
+            _sys.stderr.flush()
 
         _global_last_sent = time.time()
-        _sys.stderr.write(f"✅ 邮件发送成功: {to_email}\n")
-        _sys.stderr.flush()
         return True
 
-    except smtplib.SMTPAuthenticationError as _e:
-        _sys.stderr.write(f"❌ 邮件认证失败: {_e}\n")
-        _sys.stderr.write(f"    user={SMTP_USER} @ {SMTP_HOST}:{SMTP_PORT}\n")
-        _sys.stderr.write(f"    App Password 可能错误，请重新生成\n")
+    except urllib.error.HTTPError as _e:
+        _body = _e.read().decode("utf-8", errors="replace")
+        _sys.stderr.write(f"❌ Resend API 错误 ({_e.code}): {_body}\n")
         _sys.stderr.flush()
         return False
     except Exception as _e:
-        _sys.stderr.write(f"❌ SMTP 发送失败 ({type(_e).__name__}): {_e}\n")
+        import traceback as _tb
+        _sys.stderr.write(f"❌ 邮件发送失败 ({type(_e).__name__}): {_e}\n")
         _tb.print_exc(file=_sys.stderr)
         _sys.stderr.flush()
         return False
