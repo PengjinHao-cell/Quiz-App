@@ -1,23 +1,19 @@
-<p align="center">
-  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.9%2B-blue" alt="Python"></a>
-  <a href="https://flask.palletsprojects.com/"><img src="https://img.shields.io/badge/Flask-3.0-green" alt="Flask"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow" alt="License"></a>
-  <a href="https://quiz-app-production-9e7f.up.railway.app"><img src="https://img.shields.io/badge/Live-Online-brightgreen" alt="Live"></a>
-  <a href="https://github.com/PengjinHao-cell/Quiz-App"><img src="https://img.shields.io/badge/GitHub-Repo-181717" alt="GitHub"></a>
-</p>
-
-<p align="center">
-  <strong><a href="#简体中文">🇨🇳 简体中文</a></strong> · <strong><a href="#english">🇬🇧 English</a></strong> · <strong><a href="#繁體中文">🇭🇰 繁體中文</a></strong>
-</p>
-
-<hr>
-
 <h2 id="简体中文">🇨🇳 简体中文</h2>
 
 <h1 align="center">📝 刷题通 (Quiz Master) v1.2.1</h1>
 
 <p align="center">
   <em>🎉 正式版发布 · 安全加固 · Railway 托管 · PostgreSQL 数据库</em>
+</p>
+
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.9%2B-blue" alt="Python"></a>
+  <a href="https://flask.palletsprojects.com/"><img src="https://img.shields.io/badge/Flask-3.0-green" alt="Flask"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow" alt="License"></a>
+  <a href="https://quiz-app-production-9e7f.up.railway.app"><img src="https://img.shields.io/badge/Live-Online-brightgreen" alt="Live"></a>
+  <a href="https://github.com/PengjinHao-cell/Quiz-App"><img src="https://img.shields.io/badge/GitHub-Repo-181717" alt="GitHub"></a>
+  <br>
+  <strong><a href="#简体中文">🇨🇳 简体中文</a></strong> · <strong><a href="#english">🇬🇧 English</a></strong> · <strong><a href="#繁體中文">🇭🇰 繁體中文</a></strong>
 </p>
 
 <p align="center">
