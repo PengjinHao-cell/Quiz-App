@@ -6,10 +6,9 @@
 - 中英双语邮件模板
 """
 import os
-import json
 import random
 import time
-import urllib.request
+import requests
 
 # ====== 配置（从环境变量读取，不上传 GitHub） ======
 _env_path = os.path.join(os.path.dirname(__file__), ".env")
@@ -86,34 +85,35 @@ def send_verify_email(to_email: str, code: str, username: str) -> bool:
 
     html_content = build_email_content(code, username)
 
-    payload = json.dumps({
+    payload = {
         "from": "noreply@quizmasterprogram.top",
         "to": [to_email],
         "subject": f"📝 Quiz Master 验证码 / Verification Code — {code}",
         "html": html_content,
-    }).encode("utf-8")
+    }
 
     try:
-        req = urllib.request.Request(
+        resp = requests.post(
             "https://api.resend.com/emails",
-            data=payload,
+            json=payload,
             headers={
                 "Authorization": f"Bearer {RESEND_API_KEY}",
-                "Content-Type": "application/json",
             },
-            method="POST",
+            timeout=10,
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            body = json.loads(resp.read().decode("utf-8"))
+        if resp.ok:
+            body = resp.json()
             _sys.stderr.write(f"✅ 邮件发送成功: {to_email} (id={body.get('id','')})\n")
             _sys.stderr.flush()
+            _global_last_sent = time.time()
+            return True
+        else:
+            _sys.stderr.write(f"❌ Resend API 错误 ({resp.status_code}): {resp.text}\n")
+            _sys.stderr.flush()
+            return False
 
-        _global_last_sent = time.time()
-        return True
-
-    except urllib.error.HTTPError as _e:
-        _body = _e.read().decode("utf-8", errors="replace")
-        _sys.stderr.write(f"❌ Resend API 错误 ({_e.code}): {_body}\n")
+    except requests.exceptions.Timeout:
+        _sys.stderr.write("❌ 邮件发送超时\n")
         _sys.stderr.flush()
         return False
     except Exception as _e:
