@@ -1274,28 +1274,38 @@ def api_sync_wrong_book():
 
         existing = WrongAnswer.query.filter_by(
             user_id=user_id, question_key=question_key
-        ).first()
+        ).with_for_update().first()
 
         if existing:
             existing.wrong_count = item.get("wrong_count", existing.wrong_count)
             existing.user_wrong_answer = item.get("user_wrong_answer", existing.user_wrong_answer)
             existing.last_wrong_time = item.get("last_wrong_time", existing.last_wrong_time)
         else:
-            wa = WrongAnswer(
-                user_id=user_id,
-                question_key=question_key,
-                bank_id=item.get("bank_id", ""),
-                bank_name=item.get("bank_name", ""),
-                question_id=item.get("question_id", ""),
-                question_text=item.get("question_text", ""),
-                question_options=item.get("question_options", "{}"),
-                correct_answer=item.get("correct_answer", ""),
-                user_wrong_answer=item.get("user_wrong_answer", ""),
-                question_type=item.get("type", "single"),
-                wrong_count=item.get("wrong_count", 1),
-                last_wrong_time=item.get("last_wrong_time", ""),
-            )
-            db.session.add(wa)
+            try:
+                wa = WrongAnswer(
+                    user_id=user_id,
+                    question_key=question_key,
+                    bank_id=item.get("bank_id", ""),
+                    bank_name=item.get("bank_name", ""),
+                    question_id=item.get("question_id", ""),
+                    question_text=item.get("question_text", ""),
+                    question_options=item.get("question_options", "{}"),
+                    correct_answer=item.get("correct_answer", ""),
+                    user_wrong_answer=item.get("user_wrong_answer", ""),
+                    question_type=item.get("type", "single"),
+                    wrong_count=item.get("wrong_count", 1),
+                    last_wrong_time=item.get("last_wrong_time", ""),
+                )
+                db.session.add(wa)
+                db.session.flush()
+            except Exception:
+                db.session.rollback()
+                # 并发插入冲突，退化为更新
+                existing = WrongAnswer.query.filter_by(
+                    user_id=user_id, question_key=question_key
+                ).first()
+                if existing:
+                    existing.wrong_count = item.get("wrong_count", existing.wrong_count)
 
     db.session.commit()
     return jsonify({"success": True})
