@@ -194,6 +194,7 @@
                     return data;
                 })
                 .then((data) => {
+                    onUserLogin(data.username);
                     window.location.href = "/app";
                 })
                 .catch((err) => {

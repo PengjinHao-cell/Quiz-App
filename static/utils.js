@@ -611,3 +611,27 @@ function clearAllHistoryLocal() {
     localStorage.removeItem("quizHistory");
     clearHistoryOnServer();
 }
+
+// ========== 用户切换检测 ==========
+
+const _QUIZ_DATA_KEYS = ["quizWrongBook", "quizFavorites", "quizHistory", "quizWrongBookDeletedKeys"];
+
+/**
+ * 清空当前设备上所有答题相关 localStorage 数据
+ * 用于用户切换时防止数据残留
+ */
+function clearLocalQuizData() {
+    _QUIZ_DATA_KEYS.forEach(function(k) { localStorage.removeItem(k); });
+}
+
+/**
+ * 登录/注册成功后调用，检测用户是否切换，必要时清空旧数据
+ * @param {string} username - 当前登录用户名
+ */
+function onUserLogin(username) {
+    var prevUser = localStorage.getItem("quizLastUser");
+    if (prevUser !== username) {
+        clearLocalQuizData();
+    }
+    localStorage.setItem("quizLastUser", username);
+}
