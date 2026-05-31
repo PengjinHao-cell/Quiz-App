@@ -34,7 +34,6 @@ else:
 # ====== 全局限流 ======
 # 不管哪个邮箱，90 秒内只能发一封邮件，防止系统邮箱被频繁调用封号
 _global_last_sent = 0.0   # 上次发送时间戳
-_verify_codes = {}         # {email: {"code": "...", "expire_at": ...}}
 COOLDOWN_SECONDS = 90
 EXPIRE_SECONDS = 300
 
@@ -140,12 +139,15 @@ def can_send_code() -> tuple:
 
 
 def store_code(email: str, code: str):
-    """存储验证码"""
+    """存储验证码到数据库（跨进程/跨实例共享）"""
+    from models import db, VerificationCode
     now = time.time()
-    _verify_codes[email] = {
-        "code": code,
-        "expire_at": now + EXPIRE_SECONDS,
-    }
+    # 先清理该邮箱的旧验证码
+    VerificationCode.query.filter_by(email=email).delete()
+    # 存入新验证码
+    vc = VerificationCode(email=email, code=code, expires_at=now + EXPIRE_SECONDS)
+    db.session.add(vc)
+    db.session.commit()
 
 
 def send_error_report(username: str, email: str, description: str, log_text: str) -> bool:
@@ -184,14 +186,20 @@ def send_error_report(username: str, email: str, description: str, log_text: str
 
 
 def verify_code(email: str, code: str) -> bool:
-    """验证验证码是否正确且在有效期内"""
-    if email not in _verify_codes:
+    """验证验证码是否正确且在有效期内（数据库查询，跨进程安全）"""
+    from models import db, VerificationCode
+    now = time.time()
+    # 清理过期验证码
+    VerificationCode.cleanup_expired()
+    # 查找该邮箱的有效验证码
+    vc = VerificationCode.query.filter_by(email=email).filter(
+        VerificationCode.expires_at > now
+    ).first()
+    if not vc:
         return False
-    data = _verify_codes[email]
-    if time.time() > data["expire_at"]:
-        del _verify_codes[email]
+    if vc.code != code:
         return False
-    if data["code"] != code:
-        return False
-    del _verify_codes[email]
+    # 验证成功后删除
+    db.session.delete(vc)
+    db.session.commit()
     return True

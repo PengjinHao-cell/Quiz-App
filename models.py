@@ -3,6 +3,7 @@
 - User: 用户表
 """
 import re
+import time
 from datetime import datetime, timezone, timedelta
 from flask_login import UserMixin
 
@@ -178,6 +179,24 @@ class QuestionBank(db.Model):
     data_json = db.Column(db.Text, default="{}")  # 完整题库 JSON
     is_official = db.Column(db.Boolean, default=False)  # 管理员标记的官方题库
     created_at = db.Column(db.DateTime, default=beijing_now)
+
+
+class VerificationCode(db.Model):
+    """邮箱验证码（数据库存储，解决多进程/多实例内存不共享问题）"""
+    __tablename__ = "verification_codes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False, index=True)
+    code = db.Column(db.String(6), nullable=False)
+    expires_at = db.Column(db.Float, nullable=False)  # time.time() 时间戳
+    created_at = db.Column(db.DateTime, default=beijing_now)
+
+    @classmethod
+    def cleanup_expired(cls):
+        """删除所有过期验证码"""
+        now = time.time()
+        cls.query.filter(cls.expires_at < now).delete()
+        db.session.commit()
 
 
 class SystemLog(db.Model):
