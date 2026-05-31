@@ -43,7 +43,8 @@ document.addEventListener("DOMContentLoaded", () => {
 // ========== 云端数据加载（登录用户） ==========
 
 /**
- * 从服务器拉取用户的错题本/收藏/历史记录，合并到 localStorage
+ * 从服务器拉取用户的错题本/收藏/历史记录
+ * 如果检测到新设备（云端有数据，本地为空），弹出恢复公告
  */
 async function loadServerData() {
     if (!isLoggedIn()) return;
@@ -53,16 +54,65 @@ async function loadServerData() {
         if (!res.ok) return;
         const data = await res.json();
 
-        // 仅记录同步状态到控制台，不做数据合并
-        // 错题/收藏/历史数据的同步方向：本地 → 服务器（备份用途）
         const wbCount = Object.keys(data.wrong_book || {}).length;
         const favCount = Object.keys(data.favorites || {}).length;
         const histCount = (data.history || []).length;
-        if (wbCount > 0 || favCount > 0 || histCount > 0) {
-            console.log(`☁️ 服务器已有备份数据: ${wbCount}错题 ${favCount}收藏 ${histCount}条记录`);
+
+        if (wbCount === 0 && favCount === 0 && histCount === 0) return;
+
+        console.log(`☁️ 服务器已有备份数据: ${wbCount}错题 ${favCount}收藏 ${histCount}条记录`);
+
+        // 检测是否为新设备（本地无数据，云端有数据）
+        var localWB = getWrongBook();
+        var localFav = getFavorites();
+        var localHist = [];
+        try { localHist = JSON.parse(localStorage.getItem("quizHistory") || "[]"); } catch (_) {}
+
+        if (Object.keys(localWB).length === 0 && Object.keys(localFav).length === 0 && localHist.length === 0) {
+            showRestoreBanner(wbCount, favCount, histCount);
         }
     } catch (_) {
         // 静默失败，不影响本地使用
+    }
+}
+
+/**
+ * 在主页顶部注入"新设备检测"恢复公告
+ */
+function showRestoreBanner(wbCount, favCount, histCount) {
+    if (document.getElementById("restore-banner")) return;
+
+    var header = document.querySelector("header.quiz-header");
+    if (!header) return;
+
+    var lang = (typeof USER_LANG !== "undefined" && USER_LANG === "en") ? "en" : "zh";
+    var banner = document.createElement("div");
+    banner.id = "restore-banner";
+    banner.className = "announcement-banner";
+    banner.style.background = "linear-gradient(135deg, #d4edda, #c3e6cb)";
+    banner.style.color = "#155724";
+    banner.style.border = "1px solid #b7dfb9";
+
+    var text = lang === "en"
+        ? 'New device detected! Cloud has <b>' + wbCount + '</b> wrong answers, <b>' + favCount + '</b> favorites, <b>' + histCount + '</b> records. <a href="#" onclick="event.preventDefault();handleBannerRestore()" style="color:#2563eb;font-weight:600;text-decoration:underline;">Restore now</a>'
+        : '检测到新设备！云端存有 <b>' + wbCount + '</b> 道错题、<b>' + favCount + '</b> 个收藏、<b>' + histCount + '</b> 条学习记录。<a href="#" onclick="event.preventDefault();handleBannerRestore()" style="color:#2563eb;font-weight:600;text-decoration:underline;">点击恢复</a>';
+
+    banner.innerHTML = '<span class="announcement-icon">☁️</span><span class="announcement-text">' + text + '</span><button class="announcement-close" onclick="this.parentElement.remove()" title="' + (lang === 'en' ? 'Close' : '关闭') + '" style="color:#155724;">✕</button>';
+    header.parentNode.insertBefore(banner, header.nextSibling);
+}
+
+/**
+ * 公告中的"点击恢复"按钮回调
+ */
+async function handleBannerRestore() {
+    var banner = document.getElementById("restore-banner");
+    if (banner) banner.remove();
+    var ok = await restoreFromServer();
+    if (ok) {
+        renderStats();
+        renderHistory();
+        renderFavorites();
+        renderWrongBook();
     }
 }
 
