@@ -4,5 +4,5 @@
   from version import VERSION
   模板中通过 {{ VERSION }} 使用
 """
-VERSION = "1.2.1"
+VERSION = "1.2.2"
 VERSION_NAME = f"v{VERSION}"

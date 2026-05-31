@@ -1,6 +1,6 @@
 <h2 id="简体中文">🇨🇳 简体中文</h2>
 
-<h1 align="center">📝 刷题通 (Quiz Master) v1.2.1</h1>
+<h1 align="center">📝 刷题通 (Quiz Master) v1.2.2</h1>
 
 <p align="center">
   <em>🎉 正式版发布 · 安全加固 · Railway 托管 · PostgreSQL 数据库</em>
@@ -84,6 +84,7 @@ python3 app.py
 
 | 版本 | 亮点 |
 |------|------|
+| **v1.2.2** | 🐛 修复多进程验证码丢失（内存→数据库） · 🧹 移除 QQ 邮箱公告 |
 | **v1.2.1** | 🔐 权限体系 · 📋 系统日志 · 📮 用户反馈 · ☁️ 跨设备恢复 · ♻️ 版本号自动化 · 🐛 索引漂移修复 · 🧹 统一操作入口 · 🧪 自动化测试 46 个 |
 | **v1.1.0** | 🗄️ 题库持久化到 PostgreSQL，告别 JSON 文件，Redeploy 不丢数据 |
 | **v1.0.2** | 📧 邮箱验证码（自定义域名 + Resend）· ⚙️ 管理后台 · 数据库自动迁移 |
@@ -98,7 +99,7 @@ python3 app.py
 
 <h2 id="english">🇬🇧 English</h2>
 
-<h1 align="center">📝 Quiz Master v1.2.1</h1>
+<h1 align="center">📝 Quiz Master v1.2.2</h1>
 
 <p align="center">
   <em>A lightweight, feature-rich quiz web application with AI-powered parsing, reading comprehension mode, and smart annotation tools.</em><br>
@@ -145,6 +146,7 @@ python3 app.py
 
 | Version | Highlights |
 |---------|-----------|
+| **v1.2.2** | Fix multi-worker verification code loss (memory→DB) · Remove QQ email notice |
 | **v1.2.1** | Permissions · SystemLog · User feedback · Cross-device restore · Version auto-busting · Index bug fix · Unified operations · 46 tests |
 | **v1.1.0** | PostgreSQL bank storage — no more data loss on redeploy |
 | **v1.0.2** | Email verification (custom domain + Resend) · Admin panel |
@@ -159,7 +161,7 @@ python3 app.py
 
 <h2 id="繁體中文">🇭🇰 繁體中文</h2>
 
-<h1 align="center">📝 刷題通 (Quiz Master) v1.2.1</h1>
+<h1 align="center">📝 刷題通 (Quiz Master) v1.2.2</h1>
 
 <p align="center">
   <em>正式版發佈 · 安全加固 · Railway 託管 · PostgreSQL 數據庫</em>
@@ -192,5 +194,5 @@ python3 app.py
 <p align="center">
   <a href="https://github.com/PengjinHao-cell/Quiz-App">📦 GitHub</a> ·
   <a href="https://quiz-app-production-9e7f.up.railway.app">🌐 Live Demo</a><br>
-  <sub>Made with ❤️ by PengjinHao · © 2026 Quiz Master · v1.2.1</sub>
+  <sub>Made with ❤️ by PengjinHao · © 2026 Quiz Master · v1.2.2</sub>
 </p>
