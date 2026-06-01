@@ -40,3 +40,4 @@ data/*.json
 !data/eng_fill_50.json
 !data/vocab_cet6.json
 !data/3f96a09933c4.json
+!data/1fe8ae112b46.json
