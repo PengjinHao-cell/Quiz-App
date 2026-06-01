@@ -201,26 +201,6 @@ function handleUpload(e) {
         });
 }
 
-// ---------- 模态框工具 ----------
-
-function _createModal(html) {
-    const overlay = document.createElement("div");
-    overlay.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;animation:fadeInModal 0.2s ease;";
-    const box = document.createElement("div");
-    box.style.cssText = "background:#fff;border-radius:16px;padding:28px 32px;max-width:420px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,0.2);animation:slideUpModal 0.25s ease;";
-    box.innerHTML = html;
-    overlay.appendChild(box);
-    document.body.appendChild(overlay);
-    if (!document.getElementById("modal-style-inj")) {
-        const s = document.createElement("style"); s.id = "modal-style-inj";
-        s.textContent = "@keyframes fadeInModal{from{opacity:0}to{opacity:1}}@keyframes slideUpModal{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}";
-        document.head.appendChild(s);
-    }
-    overlay.addEventListener("click", e => { if (e.target === overlay) _closeModal(overlay); });
-    return overlay;
-}
-function _closeModal(el) { el.style.opacity = "0"; setTimeout(() => el.remove(), 200); }
-
 // ---------- 删除题库 ----------
 
 function deleteBank(bankId, bankName, isOfficial) {
@@ -1257,11 +1237,12 @@ function deleteWrongItem(key) {
 }
 
 function clearWrongBook() {
-    if (!confirm("确定要清空所有错题吗？")) return;
-    localStorage.removeItem(WRONG_BOOK_KEY);
-    renderWrongBook();
-    showToast("错题本已清空", "success");
-    clearWrongBookOnServer();
+    showConfirmModal("确定要清空所有错题吗？此操作不可撤销。", function() {
+        localStorage.removeItem(WRONG_BOOK_KEY);
+        renderWrongBook();
+        showToast("错题本已清空", "success");
+        clearWrongBookOnServer();
+    });
 }
 
 

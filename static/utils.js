@@ -635,3 +635,42 @@ function onUserLogin(username) {
     }
     localStorage.setItem("quizLastUser", username);
 }
+
+// ========== 模态框工具 ==========
+
+function _createModal(html) {
+    const overlay = document.createElement("div");
+    overlay.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;animation:fadeInModal 0.2s ease;";
+    const box = document.createElement("div");
+    box.style.cssText = "background:#fff;border-radius:16px;padding:28px 32px;max-width:420px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,0.2);animation:slideUpModal 0.25s ease;";
+    box.innerHTML = html;
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    if (!document.getElementById("modal-style-inj")) {
+        const s = document.createElement("style"); s.id = "modal-style-inj";
+        s.textContent = "@keyframes fadeInModal{from{opacity:0}to{opacity:1}}@keyframes slideUpModal{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}";
+        document.head.appendChild(s);
+    }
+    overlay.addEventListener("click", e => { if (e.target === overlay) _closeModal(overlay); });
+    return overlay;
+}
+function _closeModal(el) { el.style.opacity = "0"; setTimeout(() => el.remove(), 200); }
+
+/**
+ * 通用确认删除模态框
+ * @param {string} message - 提示文字
+ * @param {function} onConfirm - 确认后的回调
+ */
+function showConfirmModal(message, onConfirm) {
+    const html = `<div style="text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:12px;">⚠️</div>
+        <p style="color:#4a5568;font-size:0.95rem;margin-bottom:20px;line-height:1.6;">${message}</p>
+        <div style="display:flex;gap:10px;justify-content:center;">
+            <button id="confirm-cancel-btn" style="padding:8px 24px;border:2px solid #e2e8f0;border-radius:8px;background:#fff;font-size:0.85rem;cursor:pointer;">取消</button>
+            <button id="confirm-ok-btn" style="padding:8px 24px;border:none;border-radius:8px;background:#e53e3e;color:#fff;font-size:0.85rem;cursor:pointer;">确认删除</button>
+        </div>
+    </div>`;
+    const m = _createModal(html);
+    m.querySelector("#confirm-cancel-btn").addEventListener("click", () => _closeModal(m));
+    m.querySelector("#confirm-ok-btn").addEventListener("click", () => { _closeModal(m); onConfirm(); });
+}
