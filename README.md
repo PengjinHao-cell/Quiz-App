@@ -10,14 +10,14 @@
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.9%2B-blue" alt="Python"></a>
   <a href="https://flask.palletsprojects.com/"><img src="https://img.shields.io/badge/Flask-3.0-green" alt="Flask"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow" alt="License"></a>
-  <a href="https://quiz-app-production-9e7f.up.railway.app"><img src="https://img.shields.io/badge/Live-Online-brightgreen" alt="Live"></a>
+  <a href="https://quizmaster.cn"><img src="https://img.shields.io/badge/Live-Online-brightgreen" alt="Live"></a>
   <a href="https://github.com/PengjinHao-cell/Quiz-App"><img src="https://img.shields.io/badge/GitHub-Repo-181717" alt="GitHub"></a>
   <br>
   <strong><a href="#简体中文">🇨🇳 简体中文</a></strong> · <strong><a href="#english">🇬🇧 English</a></strong> · <strong><a href="#繁體中文">🇭🇰 繁體中文</a></strong>
 </p>
 
 <p align="center">
-  🔗 <strong><a href="https://quiz-app-production-9e7f.up.railway.app">🌐 在线体验</a></strong><br>
+  🔗 <strong><a href="https://quizmaster.cn">🌐 在线体验</a></strong><br>
   <sub>托管于 Railway，数据持久化存储</sub>
 </p>
 
@@ -69,7 +69,7 @@ python3 app.py
 
 ### 🌐 部署（Railway）
 
-在线地址：[quiz-app-production-9e7f.up.railway.app](https://quiz-app-production-9e7f.up.railway.app)
+在线地址：[quizmaster.cn](https://quizmaster.cn)
 
 | 环境变量 | 说明 |
 |----------|------|
@@ -108,7 +108,7 @@ python3 app.py
 </p>
 
 <p align="center">
-  🔗 <strong><a href="https://quiz-app-production-9e7f.up.railway.app">🌐 Live Demo</a></strong>
+  🔗 <strong><a href="https://quizmaster.cn">🌐 Live Demo</a></strong>
 </p>
 
 ### ✨ Features
@@ -195,6 +195,6 @@ python3 app.py
 
 <p align="center">
   <a href="https://github.com/PengjinHao-cell/Quiz-App">📦 GitHub</a> ·
-  <a href="https://quiz-app-production-9e7f.up.railway.app">🌐 Live Demo</a><br>
+  <a href="https://quizmaster.cn">🌐 Live Demo</a><br>
   <sub>Made with ❤️ by PengjinHao · © 2026 Quiz Master · v1.2.3</sub>
 </p>

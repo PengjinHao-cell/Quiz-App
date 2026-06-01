@@ -97,7 +97,7 @@ def _init_default_admin():
                 db.session.commit()
                 print(f"✅ 用户「{username}」已升级为管理员")
             return
-        user = User(username=username, email=f"{username}@quizmaster.app", is_admin=True)
+        user = User(username=username, email=f"{username}@quizmaster.cn", is_admin=True)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
@@ -319,6 +319,7 @@ def load_bank_list() -> list:
                 "question_count": total_q,
                 "passage_count": len(passages),
                 "is_official": qb.is_official,
+                "owner_user_id": qb.user_id,
             })
             continue
 
@@ -343,6 +344,7 @@ def load_bank_list() -> list:
             "judge_count": judge_count,
             "fill_count": fill_count,
             "is_official": qb.is_official,
+            "owner_user_id": qb.user_id,
         })
 
     banks.sort(key=lambda b: b.get("original_filename", "").lower())
@@ -453,7 +455,7 @@ def sample_questions_proportional(questions: list, count: int) -> list:
     return result
 
 
-def save_bank(bank_id: str, data: dict):
+def save_bank(bank_id: str, data: dict, user_id: int = None, is_official: bool = False):
     """保存题库到数据库"""
     bank_type = data.get("type", "quiz")
     language = data.get("language", "zh") if bank_type == "reading" else "zh"
@@ -463,13 +465,18 @@ def save_bank(bank_id: str, data: dict):
         qb.type = bank_type
         qb.language = language
         qb.data_json = json.dumps(data, ensure_ascii=False)
+        if user_id is not None:
+            qb.user_id = user_id
+        qb.is_official = is_official
     else:
         qb = QuestionBank(
             id=bank_id,
+            user_id=user_id,
             original_filename=data.get("original_filename", ""),
             upload_time=data.get("upload_time", ""),
             type=bank_type,
             language=language,
+            is_official=is_official,
             data_json=json.dumps(data, ensure_ascii=False),
         )
         db.session.add(qb)
@@ -588,13 +595,9 @@ def upload():
             "upload_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "passages": parsed.get("passages", []),
         }
-        save_bank(bank_id, bank_data)
-        # 管理员上传自动标记为官方
-        if current_user.is_authenticated and getattr(current_user, "is_admin", False):
-            qb = QuestionBank.query.get(bank_id)
-            if qb:
-                qb.is_official = True
-                db.session.commit()
+        is_admin_upload = current_user.is_authenticated and getattr(current_user, "is_admin", False)
+        upload_user_id = current_user.id if current_user.is_authenticated else None
+        save_bank(bank_id, bank_data, user_id=upload_user_id, is_official=is_admin_upload)
         _invalidate_bank_cache()
         total_q = sum(len(p.get("questions", [])) for p in bank_data["passages"])
         dup = check_name_duplicate(original_filename, exclude_id=bank_id)
@@ -613,12 +616,9 @@ def upload():
             "upload_time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "questions": questions,
         }
-        save_bank(bank_id, bank_data)
-        if current_user.is_authenticated and getattr(current_user, "is_admin", False):
-            qb = QuestionBank.query.get(bank_id)
-            if qb:
-                qb.is_official = True
-                db.session.commit()
+        is_admin_upload = current_user.is_authenticated and getattr(current_user, "is_admin", False)
+        upload_user_id = current_user.id if current_user.is_authenticated else None
+        save_bank(bank_id, bank_data, user_id=upload_user_id, is_official=is_admin_upload)
         _invalidate_bank_cache()
         add_log("info", "上传", f"上传题库: {original_filename}", user_id=getattr(current_user, 'id', None), username=getattr(current_user, 'username', 'guest'))
         dup = check_name_duplicate(original_filename, exclude_id=bank_id)
@@ -886,8 +886,10 @@ def api_rename_bank(bank_id):
 @app.route("/api/bank/<bank_id>/delete", methods=["POST"])
 def api_delete_bank(bank_id):
     """删除题库
-    - 管理员：需 DELETE_PASSWORD 或管理员密码
-    - 普通用户：需输入题库名称确认（双重认证）
+    - 官方题库：仅管理员可删除（密码验证）
+    - 普通题库（管理员上传或标记官方）：管理员任意删（密码验证）
+    - 用户自有题库：所有者输入名称确认删除
+    - 访客：不可删除
     """
     data = request.get_json() or {}
     # 访客不可删除
@@ -898,20 +900,34 @@ def api_delete_bank(bank_id):
     if not qb:
         return jsonify({"error": "题库不存在"}), 404
 
-    is_admin = current_user.is_authenticated and getattr(current_user, "is_admin", False)
+    is_admin = getattr(current_user, "is_admin", False)
 
-    if is_admin:
-        # 管理员：密码验证
+    # 官方题库：仅管理员可删除
+    if qb.is_official:
+        if not is_admin:
+            return jsonify({"error": "官方题库仅管理员可删除，请联系管理员"}), 403
+        # 管理员删除官方题库：密码验证
         pwd = data.get("password", "")
         expected = os.environ.get("DELETE_PASSWORD", "")
         if not expected:
-            expected = current_user.password_hash
             if not current_user.check_password(pwd):
-                return jsonify({"error": "删除密码错误"}), 403
+                return jsonify({"error": "管理员密码错误"}), 403
+        elif pwd != expected:
+            return jsonify({"error": "删除密码错误"}), 403
+    elif is_admin:
+        # 管理员删除普通题库：密码验证
+        pwd = data.get("password", "")
+        expected = os.environ.get("DELETE_PASSWORD", "")
+        if not expected:
+            if not current_user.check_password(pwd):
+                return jsonify({"error": "管理员密码错误"}), 403
         elif pwd != expected:
             return jsonify({"error": "删除密码错误"}), 403
     else:
-        # 普通用户：输入题库名称确认
+        # 普通用户：只能删除自己的题库
+        if qb.user_id is not None and qb.user_id != current_user.id:
+            return jsonify({"error": "只能删除自己上传的题库"}), 403
+        # 输入题库名称确认
         confirm_name = (data.get("confirm_name") or "").strip()
         if confirm_name != qb.original_filename:
             return jsonify({"error": "输入的题库名称不匹配"}), 403

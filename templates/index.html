@@ -194,7 +194,7 @@
                             <a href="#" class="btn btn-primary" onclick="startQuiz('{{ bank.id }}', 'practice')">练习模式</a>
                             <a href="#" class="btn btn-exam" onclick="startQuiz('{{ bank.id }}', 'exam')">考试模式</a>
                             {% endif %}
-                            {% if current_user.is_authenticated %}<button class="btn btn-danger" onclick="deleteBank('{{ bank.id }}','{{ bank.original_filename|escape }}',{{ 'true' if bank.is_official else 'false' }})">删除</button>{% endif %}
+                            {% if current_user.is_authenticated and (current_user.is_admin or (not bank.is_official and (bank.owner_user_id is none or bank.owner_user_id == current_user.id))) %}<button class="btn btn-danger" onclick="deleteBank('{{ bank.id }}','{{ bank.original_filename|escape }}',{{ 'true' if bank.is_official else 'false' }})">删除</button>{% endif %}
                         </div>
                     </div>
                     {% endfor %}

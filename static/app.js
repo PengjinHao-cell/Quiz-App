@@ -249,6 +249,14 @@ function deleteBank(bankId, bankName, isOfficial) {
             </div></div>`;
     }
     const m = _createModal(html);
+    // 绑定取消按钮关闭模态框
+    const btns = m.querySelectorAll('button');
+    for (const btn of btns) {
+        if (!btn.hasAttribute('onclick')) {
+            btn.addEventListener('click', () => _closeModal(m));
+            break;
+        }
+    }
     setTimeout(() => { const i = document.getElementById("del-inp"); if(i) i.focus(); }, 100);
 }
 

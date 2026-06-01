@@ -59,7 +59,7 @@ def main():
 
     print(f"\n✅ 已保存到: {out_path}")
     print(f"   题库 ID: {bank_id}")
-    print(f"   进入 http://localhost:5050/quiz/{bank_id} 即可刷题")
+    print(f"   进入 https://quizmaster.cn/quiz/{bank_id} 即可刷题")
 
 
 if __name__ == "__main__":

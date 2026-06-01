@@ -23,7 +23,7 @@ def main():
             print(f"✅ 管理员用户「{ADMIN_USERNAME}」已存在，跳过")
             return
 
-        user = User(username=ADMIN_USERNAME, email="admin@quizmaster.app")
+        user = User(username=ADMIN_USERNAME, email="admin@quizmaster.cn")
         user.set_password(ADMIN_PASSWORD)
         db.session.add(user)
         db.session.commit()
