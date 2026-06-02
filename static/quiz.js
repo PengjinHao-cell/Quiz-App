@@ -758,7 +758,7 @@ async function submitExam() {
     const unanswered = questions.length - answered;
 
     let detail = unanswered > 0 ? `还有 ${unanswered} 道题未作答` : "";
-    const confirmed = await showConfirmModal("确定要交卷吗？", detail);
+    const confirmed = await showConfirmModal("确定要交卷吗？", detail, "确认交卷");
     if (!confirmed) return;
 
     // 构建提交数据：将多选题答案转换为排序字符串

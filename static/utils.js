@@ -19,22 +19,24 @@ function dismissSplash() {
  * 弹窗式确认框（替代 confirm()，带样式，返回 Promise）
  * @param {string} message - 主消息
  * @param {string} [detail] - 次要说明（灰色小字）
+ * @param {string} [confirmText] - 确认按钮文字，默认"确认"
  * @returns {Promise<boolean>}
  */
-function showConfirmModal(message, detail) {
+function showConfirmModal(message, detail, confirmText) {
+    if (confirmText === undefined) confirmText = "确认";
     return new Promise((resolve) => {
-        // 创建遮罩+弹窗
         const overlay = document.createElement("div");
         overlay.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;animation:fadeInModal 0.2s ease;";
         const modal = document.createElement("div");
         modal.style.cssText = "background:#fff;border-radius:16px;padding:28px 32px;max-width:400px;width:90%;box-shadow:0 12px 40px rgba(0,0,0,0.2);text-align:center;animation:slideUpModal 0.25s ease;";
+        const detailHtml = detail ? `<p style="font-size:0.85rem;color:#a0aec0;margin-bottom:20px;">${escapeHTML(detail)}</p>` : '<div style="height:20px;"></div>';
         modal.innerHTML = `
             <div style="font-size:2rem;margin-bottom:12px;">⚠️</div>
             <p style="font-size:1rem;color:#2d3748;font-weight:600;margin-bottom:8px;">${escapeHTML(message)}</p>
-            ${detail ? `<p style="font-size:0.85rem;color:#a0aec0;margin-bottom:20px;">${escapeHTML(detail)}</p>` : '<div style="height:20px;"></div>'}
+            ${detailHtml}
             <div style="display:flex;gap:12px;justify-content:center;">
                 <button id="modal-cancel" style="padding:10px 24px;border:2px solid #e2e8f0;border-radius:10px;background:#fff;font-size:0.9rem;font-weight:600;color:#4a5568;cursor:pointer;">取消</button>
-                <button id="modal-confirm" style="padding:10px 24px;border:none;border-radius:10px;background:#e53e3e;font-size:0.9rem;font-weight:600;color:#fff;cursor:pointer;">确认</button>
+                <button id="modal-confirm" style="padding:10px 24px;border:none;border-radius:10px;background:#e53e3e;font-size:0.9rem;font-weight:600;color:#fff;cursor:pointer;">${confirmText}</button>
             </div>
         `;
         overlay.appendChild(modal);
@@ -656,21 +658,4 @@ function _createModal(html) {
 }
 function _closeModal(el) { el.style.opacity = "0"; setTimeout(() => el.remove(), 200); }
 
-/**
- * 通用确认删除模态框
- * @param {string} message - 提示文字
- * @param {function} onConfirm - 确认后的回调
- */
-function showConfirmModal(message, onConfirm) {
-    const html = `<div style="text-align:center;">
-        <div style="font-size:2.5rem;margin-bottom:12px;">⚠️</div>
-        <p style="color:#4a5568;font-size:0.95rem;margin-bottom:20px;line-height:1.6;">${message}</p>
-        <div style="display:flex;gap:10px;justify-content:center;">
-            <button id="confirm-cancel-btn" style="padding:8px 24px;border:2px solid #e2e8f0;border-radius:8px;background:#fff;font-size:0.85rem;cursor:pointer;">取消</button>
-            <button id="confirm-ok-btn" style="padding:8px 24px;border:none;border-radius:8px;background:#e53e3e;color:#fff;font-size:0.85rem;cursor:pointer;">确认删除</button>
-        </div>
-    </div>`;
-    const m = _createModal(html);
-    m.querySelector("#confirm-cancel-btn").addEventListener("click", () => _closeModal(m));
-    m.querySelector("#confirm-ok-btn").addEventListener("click", () => { _closeModal(m); onConfirm(); });
-}
+

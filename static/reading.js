@@ -191,7 +191,7 @@ async function submitReading() {
     const totalQ = passages.reduce((sum, p) => sum + p.questions.length, 0);
     const answered = Object.values(userAnswers).filter(a => a !== "").length;
     if (answered < totalQ) {
-        const ok = await showConfirmModal(`还有 ${totalQ - answered} 题未作答`, "确定提交评判吗？");
+        const ok = await showConfirmModal(`还有 ${totalQ - answered} 题未作答`, "确定提交评判吗？", "确认提交");
         if (!ok) return;
     }
     submitted = true;

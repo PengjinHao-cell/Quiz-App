@@ -160,9 +160,10 @@
             }
             container.innerHTML = html;
         }
-        function deleteFavoriteItem(key) {
-            showConfirmModal(USER_LANG==='en'?'Remove this favorite?' : '确定移除这个收藏吗？', function() {
-                // 找到对应的 DOM 元素并动画删除
+        async function deleteFavoriteItem(key) {
+            const ok = await showConfirmModal(USER_LANG==='en'?'Remove this favorite?' : '确定移除这个收藏吗？', '', '确认移除');
+            if (!ok) return;
+            // 找到对应的 DOM 元素并动画删除
                 const buttons = document.querySelectorAll(`[onclick*="'${key}'"]`);
                 buttons.forEach(btn => {
                     const card = btn.closest('[style*="display:flex"]');
@@ -184,22 +185,21 @@
                     }
                 });
                 setTimeout(() => { removeFavoriteItem(key); }, 50);
-            });
         }
-        function clearAllFavorites() {
-            showConfirmModal(USER_LANG==='en'?'Clear all favorites? This cannot be undone.' : '确定清空所有收藏吗？此操作不可撤销。', function() {
-                const content = document.getElementById("user-content");
-                content.style.transition = "all 0.3s ease";
-                content.style.opacity = "0";
-                content.style.transform = "translateY(-10px)";
-                setTimeout(() => {
-                    clearAllFavoritesLocal();
-                    content.style.transition = "none";
-                    content.style.opacity = "";
-                    content.style.transform = "";
-                    renderTab("favorites");
-                }, 320);
-            });
+        async function clearAllFavorites() {
+            const ok = await showConfirmModal(USER_LANG==='en'?'Clear all favorites? This cannot be undone.' : '确定清空所有收藏吗？此操作不可撤销。', '', '确认清空');
+            if (!ok) return;
+            const content = document.getElementById("user-content");
+            content.style.transition = "all 0.3s ease";
+            content.style.opacity = "0";
+            content.style.transform = "translateY(-10px)";
+            setTimeout(() => {
+                clearAllFavoritesLocal();
+                content.style.transition = "none";
+                content.style.opacity = "";
+                content.style.transform = "";
+                renderTab("favorites");
+            }, 320);
         }
 
         // ---------- 错题本 ----------
@@ -222,45 +222,45 @@
             }
             container.innerHTML = html;
         }
-        function deleteWrongItem(key) {
-            showConfirmModal(USER_LANG==='en'?'Remove this wrong item?' : '确定移除这道错题吗？', function() {
-                const buttons = document.querySelectorAll(`[onclick*="'${key}'"]`);
-                buttons.forEach(btn => {
-                    const card = btn.closest('[style*="display:flex"]');
-                    if (card) {
-                        const h = card.offsetHeight;
-                        card.style.boxSizing = "border-box";
-                        card.style.height = h + "px";
-                        card.style.overflow = "hidden";
-                        card.style.transition = "all 0.3s ease";
-                        void card.offsetHeight;
-                        card.style.height = "0";
-                        card.style.opacity = "0";
-                        card.style.paddingTop = "0";
-                        card.style.paddingBottom = "0";
-                        card.style.marginTop = "0";
-                        card.style.marginBottom = "0";
-                        card.style.borderWidth = "0";
-                        setTimeout(() => { card.remove(); }, 350);
-                    }
-                });
-                setTimeout(() => { removeFromWrongBook(key); }, 50);
+        async function deleteWrongItem(key) {
+            const ok = await showConfirmModal(USER_LANG==='en'?'Remove this wrong item?' : '确定移除这道错题吗？', '', '确认移除');
+            if (!ok) return;
+            const buttons = document.querySelectorAll(`[onclick*="'${key}'"]`);
+            buttons.forEach(btn => {
+                const card = btn.closest('[style*="display:flex"]');
+                if (card) {
+                    const h = card.offsetHeight;
+                    card.style.boxSizing = "border-box";
+                    card.style.height = h + "px";
+                    card.style.overflow = "hidden";
+                    card.style.transition = "all 0.3s ease";
+                    void card.offsetHeight;
+                    card.style.height = "0";
+                    card.style.opacity = "0";
+                    card.style.paddingTop = "0";
+                    card.style.paddingBottom = "0";
+                    card.style.marginTop = "0";
+                    card.style.marginBottom = "0";
+                    card.style.borderWidth = "0";
+                    setTimeout(() => { card.remove(); }, 350);
+                }
             });
+            setTimeout(() => { removeFromWrongBook(key); }, 50);
         }
-        function clearAllWrongBook() {
-            showConfirmModal(USER_LANG==='en'?'Clear wrong book? This cannot be undone.' : '确定清空所有错题吗？此操作不可撤销。', function() {
-                const content = document.getElementById("user-content");
-                content.style.transition = "all 0.3s ease";
-                content.style.opacity = "0";
-                content.style.transform = "translateY(-10px)";
-                setTimeout(() => {
-                    clearAllWrongBookLocal();
-                    content.style.transition = "none";
-                    content.style.opacity = "";
-                    content.style.transform = "";
-                    renderTab("wrongbook");
-                }, 320);
-            });
+        async function clearAllWrongBook() {
+            const ok = await showConfirmModal(USER_LANG==='en'?'Clear wrong book? This cannot be undone.' : '确定清空所有错题吗？此操作不可撤销。', '', '确认清空');
+            if (!ok) return;
+            const content = document.getElementById("user-content");
+            content.style.transition = "all 0.3s ease";
+            content.style.opacity = "0";
+            content.style.transform = "translateY(-10px)";
+            setTimeout(() => {
+                clearAllWrongBookLocal();
+                content.style.transition = "none";
+                content.style.opacity = "";
+                content.style.transform = "";
+                renderTab("wrongbook");
+            }, 320);
         }
 
         // ---------- 学习记录 ----------
@@ -286,8 +286,9 @@
             } catch(e) { html += `<p style="color:#a0aec0;">${t("noData")}</p>`; }
             container.innerHTML = html;
         }
-        function deleteHistoryItem(id) {
-            showConfirmModal(USER_LANG==='en'?'Delete this record?' : '确定删除这条记录吗？', function() {
+        async function deleteHistoryItem(id) {
+            const ok = await showConfirmModal(USER_LANG==='en'?'Delete this record?' : '确定删除这条记录吗？', '', '确认删除');
+            if (!ok) return;
             const row = document.getElementById(`hist-item-${id}`);
             if (row) {
                 const h = row.offsetHeight;
@@ -312,22 +313,21 @@
                     } catch(_) {}
                 }, 350);
             }
-            });
         }
-        function clearAllHistory() {
-            showConfirmModal(USER_LANG==='en'?'Clear all history? This cannot be undone.' : '确定清空所有记录吗？此操作不可撤销。', function() {
-                const content = document.getElementById("user-content");
-                content.style.transition = "all 0.3s ease";
-                content.style.opacity = "0";
-                content.style.transform = "translateY(-10px)";
-                setTimeout(() => {
-                    clearAllHistoryLocal();
-                    content.style.transition = "none";
-                    content.style.opacity = "";
-                    content.style.transform = "";
-                    renderTab("history");
-                }, 320);
-            });
+        async function clearAllHistory() {
+            const ok = await showConfirmModal(USER_LANG==='en'?'Clear all history? This cannot be undone.' : '确定清空所有记录吗？此操作不可撤销。', '', '确认清空');
+            if (!ok) return;
+            const content = document.getElementById("user-content");
+            content.style.transition = "all 0.3s ease";
+            content.style.opacity = "0";
+            content.style.transform = "translateY(-10px)";
+            setTimeout(() => {
+                clearAllHistoryLocal();
+                content.style.transition = "none";
+                content.style.opacity = "";
+                content.style.transform = "";
+                renderTab("history");
+            }, 320);
         }
 
         // ---------- 设置 ----------

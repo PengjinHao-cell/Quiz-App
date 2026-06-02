@@ -1236,13 +1236,13 @@ function deleteWrongItem(key) {
     }
 }
 
-function clearWrongBook() {
-    showConfirmModal("确定要清空所有错题吗？此操作不可撤销。", function() {
-        localStorage.removeItem(WRONG_BOOK_KEY);
-        renderWrongBook();
-        showToast("错题本已清空", "success");
-        clearWrongBookOnServer();
-    });
+async function clearWrongBook() {
+    const ok = await showConfirmModal("确定要清空所有错题吗？此操作不可撤销。", "", "确认清空");
+    if (!ok) return;
+    localStorage.removeItem(WRONG_BOOK_KEY);
+    renderWrongBook();
+    showToast("错题本已清空", "success");
+    clearWrongBookOnServer();
 }
 
 
