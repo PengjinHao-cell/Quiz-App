@@ -1,6 +1,6 @@
 <h2 id="简体中文">🇨🇳 简体中文</h2>
 
-<h1 align="center">📝 刷题通 (Quiz Master) v1.3.0</h1>
+<h1 align="center">📝 刷题通 (Quiz Master) v1.3.1</h1>
 
 <p align="center">
   <em>🎉 正式版发布 · 安全加固 · Railway 托管 · PostgreSQL 数据库</em>
@@ -84,6 +84,7 @@ python3 app.py
 
 | 版本 | 亮点 |
 |------|------|
+| **v1.3.1** | ⚡ 首页渲染提速 · ⏱ sync/填空去抖 · 🃏 答题卡增量更新 · 🖍 荧光懒恢复 · 🔒 收藏本隐藏答案 · 📝 组卷 qids 修复 |
 | **v1.3.0** | 🔗 域名迁移 quizmaster.cn · 🔒 题库数据隔离 · 🎨 删除确认卡片化 · 🐛 模态框修复 · 📝 题库入库 |
 | **v1.2.3** | 🆕 新设备检测公告（一键恢复云端数据） · 🔒 用户切换自动清空旧数据 |
 | **v1.2.2** | 🐛 修复多进程验证码丢失（内存→数据库） · 🧹 移除 QQ 邮箱公告 |
@@ -101,7 +102,7 @@ python3 app.py
 
 <h2 id="english">🇬🇧 English</h2>
 
-<h1 align="center">📝 Quiz Master v1.3.0</h1>
+<h1 align="center">📝 Quiz Master v1.3.1</h1>
 
 <p align="center">
   <em>A lightweight, feature-rich quiz web application with AI-powered parsing, reading comprehension mode, and smart annotation tools.</em><br>
@@ -148,6 +149,7 @@ python3 app.py
 
 | Version | Highlights |
 |---------|-----------|
+| **v1.3.1** | Homepage render speedup · Sync/fill-input debounce · Answer sheet incremental update · Lazy highlight restore · Hide fav answers · Fix qids compose |
 | **v1.3.0** | Domain migration quizmaster.cn · Bank data isolation · Delete confirmation cards · Modal fix · Bank files in repo |
 | **v1.2.3** | New-device detection banner (one-click cloud restore) · Auto-clear old data on user switch |
 | **v1.2.2** | Fix multi-worker verification code loss (memory→DB) · Remove QQ email notice |
@@ -165,7 +167,7 @@ python3 app.py
 
 <h2 id="繁體中文">🇭🇰 繁體中文</h2>
 
-<h1 align="center">📝 刷題通 (Quiz Master) v1.3.0</h1>
+<h1 align="center">📝 刷題通 (Quiz Master) v1.3.1</h1>
 
 <p align="center">
   <em>正式版發佈 · 安全加固 · Railway 託管 · PostgreSQL 數據庫</em>
@@ -198,5 +200,5 @@ python3 app.py
 <p align="center">
   <a href="https://github.com/PengjinHao-cell/Quiz-App">📦 GitHub</a> ·
   <a href="https://quizmaster.cn">🌐 Live Demo</a><br>
-  <sub>Made with ❤️ by PengjinHao · © 2026 Quiz Master · v1.3.0</sub>
+  <sub>Made with ❤️ by PengjinHao · © 2026 Quiz Master · v1.3.1</sub>
 </p>
