@@ -785,21 +785,38 @@ async function submitExam() {
             return res.json();
         })
         .then((data) => {
-            // 将错题存入错题本
+            // 批量更新错题本（一次读 + 批量改 + 一次写 + 一次同步）
             if (data.details) {
+                const book = getWrongBook();
+                let changed = false;
                 data.details.forEach((detail) => {
+                    const key = `${config.bankId}_${detail.id}`;
                     if (!detail.is_correct) {
                         const q = questions.find(qq => qq.id === detail.id);
                         if (q) {
-                            addToWrongBook(q, detail.user_answer, config.bankId, config.bankName);
+                            book[key] = {
+                                bank_id: config.bankId,
+                                bank_name: config.bankName,
+                                question_id: q.id,
+                                question_text: q.text || "",
+                                question_options: q.options || {},
+                                correct_answer: q.answer || "",
+                                user_wrong_answer: detail.user_answer,
+                                type: q.type || "single",
+                                wrong_count: (book[key] ? (book[key].wrong_count || 0) : 0) + 1,
+                                last_wrong_time: new Date().toLocaleString("zh-CN", { hourCycle: "h23" }),
+                            };
+                            changed = true;
                         }
-                    } else {
-                        // 答对了的题从错题本移除
-                        const key = `${config.bankId}_${detail.id}`;
-                        const book = getWrongBook();
-                        if (book[key]) removeFromWrongBook(key);
+                    } else if (book[key]) {
+                        delete book[key];
+                        changed = true;
                     }
                 });
+                if (changed) {
+                    saveWrongBook(book);
+                    syncWrongBookToServer();
+                }
             }
 
             // 将结果数据存入 sessionStorage 供结果页使用
