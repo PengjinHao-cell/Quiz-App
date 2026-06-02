@@ -285,7 +285,7 @@ def check_name_duplicate(name: str, exclude_id: str = ""):
 
 # 题库列表缓存（内存级，3秒 TTL）
 _bank_list_cache = {"data": None, "time": 0.0, "lock": threading.Lock()}
-_BANK_CACHE_TTL = 3.0
+_BANK_CACHE_TTL = 30.0
 
 def _invalidate_bank_cache():
     with _bank_list_cache["lock"]:

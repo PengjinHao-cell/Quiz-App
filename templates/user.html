@@ -148,15 +148,17 @@
             if (total === 0) { html += `<p style="color:#a0aec0;">${t("noData")}</p>`; container.innerHTML = html; return; }
             html += `<button class="btn btn-small btn-danger-outline" onclick="clearAllFavorites()" style="margin-bottom:12px;">🗑 ${t("clearAll")}</button>`;
             for (const [gKey, group] of Object.entries(groups)) {
+                const qids = group.questions.map(q => q.question_id).join(",");
+                const favCount = group.questions.length;
                 html += `<div style="margin-bottom:16px;"><div style="font-weight:600;color:#2d3748;margin-bottom:8px;">📄 ${escapeHTML(group.bank_name)}</div>`;
                 group.questions.forEach(item => {
                     const key = item.key || `${group.bank_id}_${item.question_id}`;
                     html += `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 12px;background:#f8fafc;border-radius:8px;margin-bottom:6px;font-size:0.85rem;color:#4a5568;gap:8px;">
-                        <div style="flex:1;min-width:0;"><div style="margin-bottom:4px;">${escapeHTML(item.question_text)}</div><div style="font-size:0.75rem;color:#a0aec0;">${USER_LANG==='en'?'Answer':'答案'}: ${escapeHTML(item.answer || "")}</div></div>
+                        <div style="flex:1;min-width:0;"><div style="margin-bottom:4px;">${escapeHTML(item.question_text)}</div></div>
                         <button onclick="deleteFavoriteItem('${key}')" style="flex-shrink:0;background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.8rem;padding:4px 6px;border-radius:4px;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">✕</button>
                     </div>`;
                 });
-                html += `</div>`;
+                html += `<a href="/quiz/${group.bank_id}?mode=practice&count=${favCount}&qids=${encodeURIComponent(qids)}" class="btn btn-primary btn-small" style="display:inline-block;margin-top:8px;">📝 ${USER_LANG==='en'?'Review these':'复习这'} ${favCount} ${USER_LANG==='en'?'favorites':'道收藏题'}</a></div>`;
             }
             container.innerHTML = html;
         }
@@ -210,6 +212,8 @@
             if (total === 0) { html += `<p style="color:#a0aec0;">${t("noData")}</p>`; container.innerHTML = html; return; }
             html += `<button class="btn btn-small btn-danger-outline" onclick="clearAllWrongBook()" style="margin-bottom:12px;">🗑 ${t("clearAll")}</button>`;
             for (const [gKey, group] of Object.entries(groups)) {
+                const qids = group.questions.map(q => q.question_id).join(",");
+                const wrongCount = group.questions.length;
                 html += `<div style="margin-bottom:16px;"><div style="font-weight:600;color:#2d3748;margin-bottom:8px;">📄 ${escapeHTML(group.bank_name)}</div>`;
                 group.questions.forEach(item => {
                     const key = item.key || `${group.bank_id}_${item.question_id}`;
@@ -218,7 +222,7 @@
                         <button onclick="deleteWrongItem('${key}')" style="flex-shrink:0;background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.8rem;padding:4px 6px;border-radius:4px;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">✕</button>
                     </div>`;
                 });
-                html += `</div>`;
+                html += `<a href="/quiz/${group.bank_id}?mode=practice&count=${wrongCount}&qids=${encodeURIComponent(qids)}" class="btn btn-primary btn-small" style="display:inline-block;margin-top:8px;">📝 ${USER_LANG==='en'?'Retry these':'重练这'} ${wrongCount} ${USER_LANG==='en'?'wrong questions':'道错题'}</a></div>`;
             }
             container.innerHTML = html;
         }

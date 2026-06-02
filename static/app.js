@@ -11,13 +11,13 @@ document.addEventListener("DOMContentLoaded", () => {
         uploadForm.addEventListener("submit", handleUpload);
     }
 
-    // 登录用户：从服务器拉取云端数据合并到 localStorage
-    loadServerData().then(() => {
-        renderStats();
-        renderHistory();
-        renderFavorites();
-        renderWrongBook();
-    });
+    // 立即渲染本地数据（不等待服务器响应，提升首屏速度）
+    renderStats();
+    renderHistory();
+    renderFavorites();
+    renderWrongBook();
+    // 登录用户：后台拉取云端数据（仅检测新设备恢复横幅）
+    loadServerData();
 
     initAnnouncement();
 
@@ -1086,10 +1086,11 @@ function renderFavorites() {
         });
 
         const favCount = qs.length;
+        const qids = qs.map(item => item.question_id).join(",");
         html += `
                 </div>
                 <div class="wrongbook-group-footer">
-                    <a href="/quiz/${group.bank_id}?mode=practice&count=${favCount}" class="btn btn-primary btn-small">📝 复习这 ${favCount} 道收藏题</a>
+                    <a href="/quiz/${group.bank_id}?mode=practice&count=${favCount}&qids=${encodeURIComponent(qids)}" class="btn btn-primary btn-small">📝 复习这 ${favCount} 道收藏题</a>
                 </div>
             </div>
         `;

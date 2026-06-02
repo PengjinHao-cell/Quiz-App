@@ -311,6 +311,9 @@ function showQuestion(index) {
 
 // ---------- 填空题输入 ----------
 
+// 填空题错题写入去抖：每题独立 timer，300ms 防抖
+var _fillDebounceTimers = {};
+
 function onFillInput(questionId, value) {
     userAnswers[questionId] = value;
     const q = questions.find(qq => qq.id === questionId);
@@ -326,7 +329,12 @@ function onFillInput(questionId, value) {
                 const book = getWrongBook();
                 if (book[key]) removeFromWrongBook(key);
             } else {
-                addToWrongBook(q, value, config.bankId, config.bankName);
+                // 去抖写入：停止输入 300ms 后才写 localStorage 并同步
+                if (_fillDebounceTimers[questionId]) clearTimeout(_fillDebounceTimers[questionId]);
+                _fillDebounceTimers[questionId] = setTimeout(function() {
+                    _fillDebounceTimers[questionId] = null;
+                    addToWrongBook(q, value, config.bankId, config.bankName);
+                }, 300);
             }
         }
         // 更新提示
@@ -646,28 +654,27 @@ function renderAnswerSheet() {
     const grid = document.getElementById("sheet-grid");
     const total = questions.length;
     document.getElementById("sheet-total").textContent = total;
-    document.getElementById("sheet-answered-count").textContent =
-        Object.values(userAnswers).filter((a) => {
-            if (Array.isArray(a)) return a.length > 0;
-            return a !== "";
-        }).length;
 
-    let html = "";
-    for (let i = 0; i < total; i++) {
-        const q = questions[i];
-        const isAnswered = (() => {
-            const ans = userAnswers[q.id];
-            if (Array.isArray(ans)) return ans.length > 0;
-            return ans !== "";
-        })();
-        const isCurrent = (i === currentIndex);
-        let cls = "sheet-num";
-        if (isCurrent) cls += " current";
-        if (isAnswered) cls += " answered";
-
-        html += `<span class="${cls}" onclick="showQuestion(${i})" title="第${i + 1}题">${i + 1}</span>`;
+    // 只有题数变化时才全量重建（首次加载/搜索过滤后），否则增量更新 class
+    if (grid.children.length !== total) {
+        let html = "";
+        for (let i = 0; i < total; i++) {
+            const q = questions[i];
+            const isAnswered = (function() {
+                const ans = userAnswers[q.id];
+                if (Array.isArray(ans)) return ans.length > 0;
+                return ans !== "";
+            })();
+            const isCurrent = (i === currentIndex);
+            var cls = "sheet-num";
+            if (isCurrent) cls += " current";
+            if (isAnswered) cls += " answered";
+            html += '<span class="' + cls + '" onclick="showQuestion(' + i + ')" title="第' + (i + 1) + '题">' + (i + 1) + '</span>';
+        }
+        grid.innerHTML = html;
     }
-    grid.innerHTML = html;
+
+    updateSheetHighlight();
 }
 
 function updateSheetHighlight() {

@@ -293,20 +293,28 @@ function _syncFetchResult(url, options) {
 /**
  * 同步错题本到服务器
  */
+/**
+ * 同步错题本到服务器（带 500ms 去抖，避免连续答题时频繁全量推送）
+ */
+var _syncWrongBookTimer = null;
 function syncWrongBookToServer() {
-    if (!isLoggedIn()) return;
-    const book = getWrongBook();
-    const items = Object.entries(book).map(([key, item]) => ({
-        question_key: key,
-        ...item,
-        question_options: JSON.stringify(item.question_options || {}),
-    }));
-    if (items.length === 0) return;
-    _syncFetch("/api/sync/wrong-book", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
-    });
+    if (_syncWrongBookTimer) clearTimeout(_syncWrongBookTimer);
+    _syncWrongBookTimer = setTimeout(function() {
+        _syncWrongBookTimer = null;
+        if (!isLoggedIn()) return;
+        const book = getWrongBook();
+        const items = Object.entries(book).map(([key, item]) => ({
+            question_key: key,
+            ...item,
+            question_options: JSON.stringify(item.question_options || {}),
+        }));
+        if (items.length === 0) return;
+        _syncFetch("/api/sync/wrong-book", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ items }),
+        });
+    }, 500);
 }
 
 /**

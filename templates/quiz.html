@@ -271,8 +271,16 @@
         } catch (e) {}
     }
 
-    // 当前题渲染后尝试恢复标注
+    // 已尝试恢复过的题目 index，避免重复 TreeWalker 遍历
+    var _hlRestoredSet = new Set();
+
+    // 当前题渲染后尝试恢复标注（懒恢复：每题只尝试一次）
     function tryRestoreQuizHL() {
+        // 仅首次切到有标注的题时尝试恢复
+        if (typeof currentIndex === "undefined") return;
+        if (_hlRestoredSet.has(currentIndex)) return;
+        _hlRestoredSet.add(currentIndex);
+
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (!saved) return;
@@ -282,6 +290,7 @@
             if (savedHLs.length === 0) return;
             savedHLs.forEach(sh => {
                 const text = sh.textContent;
+                if (!text) return;
                 const walker = document.createTreeWalker(
                     container, NodeFilter.SHOW_TEXT, null, false
                 );
@@ -302,13 +311,13 @@
         } catch (e) {}
     }
 
-    // 拦截 quiz.js 的 renderQuestion 以在每题渲染后恢复标注
-    // quiz.js 用 showQuestion(q) 渲染，每次调用生成新 DOM
-    const origRender = window.showQuestion;
-    if (typeof origRender === "function") {
-        window.showQuestion = function(q) {
-            origRender(q);
-            // 等 DOM 更新后尝试恢复荧光
+    // 拦截 quiz.js 的 showQuestion 以在每题渲染后恢复标注
+    var _origShowQuestion = window.showQuestion;
+    if (typeof _origShowQuestion === "function") {
+        window.showQuestion = function(idx) {
+            _origShowQuestion(idx);
+            // 新题渲染后重置该题的恢复标记
+            _hlRestoredSet.delete(idx);
             setTimeout(tryRestoreQuizHL, 20);
         };
     }
