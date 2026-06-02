@@ -377,6 +377,8 @@ function startReading(bankId) {
 
 // ---------- 搜题 ----------
 
+var _searchAbortController = null;
+
 function doSearch() {
     const bankId = document.getElementById("search-bank-select").value;
     const keyword = document.getElementById("search-input").value.trim();
@@ -391,9 +393,15 @@ function doSearch() {
         return;
     }
 
+    // 取消前一次未完成的请求，防止旧结果覆盖新结果
+    if (_searchAbortController) _searchAbortController.abort();
+    _searchAbortController = new AbortController();
+
     resultsDiv.innerHTML = '<div class="search-loading">搜索中...</div>';
 
-    fetch(`/api/bank/${bankId}/questions?mode=practice&q=${encodeURIComponent(keyword)}`)
+    fetch(`/api/bank/${bankId}/questions?mode=practice&q=${encodeURIComponent(keyword)}`, {
+        signal: _searchAbortController.signal
+    })
         .then(res => {
             if (!res.ok) throw new Error("搜索失败");
             return res.json();
@@ -438,6 +446,7 @@ function doSearch() {
             resultsDiv.innerHTML = html;
         })
         .catch(err => {
+            if (err.name === "AbortError") return; // 用户取消，静默
             resultsDiv.innerHTML = `<div class="search-error">搜索失败：${err.message}</div>`;
         });
 }
@@ -746,61 +755,12 @@ function renderStats() {
 
     section.style.display = "block";
 
-    // ---- 总览数据 ----
-    const totalSessions = history.length;
-    const totalQuestions = history.reduce((s, r) => s + r.total, 0);
-    const totalCorrect = history.reduce((s, r) => s + r.correct, 0);
-    const overallAccuracy = totalQuestions > 0 ? Math.round(totalCorrect / totalQuestions * 100) : 0;
-
-    // ---- 按题库统计 ----
-    const bankStats = {};
-    history.forEach(r => {
-        const key = r.bank_id || "__unknown__";
-        if (!bankStats[key]) {
-            bankStats[key] = { name: r.bank_name || "未知", total: 0, correct: 0, sessions: 0 };
-        }
-        bankStats[key].total += r.total;
-        bankStats[key].correct += r.correct;
-        bankStats[key].sessions += 1;
-    });
-
-    // ---- 按模式统计 ----
-    const modeStats = { practice: { total: 0, correct: 0 }, exam: { total: 0, correct: 0 } };
-    history.forEach(r => {
-        const m = r.mode === "exam" ? "exam" : "practice";
-        modeStats[m].total += r.total;
-        modeStats[m].correct += r.correct;
-    });
-
-    // ---- 最近 10 次得分趋势 ----
-    const recent = history.slice(0, 10).reverse();
-
-    // ---- 每日活跃（近 7 天） ----
-    // 使用 YYYY-MM-DD 统一日期格式，避免 toLocaleDateString 跨平台格式差异
-    function _fmtDate(d) {
-        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-    }
-    const dayMap = {};
-    const now = new Date();
-    for (let i = 6; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - i);
-        dayMap[_fmtDate(d)] = 0;
-    }
-    history.forEach(r => {
-        try {
-            // r.time 格式: "2026/5/27 23:41:17" 或 "2026-5-27 23:41:17"
-            const parts = r.time.split(" ")[0].split(/[\/\-]/);
-            if (parts.length === 3) {
-                const key = parts[0] + '-' + String(parseInt(parts[1])).padStart(2,'0') + '-' + String(parseInt(parts[2])).padStart(2,'0');
-                if (dayMap[key] !== undefined) {
-                    dayMap[key] += r.total;
-                }
-            }
-        } catch (_) {}
-    });
-
-    const maxDayQuestions = Math.max(...Object.values(dayMap), 1);
+    var stats = computeStats(history);
+    var totalSessions = stats.totalSessions, totalQuestions = stats.totalQuestions,
+        totalCorrect = stats.totalCorrect, overallAccuracy = stats.overallAccuracy,
+        bankStats = stats.bankStats, modeStats = stats.modeStats,
+        recent = stats.recent, dayMap = stats.dayMap;
+    var maxDayQuestions = Math.max.apply(null, Object.keys(dayMap).map(function(k) { return dayMap[k]; }).concat([1]));
 
     // ---- 构建 HTML ----
     const scoreClass = overallAccuracy >= 90 ? "excellent"

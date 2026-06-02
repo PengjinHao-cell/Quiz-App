@@ -529,10 +529,15 @@ async function restoreFromServer() {
             let localHistory = [];
             try { localHistory = JSON.parse(localStorage.getItem("quizHistory") || "[]"); } catch { localHistory = []; }
             const existingIds = new Set(localHistory.map(h => h.id).filter(Boolean));
+            // 额外去重：用 (bank_id + time) 组合防止 ID 生成算法不一致导致的重复
+            const existingSignatures = new Set(
+                localHistory.map(h => (h.bank_id || "") + "|" + (h.time || "")).filter(s => s !== "|")
+            );
 
             for (const record of data.history) {
                 const rid = record.record_id || record.id || "";
-                if (!rid || existingIds.has(rid)) continue;
+                const sig = (record.bank_id || "") + "|" + (record.time_label || "");
+                if (!rid || existingIds.has(rid) || existingSignatures.has(sig)) continue;
                 localHistory.push({
                     id: rid,
                     bank_id: record.bank_id || "",
@@ -647,6 +652,71 @@ function onUserLogin(username) {
 }
 
 // ========== 模态框工具 ==========
+
+// ========== 学习统计计算（app.js 和 user.html 共用） ==========
+
+function computeStats(history) {
+    if (!history || history.length === 0) return null;
+
+    var totalSessions = history.length;
+    var totalQuestions = history.reduce(function(s, r) { return s + (r.total || 0); }, 0);
+    var totalCorrect = history.reduce(function(s, r) { return s + (r.correct || 0); }, 0);
+    var overallAccuracy = totalQuestions > 0 ? Math.round(totalCorrect / totalQuestions * 100) : 0;
+
+    // 按题库统计
+    var bankStats = {};
+    history.forEach(function(r) {
+        var key = r.bank_id || "__unknown__";
+        if (!bankStats[key]) bankStats[key] = { name: r.bank_name || "未知", total: 0, correct: 0, sessions: 0 };
+        bankStats[key].total += r.total || 0;
+        bankStats[key].correct += r.correct || 0;
+        bankStats[key].sessions += 1;
+    });
+
+    // 按模式统计
+    var modeStats = { practice: { total: 0, correct: 0 }, exam: { total: 0, correct: 0 } };
+    history.forEach(function(r) {
+        var m = r.mode === "exam" ? "exam" : "practice";
+        modeStats[m].total += r.total || 0;
+        modeStats[m].correct += r.correct || 0;
+    });
+
+    // 最近10次得分
+    var recent = history.slice(0, 10).reverse();
+
+    // 7日活跃
+    function fmtDate(d) {
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+    var dayMap = {};
+    var now = new Date();
+    for (var i = 6; i >= 0; i--) {
+        var d = new Date(now);
+        d.setDate(d.getDate() - i);
+        dayMap[fmtDate(d)] = 0;
+    }
+    history.forEach(function(r) {
+        try {
+            var parts = (r.time || "").split(" ")[0].split(/[\/\-]/);
+            if (parts.length === 3) {
+                var key = parts[0] + '-' + String(parseInt(parts[1])).padStart(2,'0') + '-' + String(parseInt(parts[2])).padStart(2,'0');
+                if (dayMap[key] !== undefined) dayMap[key] += r.total || 0;
+            }
+        } catch (_) {}
+    });
+
+    return {
+        totalSessions: totalSessions,
+        totalQuestions: totalQuestions,
+        totalCorrect: totalCorrect,
+        overallAccuracy: overallAccuracy,
+        bankStats: bankStats,
+        modeStats: modeStats,
+        recent: recent,
+        dayMap: dayMap,
+    };
+}
+
 
 function _createModal(html) {
     const overlay = document.createElement("div");

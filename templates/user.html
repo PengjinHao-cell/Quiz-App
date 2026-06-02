@@ -117,10 +117,10 @@
             try {
                 const history = JSON.parse(localStorage.getItem("quizHistory") || "[]");
                 if (history.length === 0) { div.innerHTML = `<p style="color:#a0aec0;">${t("noData")}</p>`; return; }
-                let totalQ = 0, correctQ = 0;
-                history.forEach(h => { totalQ += h.total || 0; correctQ += h.correct || 0; });
-                const rate = totalQ > 0 ? Math.round(correctQ / totalQ * 100) : 0;
-                const days = [...new Set(history.map(h => h.time ? h.time.slice(0, 10) : ""))].filter(Boolean).length;
+                var stats = computeStats(history);
+                var totalQ = stats.totalQuestions, correctQ = stats.totalCorrect;
+                var rate = stats.overallAccuracy;
+                var days = Object.keys(stats.dayMap).filter(function(k) { return stats.dayMap[k] > 0; }).length;
                 let html = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px;">
                     <div style="background:#ebf8ff;padding:16px;border-radius:10px;text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#3182ce;">${history.length}</div><div style="font-size:0.8rem;color:#64748b;">${USER_LANG==='en'?'Practices':'练习次数'}</div></div>
                     <div style="background:#f0fff4;padding:16px;border-radius:10px;text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:#38a169;">${totalQ}</div><div style="font-size:0.8rem;color:#64748b;">${USER_LANG==='en'?'Questions':'总题数'}</div></div>

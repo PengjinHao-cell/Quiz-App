@@ -178,6 +178,13 @@ class QuestionBank(db.Model):
     language = db.Column(db.String(8), default="zh")
     data_json = db.Column(db.Text, default="{}")  # 完整题库 JSON
     is_official = db.Column(db.Boolean, default=False)  # 管理员标记的官方题库
+    # 预计算字段（避免 load_bank_list 每次解析完整 JSON）
+    question_count = db.Column(db.Integer, default=0)
+    single_count = db.Column(db.Integer, default=0)
+    multi_count = db.Column(db.Integer, default=0)
+    judge_count = db.Column(db.Integer, default=0)
+    fill_count = db.Column(db.Integer, default=0)
+    passage_count = db.Column(db.Integer, default=0)  # 阅读理解篇数
     created_at = db.Column(db.DateTime, default=beijing_now)
 
 
@@ -196,6 +203,55 @@ class VerificationCode(db.Model):
         """删除所有过期验证码"""
         now = time.time()
         cls.query.filter(cls.expires_at < now).delete()
+        db.session.commit()
+
+
+class RateLimit(db.Model):
+    """请求限流（跨进程安全，替代内存字典）
+    用于登录限流、验证码限流等场景。
+    key = ip 或 email，window_sec = 时间窗口，max_attempts = 窗口内最大尝试次数
+    """
+    __tablename__ = "rate_limits"
+
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(128), nullable=False, index=True)  # ip 或 email
+    category = db.Column(db.String(32), nullable=False, default="login")  # "login" or "verify_code"
+    attempts = db.Column(db.Integer, default=0)
+    window_start = db.Column(db.Float, nullable=False)  # time.time() 时间窗口起点
+    updated_at = db.Column(db.DateTime, default=beijing_now)
+
+    @classmethod
+    def check_and_record(cls, key, category, window_sec=300, max_attempts=5):
+        """检查并记录一次尝试。返回 (allowed: bool, wait_seconds: int)"""
+        now = time.time()
+        cls.query.filter(cls.window_start < now - window_sec).delete()
+        db.session.commit()
+
+        record = cls.query.filter_by(key=key, category=category).first()
+        if not record:
+            record = cls(key=key, category=category, attempts=1, window_start=now)
+            db.session.add(record)
+            db.session.commit()
+            return True, 0
+
+        if now - record.window_start > window_sec:
+            record.attempts = 1
+            record.window_start = now
+            db.session.commit()
+            return True, 0
+
+        if record.attempts >= max_attempts:
+            wait = int(window_sec - (now - record.window_start))
+            return False, max(wait, 1)
+
+        record.attempts += 1
+        db.session.commit()
+        return True, 0
+
+    @classmethod
+    def reset(cls, key, category):
+        """成功后清除限流记录"""
+        cls.query.filter_by(key=key, category=category).delete()
         db.session.commit()
 
 

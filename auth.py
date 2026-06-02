@@ -12,66 +12,31 @@ from email_utils import (
 
 auth_bp = Blueprint("auth", __name__)
 
-# ---------- 登录限流（内存计数，进程级） ----------
-_LOGIN_ATTEMPTS = {}  # {ip: [timestamp, ...]}
+# 限流已迁移到 RateLimit 数据库表（跨进程安全），仅保留接口
+from models import RateLimit
+
 
 def _check_login_rate_limit(ip: str) -> tuple:
-    """
-    检查 IP 登录频率。
-    返回 (allowed: bool, wait_seconds: int)
-    规则：同一 IP 5 分钟内失败 5 次后，限流 5 分钟。
-    """
-    now = time.time()
-    if ip not in _LOGIN_ATTEMPTS:
-        return True, 0
-    # 清理超过 5 分钟的旧记录
-    _LOGIN_ATTEMPTS[ip] = [t for t in _LOGIN_ATTEMPTS[ip] if now - t < 300]
-    attempts = len(_LOGIN_ATTEMPTS[ip])
-    if attempts >= 5:
-        oldest = _LOGIN_ATTEMPTS[ip][0]
-        wait = int(300 - (now - oldest))
-        return False, max(wait, 1)
-    return True, 0
+    """登录限流：同IP 5分钟内失败5次→冻结5分钟（数据库版，跨worker安全）"""
+    return RateLimit.check_and_record(ip, "login", window_sec=300, max_attempts=4)
+    # max_attempts=4 表示第5次尝试才被拒绝（check_and_record 先+1再判断）
+
 
 def _record_login_attempt(ip: str, success: bool):
-    """记录登录尝试"""
-    now = time.time()
+    """成功后清除限流记录"""
     if success:
-        # 成功后清空该 IP 记录
-        _LOGIN_ATTEMPTS.pop(ip, None)
-    else:
-        if ip not in _LOGIN_ATTEMPTS:
-            _LOGIN_ATTEMPTS[ip] = []
-        _LOGIN_ATTEMPTS[ip].append(now)
+        RateLimit.reset(ip, "login")
 
-# ---------- 验证码限流（每邮箱 3 次） ----------
-_VERIFY_CODE_ATTEMPTS = {}  # {email: [timestamp, ...]}
 
 def _check_code_rate_limit(email: str) -> tuple:
-    """
-    检查邮箱验证码重试频率。
-    返回 (allowed: bool, wait_seconds: int)
-    规则：同一邮箱 10 分钟内错误 3 次后锁定 10 分钟。
-    """
-    now = time.time()
-    if email not in _VERIFY_CODE_ATTEMPTS:
-        return True, 0
-    _VERIFY_CODE_ATTEMPTS[email] = [t for t in _VERIFY_CODE_ATTEMPTS[email] if now - t < 600]
-    if len(_VERIFY_CODE_ATTEMPTS[email]) >= 3:
-        oldest = _VERIFY_CODE_ATTEMPTS[email][0]
-        wait = int(600 - (now - oldest))
-        return False, max(wait, 1)
-    return True, 0
+    """验证码限流：同邮箱10分钟内错误3次→锁定10分钟"""
+    return RateLimit.check_and_record(email, "verify_code", window_sec=600, max_attempts=2)
+
 
 def _record_code_attempt(email: str, success: bool):
-    """记录验证码验证尝试"""
-    now = time.time()
+    """成功后清除限流记录"""
     if success:
-        _VERIFY_CODE_ATTEMPTS.pop(email, None)
-    else:
-        if email not in _VERIFY_CODE_ATTEMPTS:
-            _VERIFY_CODE_ATTEMPTS[email] = []
-        _VERIFY_CODE_ATTEMPTS[email].append(now)
+        RateLimit.reset(email, "verify_code")
 
 
 @auth_bp.route("/register", methods=["GET", "POST"])

@@ -341,8 +341,8 @@
         }
     }
 
-    // 初始化时恢复标注
-    loadHighlights();
+    // 暴露给 reading.js 在 showPassage 渲染后调用（不在此时执行，文章尚未加载）
+    window.loadReadingHighlights = loadHighlights;
 
     window._IS_LOGGED_IN = {% if current_user.is_authenticated %}true{% else %}false{% endif %};
 })();

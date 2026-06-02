@@ -229,6 +229,26 @@ def _run_migration():
                     imported += 1
                 if imported:
                     print(f"📦 迁移: 已导入 {imported} 个题库到数据库")
+
+            # v1.3.1: 为已有题库补全预计算字段（question_count/single_count/multi_count 等）
+            banks_to_migrate = QuestionBank.query.filter(
+                (QuestionBank.question_count == 0) | (QuestionBank.question_count == None)
+            ).all()
+            if banks_to_migrate:
+                for qb in banks_to_migrate:
+                    try:
+                        data = json.loads(qb.data_json)
+                        counts = _compute_bank_counts(data)
+                        qb.question_count = counts["question_count"]
+                        qb.single_count = counts["single_count"]
+                        qb.multi_count = counts["multi_count"]
+                        qb.judge_count = counts["judge_count"]
+                        qb.fill_count = counts["fill_count"]
+                        qb.passage_count = counts["passage_count"]
+                    except Exception:
+                        continue
+                db.session.commit()
+                print(f"📦 迁移: 已补全 {len(banks_to_migrate)} 个题库的预计算字段")
     except Exception as e:
         print(f"⚠️  迁移失败（可忽略）: {e}")
 
@@ -301,11 +321,39 @@ def load_bank_list() -> list:
     records = QuestionBank.query.order_by(QuestionBank.original_filename.asc()).all()
     banks = []
     for qb in records:
+        bank_type = qb.type
+        # 优先使用预计算字段（v1.3.1+），回退到 JSON 解析（兼容旧数据）
+        use_precomputed = qb.question_count is not None and qb.question_count > 0
+
+        if use_precomputed:
+            upload_time = ""
+            try:
+                data = json.loads(qb.data_json)
+                upload_time = data.get("upload_time", "")
+            except Exception:
+                pass
+            banks.append({
+                "id": qb.id,
+                "type": bank_type,
+                "language": qb.language,
+                "original_filename": qb.original_filename,
+                "upload_time": upload_time,
+                "question_count": qb.question_count,
+                "single_count": qb.single_count or 0,
+                "multi_count": qb.multi_count or 0,
+                "judge_count": qb.judge_count or 0,
+                "fill_count": qb.fill_count or 0,
+                "passage_count": qb.passage_count or 0,
+                "is_official": qb.is_official,
+                "owner_user_id": qb.user_id,
+            })
+            continue
+
+        # 旧数据兼容：解析 JSON
         try:
             data = json.loads(qb.data_json)
         except Exception:
             continue
-        bank_type = qb.type
 
         if bank_type == "reading":
             passages = data.get("passages", [])
@@ -455,10 +503,38 @@ def sample_questions_proportional(questions: list, count: int) -> list:
     return result
 
 
+def _compute_bank_counts(data: dict):
+    """从题库 data dict 计算预统计字段（避免 load_bank_list 每次解析完整 JSON）"""
+    bank_type = data.get("type", "quiz")
+    if bank_type == "reading":
+        passages = data.get("passages", [])
+        total_q = sum(len(p.get("questions", [])) for p in passages)
+        return {
+            "question_count": total_q,
+            "passage_count": len(passages),
+            "single_count": 0, "multi_count": 0, "judge_count": 0, "fill_count": 0,
+        }
+    questions = data.get("questions", [])
+    s = m = j = f = 0
+    for q in questions:
+        t = detect_question_type(q)
+        if t == "single": s += 1
+        elif t == "multi": m += 1
+        elif t == "judge": j += 1
+        elif t == "fill": f += 1
+    return {
+        "question_count": len(questions),
+        "single_count": s, "multi_count": m,
+        "judge_count": j, "fill_count": f,
+        "passage_count": 0,
+    }
+
+
 def save_bank(bank_id: str, data: dict, user_id: int = None, is_official: bool = False):
     """保存题库到数据库"""
     bank_type = data.get("type", "quiz")
     language = data.get("language", "zh") if bank_type == "reading" else "zh"
+    counts = _compute_bank_counts(data)
     qb = QuestionBank.query.get(bank_id)
     if qb:
         qb.original_filename = data.get("original_filename", qb.original_filename)
@@ -480,6 +556,13 @@ def save_bank(bank_id: str, data: dict, user_id: int = None, is_official: bool =
             data_json=json.dumps(data, ensure_ascii=False),
         )
         db.session.add(qb)
+    # 更新预计算字段
+    qb.question_count = counts["question_count"]
+    qb.single_count = counts["single_count"]
+    qb.multi_count = counts["multi_count"]
+    qb.judge_count = counts["judge_count"]
+    qb.fill_count = counts["fill_count"]
+    qb.passage_count = counts["passage_count"]
     db.session.commit()
 
 

@@ -325,6 +325,11 @@ function onFillInput(questionId, value) {
         const correctStr = (q.answer || "").replace(/\s/g, "");
         if (value && q.answer) {
             if (userStr === correctStr) {
+                // 清除可能还在等待的去抖 timer，避免 addToWrongBook 在 removeFromWrongBook 之后 fire
+                if (_fillDebounceTimers[questionId]) {
+                    clearTimeout(_fillDebounceTimers[questionId]);
+                    _fillDebounceTimers[questionId] = null;
+                }
                 const key = `${config.bankId}_${q.id}`;
                 const book = getWrongBook();
                 if (book[key]) removeFromWrongBook(key);

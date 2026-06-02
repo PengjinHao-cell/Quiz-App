@@ -649,11 +649,6 @@ body {
     align-items: flex-start;
 }
 
-.quiz-main {
-    flex: 1;
-    min-width: 0;
-}
-
 /* Answer Sheet Sidebar */
 .answer-sheet {
     width: 200px;
@@ -903,8 +898,10 @@ body {
     50% { box-shadow: 0 0 0 6px rgba(229, 62, 62, 0); }
 }
 
-/* Question Area */
+/* Question Area (merged — flex layout + visual) */
 .quiz-main {
+    flex: 1;
+    min-width: 0;
     background: white;
     border-radius: 12px;
     padding: 32px 24px;

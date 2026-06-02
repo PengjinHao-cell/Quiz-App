@@ -64,6 +64,11 @@ function showPassage(pIdx) {
         ${p.text.split("\n").filter(Boolean).map(para => `<p>${escapeHTML(para)}</p>`).join("")}
     `;
 
+    // 文章渲染后恢复荧光/下划线标注
+    if (typeof window.loadReadingHighlights === "function") {
+        window.loadReadingHighlights();
+    }
+
     // 题号导航圆点
     renderQuestionNav(pIdx);
     // 渲染第一题

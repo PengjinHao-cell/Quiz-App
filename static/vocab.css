@@ -1,0 +1,28 @@
+/* ========================================
+   背单词页面专属样式（从 vocab.html 拆出）
+   ======================================== */
+
+.vocab-header { display: flex; align-items: center; gap: 16px; background: white; border-radius: 12px; padding: 16px 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; }
+.vocab-header-left { display: flex; align-items: center; gap: 12px; }
+.vocab-header h1 { font-size: 1.1rem; margin: 0; }
+.vocab-progress { margin-left: auto; font-size: 0.9rem; color: #718096; font-weight: 600; }
+.vocab-card { background: white; border-radius: 12px; padding: 40px 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); min-height: 400px; text-align: center; }
+.vocab-word { font-size: 2.2rem; font-weight: 800; color: #2d3748; margin-bottom: 6px; letter-spacing: 0.5px; }
+.vocab-phonetic { font-size: 1rem; color: #a0aec0; margin-bottom: 32px; font-family: 'Times New Roman', serif; }
+.vocab-example { font-size: 0.9rem; color: #718096; font-style: italic; margin-bottom: 4px; line-height: 1.6; max-width: 500px; margin-left: auto; margin-right: auto; }
+.vocab-trans { font-size: 0.85rem; color: #a0aec0; margin-bottom: 28px; }
+.vocab-options { display: flex; flex-direction: column; gap: 10px; max-width: 480px; margin: 0 auto; }
+.vocab-opt { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 2px solid #e2e8f0; border-radius: 10px; cursor: pointer; transition: all 0.2s; text-align: left; font-size: 1rem; }
+.vocab-opt:hover { border-color: #3182ce; background: #ebf8ff; }
+.vocab-opt.selected { border-color: #3182ce; background: #ebf8ff; }
+.vocab-opt.correct { border-color: #38a169; background: #f0fff4; }
+.vocab-opt.wrong { border-color: #e53e3e; background: #fff5f5; }
+.vocab-opt-letter { font-weight: 700; color: #4a5568; min-width: 24px; }
+.vocab-feedback { margin-top: 20px; padding: 14px 20px; border-radius: 10px; font-size: 0.95rem; max-width: 480px; margin-left: auto; margin-right: auto; }
+.vocab-feedback.correct { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+.vocab-feedback.wrong { background: #fff5f5; color: #c53030; border: 1px solid #fed7d7; }
+.vocab-nav { display: flex; justify-content: center; gap: 16px; margin-top: 24px; }
+.vocab-empty { text-align: center; padding: 60px 0; color: #718096; }
+.vocab-empty p { margin-bottom: 16px; }
+.vocab-count-select { padding: 6px 12px; border: 1px solid #cbd5e0; border-radius: 8px; font-size: 0.9rem; margin-right: 12px; }
+.vocab-controls { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
