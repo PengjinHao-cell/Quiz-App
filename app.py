@@ -190,6 +190,42 @@ def _run_migration():
                         conn.commit()
                         print("📦 迁移: 已添加 is_admin 列 (PostgreSQL)")
 
+            # v1.3.1: 检查并添加 question_banks 预计算字段列
+            PRECOMPUTED_COLS = {
+                "question_count": "INTEGER DEFAULT 0",
+                "single_count": "INTEGER DEFAULT 0",
+                "multi_count": "INTEGER DEFAULT 0",
+                "judge_count": "INTEGER DEFAULT 0",
+                "fill_count": "INTEGER DEFAULT 0",
+                "passage_count": "INTEGER DEFAULT 0",
+            }
+            if DATABASE_URL.startswith("sqlite"):
+                import sqlite3
+                db_path = DATABASE_URL.replace("sqlite:///", "")
+                if not os.path.isabs(db_path):
+                    db_path = os.path.join(BASE_DIR, db_path)
+                _sc = sqlite3.connect(db_path)
+                _sc.execute("PRAGMA table_info(question_banks)")
+                _existing_cols = [row[1] for row in _sc.fetchall()]
+                for _cn, _cd in PRECOMPUTED_COLS.items():
+                    if _cn not in _existing_cols:
+                        _sc.execute(f"ALTER TABLE question_banks ADD COLUMN {_cn} {_cd}")
+                        _sc.commit()
+                        print(f"📦 迁移: 已添加 {_cn} 列 (question_banks, SQLite)")
+                _sc.close()
+            elif DATABASE_URL.startswith("postgresql"):
+                from sqlalchemy import text as _t
+                with engine.connect() as _c:
+                    for _cn, _cd in PRECOMPUTED_COLS.items():
+                        _r = _c.execute(_t(
+                            "SELECT column_name FROM information_schema.columns "
+                            "WHERE table_name='question_banks' AND column_name=:cname"
+                        ), {"cname": _cn})
+                        if _r.fetchone() is None:
+                            _c.execute(_t(f"ALTER TABLE question_banks ADD COLUMN {_cn} {_cd}"))
+                            _c.commit()
+                            print(f"📦 迁移: 已添加 {_cn} 列 (question_banks)")
+
             # 导入已有 JSON 题库到数据库
             # 检查 question_banks 表是否有 is_official 列
             try:

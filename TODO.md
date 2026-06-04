@@ -19,6 +19,8 @@
 
 ## 已解决 ✓
 
+- [x] **生产环境 500 错误** — `question_banks` 表缺少 6 个预计算字段列。`migrate.py` + `_run_migration()` 均未迁移这些列，`load_bank_list` 查询时 SQLAlchemy SELECT 不存在的列导致 `ProgrammingError`。修复：在 `_run_migration()` 中先 `ALTER TABLE ADD COLUMN` 再查询，`migrate.py` 声明式扩展覆盖 (2026-06-04)
+
 - [x] **跨设备数据恢复** — 新增 `restoreFromServer()` + 侧边栏入口
 - [x] **版本号自动化** — 22 处硬编码 `v=4`/`v=3` → `v=VERSION`
 - [x] **deleteHistoryItem 索引漂移** — 改用 `record.id` 定位
