@@ -46,3 +46,4 @@ data/*.json
 # ECDICT source files (too large, build with build_dict.py)
 data/ecdict.csv
 data/ecdict_full.csv
+v1.0.1-开发日志.md
