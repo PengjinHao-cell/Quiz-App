@@ -2079,6 +2079,36 @@ def api_vocab_review():
     return jsonify({"success": True})
 
 
+# =========================== 数据导出 API ===========================
+
+
+@app.route("/api/admin/export")
+@login_required
+@admin_required
+def api_admin_export():
+    """导出全部数据库数据为 JSON"""
+    dump = {}
+
+    for model, name in [
+        (User, "users"),
+        (WrongAnswer, "wrong_answers"),
+        (Favorite, "favorites"),
+        (StudyHistory, "study_history"),
+        (QuestionBank, "question_banks"),
+        (SystemLog, "system_logs"),
+        (VocabWord, "vocab_words"),
+        (Explanation, "explanations"),
+    ]:
+        rows = model.query.all()
+        cols = [c.name for c in model.__table__.columns]
+        dump[name] = [
+            {c: str(getattr(r, c)) if getattr(r, c) is not None else None for c in cols}
+            for r in rows
+        ]
+
+    return jsonify(dump)
+
+
 # =========================== AI 错题解析 API ===========================
 
 
