@@ -2083,10 +2083,12 @@ def api_vocab_review():
 
 
 @app.route("/api/admin/export")
-@login_required
-@admin_required
 def api_admin_export():
-    """导出全部数据库数据为 JSON"""
+    """导出全部数据库数据为 JSON（需 key 参数鉴权）"""
+    export_key = request.args.get("key", "")
+    admin_pwd = os.environ.get("ADMIN_PASSWORD", "REDACTED")
+    if export_key != admin_pwd:
+        return jsonify({"error": "需要 ?key=管理员密码"}), 403
     dump = {}
 
     for model, name in [
