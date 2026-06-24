@@ -69,6 +69,7 @@
                     <a class="dropdown-item" href="{{ url_for('auth.login') }}" style="color:#a0aec0;">⭐ 收藏本</a>
                     <a class="dropdown-item" href="{{ url_for('auth.login') }}" style="color:#a0aec0;">📕 错题本</a>
                     <a class="dropdown-item" href="{{ url_for('auth.login') }}" style="color:#a0aec0;">📜 学习记录</a>
+                    <a class="dropdown-item" href="/user#vocabbook">📖 生词本</a>
                     <div class="dropdown-divider"></div>
                     <a class="dropdown-item" href="/" style="color:#e53e3e;">🚪 退出访客模式</a>
                 </div>
@@ -84,6 +85,8 @@
                     <a class="dropdown-item" href="/user#favorites">⭐ 收藏本</a>
                     <a class="dropdown-item" href="/user#wrongbook">📕 错题本</a>
                     <a class="dropdown-item" href="/user#history">📜 学习记录</a>
+                    <a class="dropdown-item" href="/user#vocabbook">📖 生词本</a>
+                    <div class="dropdown-divider"></div>
                     <a class="dropdown-item" href="/user#settings">⚙️ {{ _settings }}</a>
                     <div class="dropdown-divider"></div>
                     <a class="dropdown-item" href="{{ url_for('auth.logout') }}" style="color:#e53e3e;">🚪 退出登录</a>
@@ -305,6 +308,7 @@
         window._IS_ADMIN = {% if current_user.is_authenticated and current_user.is_admin %}true{% else %}false{% endif %};
     </script>
     <script src="{{ url_for('static', filename='utils.js', v=VERSION) }}"></script>
+    <script src="{{ url_for('static', filename='wordlookup.js', v=VERSION) }}"></script>
     <script src="{{ url_for('static', filename='app.js', v=VERSION) }}"></script>
 </body>
 </html>

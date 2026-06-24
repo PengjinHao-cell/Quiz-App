@@ -41,3 +41,8 @@ data/*.json
 !data/vocab_cet6.json
 !data/3f96a09933c4.json
 !data/1fe8ae112b46.json
+!data/dict_cache.json
+
+# ECDICT source files (too large, build with build_dict.py)
+data/ecdict.csv
+data/ecdict_full.csv

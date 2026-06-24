@@ -203,6 +203,8 @@ function handleUpload(e) {
 
 // ---------- 删除题库 ----------
 
+var _deleteBankModal = null;
+
 function deleteBank(bankId, bankName, isOfficial) {
     const isUserAdmin = typeof isAdmin === "function" && isAdmin();
     let html;
@@ -228,12 +230,14 @@ function deleteBank(bankId, bankName, isOfficial) {
                 <button style="padding:8px 24px;border:none;border-radius:8px;background:#e53e3e;color:#fff;font-size:0.85rem;cursor:pointer;" onclick="_delName('${bankId}')">确认删除</button>
             </div></div>`;
     }
-    const m = _createModal(html);
+    // 先关闭之前的删除模态框
+    if (_deleteBankModal) { _closeModal(_deleteBankModal); _deleteBankModal = null; }
+    _deleteBankModal = _createModal(html);
     // 绑定取消按钮关闭模态框
-    const btns = m.querySelectorAll('button');
+    const btns = _deleteBankModal.querySelectorAll('button');
     for (const btn of btns) {
         if (!btn.hasAttribute('onclick')) {
-            btn.addEventListener('click', () => _closeModal(m));
+            btn.addEventListener('click', () => { _closeModal(_deleteBankModal); _deleteBankModal = null; });
             break;
         }
     }
@@ -254,7 +258,9 @@ function _delExec(bankId, body, errEl) {
     fetch(`/api/bank/${bankId}/delete`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) })
         .then(async r => { const d = await r.json(); if(!r.ok) throw new Error(d.error); return d; })
         .then(() => {
-            document.querySelectorAll('[style*="position:fixed"][style*="z-index:10000"]').forEach(_closeModal);
+            // 关闭删除确认卡片
+            if (_deleteBankModal) { _closeModal(_deleteBankModal); _deleteBankModal = null; }
+            // 题库卡片收缩动画
             const card = document.getElementById(`bank-${bankId}`);
             if (card) { const h = card.offsetHeight; card.style.boxSizing="border-box"; card.style.height=h+"px"; card.style.overflow="hidden"; card.style.transition="all 0.35s ease"; void card.offsetHeight; card.style.height="0"; card.style.opacity="0"; card.style.padding="0"; card.style.marginBottom="0"; card.style.borderWidth="0"; card.style.gap="0"; setTimeout(() => card.remove(), 350); }
             const r = document.querySelectorAll(".bank-card").length - 1;
@@ -1205,5 +1211,7 @@ async function clearWrongBook() {
     showToast("错题本已清空", "success");
     clearWrongBookOnServer();
 }
+
+
 
 

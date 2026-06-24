@@ -1,6 +1,6 @@
 <h2 id="简体中文">🇨🇳 简体中文</h2>
 
-<h1 align="center">📝 刷题通 (Quiz Master) v1.3.1</h1>
+<h1 align="center">📝 刷题通 (Quiz Master) v1.4.0</h1>
 
 <p align="center">
   <em>🎉 正式版发布 · 安全加固 · Railway 托管 · PostgreSQL 数据库</em>
@@ -35,6 +35,9 @@
 | **🌐 双语界面** | 完整中英文切换（仅系统文字，题目原文不变） |
 | **🧠 智能识别** | 三引擎自动判断：阅读格式 / 异形格式 / 标准格式 |
 | **📖 阅读理解** | 左右双栏布局 · 荧光笔 🖍 / 下划线 ＿ 标注 · 篇数选择 · 本地历史 |
+| **🔤 点击查词** | 双击英文单词弹出释义（20,000 离线词库 + API 兜底）· 右键增强菜单（查词/复制/加入生词本）· 阅读模式荧光/下划线标注 |
+| **📖 生词本** | 云端同步 · 复习模式（遮释义回想）· CSV 导出 · 用户中心独立 Tab |
+| **🤖 AI 错题解析** | 答错一键 DeepSeek 解析 · 逐选项分析 · 知识点 + 记忆技巧 · 数据库缓存 |
 | **🧠 刷题模式** | 练习模式（即时反馈）· 考试模式（自定义时长/计分）· 选项乱序 · 答题卡 · 快捷键 |
 | **📊 学习工具** | 错题本 · 收藏 · 7日活跃趋势图 · 成绩分享（图片保存） |
 | **🎨 用户体验** | Toast 通知 · 统一启动画面 · 搜题 · 响应式布局 · 公告横幅 · 密码强度指示条 |
@@ -84,6 +87,7 @@ python3 app.py
 
 | 版本 | 亮点 |
 |------|------|
+| **v1.4.0** | 🔤 英文单词点击查词（双击+右键）· 📖 生词本（云同步+复习）· 🤖 AI 错题解析（DeepSeek） |
 | **v1.3.1** | ⚡ 首页渲染提速 · ⏱ sync/填空去抖 · 🃏 答题卡增量更新 · 🖍 荧光懒恢复 · 🔒 收藏本隐藏答案 · 📝 组卷 qids 修复 |
 | **v1.3.0** | 🔗 域名迁移 quizmaster.cn · 🔒 题库数据隔离 · 🎨 删除确认卡片化 · 🐛 模态框修复 · 📝 题库入库 |
 | **v1.2.3** | 🆕 新设备检测公告（一键恢复云端数据） · 🔒 用户切换自动清空旧数据 |
@@ -102,7 +106,7 @@ python3 app.py
 
 <h2 id="english">🇬🇧 English</h2>
 
-<h1 align="center">📝 Quiz Master v1.3.1</h1>
+<h1 align="center">📝 Quiz Master v1.4.0</h1>
 
 <p align="center">
   <em>A lightweight, feature-rich quiz web application with AI-powered parsing, reading comprehension mode, and smart annotation tools.</em><br>
@@ -124,6 +128,12 @@ python3 app.py
 **🌐 Bilingual** — Full Chinese/English UI switch (questions unchanged)
 
 **🧠 Detection** — Triple-engine: Reading / Party / Standard format auto-detection
+
+**🔤 Word Lookup** — Double-click words for definition (20K offline dict + API fallback) · Right-click menu (lookup/copy/add to vocab) · Reading mode annotation
+
+**📖 Vocab Book** — Cloud sync · Review mode (blur-to-reveal) · CSV export · User center tab
+
+**🤖 AI Explain** — DeepSeek-powered wrong answer analysis · Per-option breakdown · Knowledge points + memory tips · DB cached
 
 **📖 Reading** — Dual-panel · Highlight 🖍 / Underline ＿ · Passage selection · Local history
 
@@ -149,6 +159,7 @@ python3 app.py
 
 | Version | Highlights |
 |---------|-----------|
+| **v1.4.0** | Word click-lookup (double-click + right-click) · Vocab book (cloud sync + review) · AI wrong answer explain (DeepSeek) |
 | **v1.3.1** | Homepage render speedup · Sync/fill-input debounce · Answer sheet incremental update · Lazy highlight restore · Hide fav answers · Fix qids compose |
 | **v1.3.0** | Domain migration quizmaster.cn · Bank data isolation · Delete confirmation cards · Modal fix · Bank files in repo |
 | **v1.2.3** | New-device detection banner (one-click cloud restore) · Auto-clear old data on user switch |
@@ -167,7 +178,7 @@ python3 app.py
 
 <h2 id="繁體中文">🇭🇰 繁體中文</h2>
 
-<h1 align="center">📝 刷題通 (Quiz Master) v1.3.1</h1>
+<h1 align="center">📝 刷題通 (Quiz Master) v1.4.0</h1>
 
 <p align="center">
   <em>正式版發佈 · 安全加固 · Railway 託管 · PostgreSQL 數據庫</em>

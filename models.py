@@ -268,3 +268,44 @@ class SystemLog(db.Model):
     username = db.Column(db.String(64), default="")
     ip_address = db.Column(db.String(64), default="")
     created_at = db.Column(db.DateTime, default=beijing_now)
+
+
+class VocabWord(db.Model):
+    """生词本（云端同步）"""
+    __tablename__ = "vocab_words"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    word = db.Column(db.String(128), nullable=False)
+    meaning = db.Column(db.String(256), default="")
+    source = db.Column(db.String(32), default="unknown")   # "local" / "api"
+    context = db.Column(db.Text, default="")                # 出处：来自哪个题库
+    review_count = db.Column(db.Integer, default=0)
+    last_review_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=beijing_now)
+
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "word", name="uq_user_vocab"),
+    )
+
+    def to_dict(self):
+        return {
+            "word": self.word,
+            "meaning": self.meaning,
+            "source": self.source,
+            "context": self.context,
+            "review_count": self.review_count,
+            "last_review_at": self.last_review_at.strftime("%Y-%m-%d %H:%M") if self.last_review_at else "",
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M") if self.created_at else "",
+        }
+
+
+class Explanation(db.Model):
+    """AI 错题解析缓存"""
+    __tablename__ = "explanations"
+
+    id = db.Column(db.Integer, primary_key=True)
+    question_key = db.Column(db.String(256), unique=True, nullable=False, index=True)
+    # question_key = "{bank_id}_{question_id}"
+    content = db.Column(db.Text, default="")  # Markdown 格式解析内容
+    created_at = db.Column(db.DateTime, default=beijing_now)

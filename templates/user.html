@@ -54,6 +54,7 @@
                 <a class="user-sidebar-item" href="#favorites" onclick="switchTab('favorites')">⭐ <span>{% if lang == 'en' %}Favorites{% else %}收藏本{% endif %}</span></a>
                 <a class="user-sidebar-item" href="#wrongbook" onclick="switchTab('wrongbook')">📕 <span>{% if lang == 'en' %}Wrong Book{% else %}错题本{% endif %}</span></a>
                 <a class="user-sidebar-item" href="#history" onclick="switchTab('history')">📜 <span>{% if lang == 'en' %}History{% else %}学习记录{% endif %}</span></a>
+                <a class="user-sidebar-item" href="#vocabbook" onclick="switchTab('vocabbook')">📖 <span>{% if lang == 'en' %}Vocab Book{% else %}生词本{% endif %}</span></a>
                 <div class="user-sidebar-divider"></div>
                 <a class="user-sidebar-item" href="#settings" onclick="switchTab('settings')">⚙️ <span>{% if lang == 'en' %}Settings{% else %}设置{% endif %}</span></a>
                 <div class="user-sidebar-divider"></div>
@@ -68,7 +69,11 @@
         {% endif %}
     </div>
 
+    <script>
+    window._IS_LOGGED_IN = {% if current_user.is_authenticated %}true{% else %}false{% endif %};
+    </script>
     <script src="{{ url_for('static', filename='utils.js', v=VERSION) }}"></script>
+    <script src="{{ url_for('static', filename='wordlookup.js', v=VERSION) }}"></script>
     <script>
         // 全局错误捕获
         window.onerror = function(msg, url, line) {
@@ -81,6 +86,7 @@
             wrongbook: { zh: "错题本", en: "Wrong Book" },
             history: { zh: "学习记录", en: "History" },
             settings: { zh: "设置", en: "Settings" },
+            vocabbk: { zh: "生词本", en: "Vocab Book" },
             loading: { zh: "加载中...", en: "Loading..." },
             noData: { zh: "暂无数据", en: "No data" },
             clearAll: { zh: "清空全部", en: "Clear All" },
@@ -90,6 +96,22 @@
             langZh: { zh: "中文", en: "Chinese" },
             langEn: { zh: "英文", en: "English" },
             save: { zh: "保存", en: "Save" },
+            // 生词本专用
+            "Vocab Book": { zh: "生词本", en: "Vocab Book" },
+            "Start Review": { zh: "开始复习", en: "Start Review" },
+            "End Review": { zh: "结束复习", en: "End Review" },
+            "Export CSV": { zh: "导出 CSV", en: "Export CSV" },
+            "Clear All": { zh: "清空全部", en: "Clear All" },
+            "Total": { zh: "共", en: "Total" },
+            "Reviewed": { zh: "已复习", en: "Reviewed" },
+            "Vocab book is empty": { zh: "生词本还是空的", en: "Vocab book is empty" },
+            "Double-click English words while studying → right-click → Add to Vocab Book": { zh: "在刷题时双击英文单词 → 右键 → 加入生词本", en: "Double-click English words while studying → right-click → Add to Vocab Book" },
+            "Deleted": { zh: "已删除", en: "Deleted" },
+            "Exported": { zh: "已导出", en: "Exported" },
+            "words": { zh: "个词", en: " words" },
+            "Cleared": { zh: "已清空", en: "Cleared" },
+            "Clear all vocab words? This cannot be undone.": { zh: "确定要清空所有生词吗？此操作不可撤销。", en: "Clear all vocab words? This cannot be undone." },
+            "Delete": { zh: "删除", en: "Delete" },
         };
         function t(key) { return _T[key] ? (_T[key][USER_LANG] || _T[key]["zh"]) : key; }
 
@@ -107,6 +129,7 @@
             else if (tab === "favorites") renderFavorites(container);
             else if (tab === "wrongbook") renderWrongBook(container);
             else if (tab === "history") renderHistory(container);
+            else if (tab === "vocabbook") renderVocabBook(container);
             else if (tab === "settings") renderSettings(container);
         }
 
@@ -217,8 +240,9 @@
                 html += `<div style="margin-bottom:16px;"><div style="font-weight:600;color:#2d3748;margin-bottom:8px;">📄 ${escapeHTML(group.bank_name)}</div>`;
                 group.questions.forEach(item => {
                     const key = item.key || `${group.bank_id}_${item.question_id}`;
-                    html += `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 12px;background:#fff5f5;border-radius:8px;margin-bottom:6px;font-size:0.85rem;gap:8px;">
-                        <div style="flex:1;min-width:0;"><div style="margin-bottom:4px;color:#4a5568;">${escapeHTML(item.question_text)}</div><div style="font-size:0.75rem;"><span style="color:#e53e3e;">${USER_LANG==='en'?'Your answer':'你的答案'}: ${escapeHTML(item.user_wrong_answer)}</span> · <span style="color:#38a169;">${USER_LANG==='en'?'Correct':'正确答案'}: ${escapeHTML(item.correct_answer)}</span> · ${USER_LANG==='en'?'Wrong':'错'} ${item.wrong_count} ${USER_LANG==='en'?'times':'次'}</div></div>
+                    html += `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 12px;background:#fff5f5;border-radius:8px;margin-bottom:6px;font-size:0.85rem;gap:8px;" id="wrongbook-card-${key}">
+                        <div style="flex:1;min-width:0;"><div style="margin-bottom:4px;color:#4a5568;">${escapeHTML(item.question_text)}</div><div style="font-size:0.75rem;"><span style="color:#e53e3e;">${USER_LANG==='en'?'Your answer':'你的答案'}: ${escapeHTML(item.user_wrong_answer)}</span> · <span style="color:#38a169;">${USER_LANG==='en'?'Correct':'正确答案'}: ${escapeHTML(item.correct_answer)}</span> · ${USER_LANG==='en'?'Wrong':'错'} ${item.wrong_count} ${USER_LANG==='en'?'times':'次'}</div>
+                        <button class="ai-explain-btn" style="margin-top:4px;font-size:0.7rem;padding:3px 10px;" onclick="requestAIExplainWrong(this, '${key}')">🤖 ${USER_LANG==='en'?'AI Explain':'AI 解析'}</button></div>
                         <button onclick="deleteWrongItem('${key}')" style="flex-shrink:0;background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.8rem;padding:4px 6px;border-radius:4px;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">✕</button>
                     </div>`;
                 });
@@ -251,6 +275,83 @@
             });
             setTimeout(() => { removeFromWrongBook(key); }, 50);
         }
+
+        // ---------- AI 错题解析（错题本） ----------
+        window.requestAIExplainWrong = function(btn, key) {
+            if (!btn) return;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="ai-explain-spinner"></span>';
+
+            var card = document.getElementById("wrongbook-card-" + key);
+            var existing = card && card.querySelector(".ai-explain-content");
+            if (existing) {
+                existing.scrollIntoView({ behavior: "smooth" });
+                btn.disabled = false;
+                btn.textContent = "🤖 " + (USER_LANG==="en"?"AI Explain":"AI 解析");
+                return;
+            }
+
+            var book = getWrongBook();
+            var item = book[key];
+            if (!item) { btn.disabled = false; return; }
+
+            var parts = key.split("_");
+            var bankId = parts[0] || "";
+            var qid = parts.slice(1).join("_") || "";
+
+            var options = item.question_options;
+            if (typeof options === "string") {
+                try { options = JSON.parse(options); } catch(e) { options = {}; }
+            }
+
+            fetch("/api/explain", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    question_text: item.question_text,
+                    options: options,
+                    correct_answer: item.correct_answer,
+                    user_answer: item.user_wrong_answer,
+                    type: item.type || "single",
+                    bank_id: bankId,
+                    question_id: qid,
+                }),
+            })
+            .then(function(res) {
+                if (!res.ok) return res.json().then(function(d) { throw new Error(d.error); });
+                return res.json();
+            })
+            .then(function(data) {
+                var div = document.createElement("div");
+                div.className = "ai-explain-content";
+                div.innerHTML = _simpleMD(data.explanation);
+                if (card) card.appendChild(div);
+                if (div) div.scrollIntoView({ behavior: "smooth" });
+                btn.textContent = "🤖 " + (USER_LANG==="en"?"AI Explain":"AI 解析");
+                btn.disabled = false;
+            })
+            .catch(function(err) {
+                btn.textContent = "🤖 " + (USER_LANG==="en"?"AI Explain":"AI 解析");
+                btn.disabled = false;
+                showToast("AI 解析失败: " + err.message, "error");
+            });
+        };
+
+        function _simpleMD(md) {
+            if (!md) return "";
+            var html = md;
+            html = html.replace(/^### (.+)$/gm, "<h3>$1</h3>");
+            html = html.replace(/^## (.+)$/gm, "<h3>$1</h3>");
+            html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+            html = html.replace(/^- (.+)$/gm, "<li>$1</li>");
+            html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, "<ul>$1</ul>");
+            html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+            html = html.replace(/\n\n/g, "<br><br>");
+            html = html.replace(/\n/g, "<br>");
+            return html;
+        }
+
         async function clearAllWrongBook() {
             const ok = await showConfirmModal(USER_LANG==='en'?'Clear wrong book? This cannot be undone.' : '确定清空所有错题吗？此操作不可撤销。', '', '确认清空');
             if (!ok) return;
@@ -336,6 +437,255 @@
 
         // ---------- 设置 ----------
         let _profileCodeSent = false;
+
+        // ---------- 生词本 ----------
+        function renderVocabBook(container) {
+            var html = '<h2>📖 ' + t('Vocab Book') + '</h2>';
+
+            // 操作栏
+            html += '<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">';
+            html += '<button class="btn btn-secondary btn-sm" id="vocab-btn-review" onclick="toggleVocabReview()">🔄 ' + t('Start Review') + '</button>';
+            html += '<button class="btn btn-secondary btn-sm" onclick="exportVocabCSV()">📥 ' + t('Export CSV') + '</button>';
+            html += '<button class="btn btn-danger btn-sm" onclick="clearVocabBook()">🗑 ' + t('Clear All') + '</button>';
+            html += '</div>';
+
+            // 统计
+            html += '<div id="vocab-stats" style="font-size:0.85rem;color:#718096;margin-bottom:12px;"></div>';
+
+            // 列表容器
+            html += '<div id="vocab-list"></div>';
+            html += '<div id="vocab-empty" style="display:none;text-align:center;padding:40px;color:#a0aec0;">';
+            html += '<div style="font-size:2.5rem;margin-bottom:8px;">📭</div>';
+            html += '<p>' + t('Vocab book is empty') + '</p>';
+            html += '<p style="font-size:0.85rem;">' + t('Double-click English words while studying → right-click → Add to Vocab Book') + '</p>';
+            html += '</div>';
+
+            container.innerHTML = html;
+
+            // 加载数据
+            loadVocabWords();
+        }
+
+        var _vocabWords = [];
+        var _vocabReviewing = false;
+
+        function loadVocabWords() {
+            if (typeof window._IS_LOGGED_IN !== "undefined" && window._IS_LOGGED_IN) {
+                fetch("/api/vocab/list", { credentials: "same-origin" })
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        _vocabWords = data.words || [];
+                        renderVocabList();
+                    })
+                    .catch(function() { loadVocabLocal(); });
+            } else {
+                loadVocabLocal();
+            }
+        }
+
+        function loadVocabLocal() {
+            var book = typeof getVocabBookLocal === "function" ? getVocabBookLocal() : {};
+            _vocabWords = Object.values(book).sort(function(a, b) {
+                return (b.created_at || "").localeCompare(a.created_at || "");
+            });
+            renderVocabList();
+        }
+
+        function renderVocabList() {
+            var listEl = document.getElementById("vocab-list");
+            var emptyEl = document.getElementById("vocab-empty");
+            var statsEl = document.getElementById("vocab-stats");
+
+            if (!listEl) return;
+
+            var reviewed = _vocabWords.filter(function(w) { return (w.review_count || 0) > 0; }).length;
+            if (statsEl) {
+                statsEl.innerHTML = '<span>' + t('Total') + ': <strong>' + _vocabWords.length + '</strong></span> &nbsp;|&nbsp; <span>' + t('Reviewed') + ': <strong>' + reviewed + '</strong></span>';
+            }
+
+            if (_vocabWords.length === 0) {
+                listEl.innerHTML = "";
+                if (emptyEl) emptyEl.style.display = "block";
+                var btnR = document.getElementById("vocab-btn-review");
+                if (btnR) btnR.disabled = true;
+                return;
+            }
+
+            if (emptyEl) emptyEl.style.display = "none";
+            var btnR2 = document.getElementById("vocab-btn-review");
+            if (btnR2) btnR2.disabled = false;
+
+            var html = "";
+            _vocabWords.forEach(function(w, i) {
+                var key = "vocab_" + w.word.replace(/[^a-z]/g, "_");
+                html += '<div id="vocab-card-' + key + '" style="display:flex;justify-content:space-between;align-items:flex-start;padding:10px 12px;background:#f0fdf4;border-radius:8px;margin-bottom:6px;font-size:0.85rem;gap:8px;transition:all 0.3s ease;">';
+                html += '<div style="flex:1;min-width:0;">';
+                html += '<div style="margin-bottom:4px;color:#2d3748;font-weight:600;">' + _esc(w.word) + '</div>';
+                if (_vocabReviewing) {
+                    html += '<div class="vocab-meaning-blur" onclick="revealVocabMeaning(this,\'' + key + '\')" style="color:#4a5568;filter:blur(5px);cursor:pointer;user-select:none;">' + _esc(w.meaning) + '</div>';
+                    html += '<div class="vocab-review-btns" id="vocab-review-' + key + '" style="display:none;margin-top:6px;gap:6px;">';
+                    html += '<button class="btn btn-sm" style="background:#c6f6d5;color:#276749;font-size:0.75rem;padding:4px 10px;" onclick="markVocabReview(' + i + ',true)">✓ ' + (USER_LANG==="en"?"Remember":"记住了") + '</button>';
+                    html += '<button class="btn btn-sm" style="background:#fed7d7;color:#9b2c2c;font-size:0.75rem;padding:4px 10px;" onclick="markVocabReview(' + i + ',false)">↻ ' + (USER_LANG==="en"?"Again":"再练") + '</button>';
+                    html += '</div>';
+                } else {
+                    html += '<div style="color:#4a5568;">' + _esc(w.meaning) + '</div>';
+                }
+                html += '</div>';
+                html += '<div style="flex-shrink:0;display:flex;align-items:center;gap:4px;">';
+                html += '<span style="font-size:0.7rem;color:#a0aec0;">' + _fmtDate(w.created_at) + '</span>';
+                html += '<button onclick="deleteVocabWord(\'' + key + '\')" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:0.8rem;padding:4px 6px;border-radius:4px;" onmouseover="this.style.background=\'#fee2e2\'" onmouseout="this.style.background=\'none\'" title="' + t('Delete') + '">✕</button>';
+                html += '</div>';
+                html += '</div>';
+            });
+
+            listEl.innerHTML = html;
+        }
+
+        // 暴露到 window 供 onclick 调用
+        window.toggleVocabReview = function() {
+            _vocabReviewing = !_vocabReviewing;
+            var btn = document.getElementById("vocab-btn-review");
+            if (btn) {
+                btn.textContent = _vocabReviewing ? '🛑 ' + t('End Review') : '🔄 ' + t('Start Review');
+                if (_vocabReviewing) { btn.classList.add("btn-danger"); } else { btn.classList.remove("btn-danger"); }
+            }
+            renderVocabList();
+        };
+
+        window.revealVocabMeaning = function(el, key) {
+            if (!_vocabReviewing) return;
+            el.style.filter = "none";
+            var btns = document.getElementById("vocab-review-" + key);
+            if (btns) btns.style.display = "flex";
+        };
+
+        window.markVocabReview = function(idx, remembered) {
+            var w = _vocabWords[idx];
+            if (typeof window._IS_LOGGED_IN !== "undefined" && window._IS_LOGGED_IN) {
+                fetch("/api/vocab/review", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ word: w.word, remembered: remembered }),
+                }).catch(function() {});
+            }
+            w.review_count = (w.review_count || 0) + 1;
+            if (remembered) {
+                // 记住的移到末尾
+                _vocabWords.splice(idx, 1);
+                _vocabWords.push(w);
+            }
+            renderVocabList();
+        };
+
+        window.deleteVocabWord = async function(key) {
+            // 从 key 反查 word
+            var word = key.replace(/^vocab_/, "").replace(/_/g, "");
+            var idx = -1;
+            for (var i = 0; i < _vocabWords.length; i++) {
+                if (_vocabWords[i].word.replace(/[^a-z]/g, "_") === key.replace(/^vocab_/, "")) {
+                    word = _vocabWords[i].word;
+                    idx = i;
+                    break;
+                }
+            }
+            if (idx < 0) return;
+
+            var ok = await showConfirmModal(
+                (USER_LANG==="en" ? "Remove this word?" : "确定移除此生词吗？"),
+                (USER_LANG==="en" ? ("「" + word + "」will be deleted from your vocab book.") : ("「" + word + "」将从生词本中删除。")),
+                USER_LANG==="en" ? "Remove" : "确认移除"
+            );
+            if (!ok) return;
+
+            // 卡片收缩动画
+            var card = document.getElementById("vocab-card-" + key);
+            if (card) {
+                var h = card.offsetHeight;
+                card.style.boxSizing = "border-box";
+                card.style.height = h + "px";
+                card.style.overflow = "hidden";
+                void card.offsetHeight;
+                card.style.height = "0";
+                card.style.opacity = "0";
+                card.style.paddingTop = "0";
+                card.style.paddingBottom = "0";
+                card.style.marginTop = "0";
+                card.style.marginBottom = "0";
+                card.style.borderWidth = "0";
+                setTimeout(function() { card.remove(); }, 350);
+            }
+
+            // 数据删除
+            if (typeof window._IS_LOGGED_IN !== "undefined" && window._IS_LOGGED_IN) {
+                fetch("/api/vocab/" + encodeURIComponent(word), {
+                    method: "DELETE", credentials: "same-origin",
+                }).catch(function() {});
+            } else {
+                var book = typeof getVocabBookLocal === "function" ? getVocabBookLocal() : {};
+                delete book[word];
+                if (typeof saveVocabBookLocal === "function") saveVocabBookLocal(book);
+            }
+            _vocabWords.splice(idx, 1);
+            setTimeout(function() { renderVocabList(); }, 360);
+            showToast(t('Deleted'), "success");
+        };
+
+        window.exportVocabCSV = function() {
+            if (_vocabWords.length === 0) { showToast(t('Vocab book is empty'), "info"); return; }
+            var csv = "Word,Meaning\n";
+            _vocabWords.forEach(function(w) {
+                csv += '"' + (w.word || "").replace(/"/g, '""') + '","' + (w.meaning || "").replace(/"/g, '""') + '"\n';
+            });
+            var blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url;
+            a.download = "vocab_book_" + new Date().toISOString().slice(0, 10) + ".csv";
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast(t('Exported') + " " + _vocabWords.length + " " + t('words'), "success");
+        };
+
+        window.clearVocabBook = async function() {
+            var ok = await showConfirmModal(
+                t('Clear all vocab words? This cannot be undone.'),
+                "",
+                USER_LANG==="en" ? "Clear All" : "确认清空"
+            );
+            if (!ok) return;
+
+            var content = document.getElementById("user-content");
+            content.style.transition = "all 0.3s ease";
+            content.style.opacity = "0";
+            content.style.transform = "translateY(-10px)";
+            setTimeout(function() {
+                if (typeof window._IS_LOGGED_IN !== "undefined" && window._IS_LOGGED_IN) {
+                    fetch("/api/vocab/clear", { method: "POST", credentials: "same-origin" }).catch(function() {});
+                } else {
+                    if (typeof window.VOCAB_BOOK_KEY !== "undefined") localStorage.removeItem(window.VOCAB_BOOK_KEY);
+                }
+                _vocabWords = [];
+                content.style.transition = "none";
+                content.style.opacity = "";
+                content.style.transform = "";
+                renderVocabList();
+                showToast(t('Cleared'), "success");
+            }, 320);
+        };
+
+        function _esc(str) {
+            if (!str) return "";
+            var div = document.createElement("div");
+            div.textContent = String(str);
+            return div.innerHTML;
+        }
+
+        function _fmtDate(d) {
+            if (!d) return "";
+            try {
+                return d.slice(0, 10);
+            } catch(e) { return ""; }
+        }
 
         function renderSettings(container) {
             let html = `<h2>⚙️ ${t("settings")}</h2>`;

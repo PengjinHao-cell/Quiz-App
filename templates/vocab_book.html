@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生词本 - 刷题通</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v=VERSION) }}">
+    <style>
+        .vocab-layout { max-width: 800px; margin: 0 auto; }
+        .vocab-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+        .vocab-stats { display: flex; gap: 20px; font-size: 0.85rem; color: #718096; }
+        .vocab-stats strong { color: #2d3748; font-size: 1.1rem; }
+        .vocab-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .vocab-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 16px 20px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s; }
+        .vocab-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+        .vocab-card-word { font-size: 1.1rem; font-weight: 700; color: #2d3748; min-width: 120px; }
+        .vocab-card-meaning { font-size: 0.9rem; color: #4a5568; flex: 1; margin: 0 16px; }
+        .vocab-card-meta { font-size: 0.75rem; color: #a0aec0; white-space: nowrap; }
+        .vocab-card-del { background: none; border: none; color: #cbd5e0; cursor: pointer; font-size: 1rem; padding: 4px; flex-shrink: 0; }
+        .vocab-card-del:hover { color: #e53e3e; }
+        .vocab-empty { text-align: center; padding: 60px 20px; color: #a0aec0; }
+        .vocab-empty-icon { font-size: 3rem; margin-bottom: 12px; }
+        /* 复习模式 */
+        .review-mode .vocab-card-meaning { filter: blur(6px); cursor: pointer; user-select: none; transition: filter 0.2s; }
+        .review-mode .vocab-card-meaning.revealed { filter: none; }
+        .review-card-actions { display: flex; gap: 8px; margin-left: 8px; flex-shrink: 0; }
+        .review-btn { padding: 6px 14px; border-radius: 8px; border: none; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .review-btn-remember { background: #c6f6d5; color: #276749; }
+        .review-btn-remember:hover { background: #9ae6b4; }
+        .review-btn-again { background: #fed7d7; color: #9b2c2c; }
+        .review-btn-again:hover { background: #feb2b2; }
+    </style>
+</head>
+<body>
+    {% set splash_icon = '📖' %}
+    {% set splash_text = '加载中...' %}
+    {% include '_splash.html' %}
+
+    <div class="container vocab-layout">
+        <header class="quiz-header">
+            <div class="quiz-header-left">
+                <a href="{{ url_for('app_main') }}" class="btn btn-back">← 返回主页</a>
+                <div class="quiz-info">
+                    <h1>📖 生词本</h1>
+                </div>
+            </div>
+        </header>
+
+        <div class="vocab-header">
+            <div class="vocab-stats" id="vocab-stats">
+                <span>共 <strong id="stat-total">0</strong> 词</span>
+                <span>已复习 <strong id="stat-reviewed">0</strong></span>
+            </div>
+            <div class="vocab-actions">
+                <button class="btn btn-secondary btn-sm" id="btn-review" onclick="toggleReview()">🔄 开始复习</button>
+                <button class="btn btn-secondary btn-sm" id="btn-export" onclick="exportVocab()">📥 导出 CSV</button>
+                <button class="btn btn-danger btn-sm" id="btn-clear" onclick="clearVocab()">🗑 清空</button>
+            </div>
+        </div>
+
+        <div id="vocab-list"></div>
+
+        <div class="vocab-empty" id="vocab-empty" style="display:none;">
+            <div class="vocab-empty-icon">📭</div>
+            <p>生词本还是空的</p>
+            <p style="font-size:0.85rem;">在刷题或阅读时，双击英文单词 → 右键 → 加入生词本</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='utils.js', v=VERSION) }}"></script>
+    <script src="{{ url_for('static', filename='wordlookup.js', v=VERSION) }}"></script>
+    <script src="{{ url_for('static', filename='app.js', v=VERSION) }}"></script>
+    <script>
+    window._IS_LOGGED_IN = {% if current_user.is_authenticated %}true{% else %}false{% endif %};
+    </script>
+    <script>
+    (function() {
+        "use strict";
+
+        var words = [];
+        var reviewMode = false;
+
+        // ===== 初始化 =====
+        document.addEventListener("DOMContentLoaded", function() {
+            loadWords();
+            setTimeout(dismissSplash, 400);
+        });
+
+        function loadWords() {
+            if (isLoggedIn()) {
+                fetch("/api/vocab/list", { credentials: "same-origin" })
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        words = data.words || [];
+                        render();
+                    })
+                    .catch(function() {
+                        // 失败时回退到本地
+                        loadLocal();
+                    });
+            } else {
+                loadLocal();
+            }
+        }
+
+        function loadLocal() {
+            var book = getVocabBookLocal();
+            words = Object.values(book).sort(function(a, b) {
+                return (b.created_at || "").localeCompare(a.created_at || "");
+            });
+            render();
+        }
+
+        // ===== 渲染 =====
+        function render() {
+            var listEl = document.getElementById("vocab-list");
+            var emptyEl = document.getElementById("vocab-empty");
+
+            // 统计
+            document.getElementById("stat-total").textContent = words.length;
+            var reviewed = words.filter(function(w) { return (w.review_count || 0) > 0; }).length;
+            document.getElementById("stat-reviewed").textContent = reviewed;
+
+            if (words.length === 0) {
+                listEl.innerHTML = "";
+                emptyEl.style.display = "block";
+                document.getElementById("btn-review").disabled = true;
+                return;
+            }
+
+            emptyEl.style.display = "none";
+            document.getElementById("btn-review").disabled = false;
+
+            var html = "";
+            words.forEach(function(w, i) {
+                var meaningCls = "vocab-card-meaning";
+                if (reviewMode) meaningCls += " revealed"; // 初始全部显示遮罩由 CSS class 控制
+                // 复习模式：初始模糊
+                var actualCls = reviewMode ? "vocab-card-meaning" : "vocab-card-meaning";
+
+                html += '<div class="vocab-card" data-idx="' + i + '">';
+                html += '<button class="vocab-card-del" title="删除" onclick="deleteWord(' + i + ')">✕</button>';
+                html += '<span class="vocab-card-word">' + escapeHTML(w.word) + '</span>';
+                html += '<span class="' + actualCls + '" onclick="revealMeaning(this)">' + escapeHTML(w.meaning) + '</span>';
+                html += '<span class="vocab-card-meta">' + formatDate(w.created_at) + '</span>';
+
+                if (reviewMode) {
+                    html += '<span class="review-card-actions" style="display:none;" id="review-actions-' + i + '">';
+                    html += '<button class="review-btn review-btn-remember" onclick="markReview(' + i + ', true)">✓ 记住了</button>';
+                    html += '<button class="review-btn review-btn-again" onclick="markReview(' + i + ', false)">↻ 再练</button>';
+                    html += '</span>';
+                }
+
+                html += '</div>';
+            });
+
+            listEl.innerHTML = html;
+        }
+
+        // ===== 复习模式 =====
+        function toggleReview() {
+            reviewMode = !reviewMode;
+            var btn = document.getElementById("btn-review");
+            var container = document.querySelector(".container");
+
+            if (reviewMode) {
+                btn.textContent = "🛑 结束复习";
+                btn.classList.add("btn-danger");
+                container.classList.add("review-mode");
+            } else {
+                btn.textContent = "🔄 开始复习";
+                btn.classList.remove("btn-danger");
+                container.classList.remove("review-mode");
+            }
+
+            render();
+        }
+
+        window.revealMeaning = function(el) {
+            if (!reviewMode) return;
+            el.classList.add("revealed");
+            // 显示操作按钮
+            var card = el.closest(".vocab-card");
+            var actions = card.querySelector(".review-card-actions");
+            if (actions) actions.style.display = "flex";
+        };
+
+        window.markReview = function(idx, remembered) {
+            var w = words[idx];
+            if (isLoggedIn()) {
+                fetch("/api/vocab/review", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ word: w.word, remembered: remembered }),
+                }).catch(function() {});
+            }
+            w.review_count = (w.review_count || 0) + 1;
+            render();
+        };
+
+        // ===== 删除 =====
+        window.deleteWord = function(idx) {
+            var w = words[idx];
+            if (!confirm("确定删除「" + w.word + "」吗？")) return;
+
+            if (isLoggedIn()) {
+                fetch("/api/vocab/" + encodeURIComponent(w.word), {
+                    method: "DELETE",
+                    credentials: "same-origin",
+                }).catch(function() {});
+            } else {
+                var book = getVocabBookLocal();
+                delete book[w.word];
+                saveVocabBookLocal(book);
+            }
+
+            words.splice(idx, 1);
+            render();
+            if (typeof showToast === "function") showToast("已删除", "success");
+        };
+
+        // ===== 导出 CSV =====
+        window.exportVocab = function() {
+            if (words.length === 0) {
+                if (typeof showToast === "function") showToast("生词本为空", "info");
+                return;
+            }
+
+            var csv = "Word,Meaning\n";
+            words.forEach(function(w) {
+                csv += '"' + w.word.replace(/"/g, '""') + '","' + w.meaning.replace(/"/g, '""') + '"\n';
+            });
+
+            var blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url;
+            a.download = "vocab_book_" + new Date().toISOString().slice(0, 10) + ".csv";
+            a.click();
+            URL.revokeObjectURL(url);
+
+            if (typeof showToast === "function") showToast("已导出 " + words.length + " 个生词", "success");
+        };
+
+        // ===== 清空 =====
+        window.clearVocab = function() {
+            if (!confirm("确定要清空所有生词吗？此操作不可撤销。")) return;
+
+            if (isLoggedIn()) {
+                fetch("/api/vocab/clear", {
+                    method: "POST",
+                    credentials: "same-origin",
+                }).catch(function() {});
+            } else {
+                localStorage.removeItem(VOCAB_BOOK_KEY);
+            }
+
+            words = [];
+            render();
+            if (typeof showToast === "function") showToast("生词本已清空", "success");
+        };
+
+        function formatDate(d) {
+            if (!d) return "";
+            try {
+                var dt = new Date(d);
+                if (isNaN(dt.getTime())) {
+                    // 尝试 YYYY-MM-DD HH:MM 格式
+                    return d.slice(0, 10);
+                }
+                return dt.toLocaleDateString("zh-CN");
+            } catch(e) {
+                return d.slice(0, 10);
+            }
+        }
+    })();
+    </script>
+</body>
+</html>

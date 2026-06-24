@@ -177,6 +177,20 @@ function showQuestion(qi) {
 
     updateReadingProgress();
     renderAnswerSheet();
+
+    // AI 解析按钮
+    setTimeout(function() {
+        var hint = container.querySelector(".practice-hint.wrong");
+        if (hint && !hint.querySelector(".ai-explain-btn")) {
+            var btn = document.createElement("button");
+            btn.className = "ai-explain-btn";
+            btn.textContent = "🤖 AI 解析";
+            btn.onclick = function() {
+                requestAIExplainReading(q, btn);
+            };
+            hint.appendChild(btn);
+        }
+    }, 0);
 }
 
 function selectReadingOption(key, letter) {
@@ -302,4 +316,71 @@ function goToQuestionByGlobalIdx(gIdx) {
             idx++;
         }
     }
+}
+
+// ========== AI 错题解析（阅读理解） ==========
+
+function requestAIExplainReading(question, btn) {
+    if (!btn) return;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="ai-explain-spinner"></span> 解析中…';
+
+    var card = btn.closest(".question-card");
+    var existing = card.querySelector(".ai-explain-content");
+    if (existing) {
+        existing.scrollIntoView({ behavior: "smooth" });
+        btn.disabled = false;
+        btn.textContent = "🤖 AI 解析";
+        return;
+    }
+
+    var passage = passages[currentPassageIdx];
+    var key = passage ? passage.id + "_" + question.id : "";
+
+    fetch("/api/explain", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            question_text: question.text,
+            options: question.options,
+            correct_answer: question.answer,
+            user_answer: userAnswers[getQKey(passage ? passage.id : "", question.id)] || "",
+            type: question.type || "single",
+            bank_id: typeof READING_CONFIG !== "undefined" ? READING_CONFIG.bankId : "",
+            question_id: question.id,
+        }),
+    })
+    .then(function(res) {
+        if (!res.ok) return res.json().then(function(d) { throw new Error(d.error); });
+        return res.json();
+    })
+    .then(function(data) {
+        var div = document.createElement("div");
+        div.className = "ai-explain-content";
+        div.innerHTML = simpleMarkdown(data.explanation);
+        card.appendChild(div);
+        div.scrollIntoView({ behavior: "smooth" });
+        btn.textContent = "🤖 AI 解析";
+        btn.disabled = false;
+    })
+    .catch(function(err) {
+        btn.textContent = "🤖 AI 解析";
+        btn.disabled = false;
+        if (typeof showToast === "function") showToast("AI 解析失败: " + err.message, "error");
+    });
+}
+
+function simpleMarkdown(md) {
+    if (!md) return "";
+    var html = md;
+    html = html.replace(/^### (.+)$/gm, "<h3>$1</h3>");
+    html = html.replace(/^## (.+)$/gm, "<h3>$1</h3>");
+    html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/^- (.+)$/gm, "<li>$1</li>");
+    html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, "<ul>$1</ul>");
+    html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+    html = html.replace(/\n\n/g, "<br><br>");
+    html = html.replace(/\n/g, "<br>");
+    return html;
 }

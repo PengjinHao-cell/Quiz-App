@@ -21,7 +21,7 @@ from flask_login import LoginManager, current_user, login_required
 from werkzeug.utils import secure_filename
 from parser import parse_file, create_sample_questions
 from version import VERSION, VERSION_NAME
-from models import db, User, WrongAnswer, Favorite, StudyHistory, QuestionBank, SystemLog
+from models import db, User, WrongAnswer, Favorite, StudyHistory, QuestionBank, SystemLog, VocabWord, Explanation, beijing_now
 from auth import auth_bp
 
 app = Flask(__name__)
@@ -79,6 +79,27 @@ app.register_blueprint(auth_bp)
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 DATA_FOLDER = os.path.join(BASE_DIR, "data")
+
+# =========================== 词库缓存 ===========================
+
+_dict_cache = {}  # {word: meaning} — 服务启动时从 JSON 加载到内存
+
+
+def _load_dict_cache():
+    """加载本地英汉词库到内存"""
+    global _dict_cache
+    dict_path = os.path.join(DATA_FOLDER, "dict_cache.json")
+    if os.path.exists(dict_path):
+        try:
+            with open(dict_path, "r", encoding="utf-8") as f:
+                _dict_cache = json.load(f)
+            print(f"📖 词库加载完成：{len(_dict_cache)} 词")
+        except Exception as e:
+            print(f"⚠️  词库加载失败：{e}")
+            _dict_cache = {}
+    else:
+        print("⚠️  未找到词库文件 data/dict_cache.json，查词将仅依赖在线 API")
+
 
 # =========================== 默认管理员 ===========================
 
@@ -205,8 +226,8 @@ def _run_migration():
                 if not os.path.isabs(db_path):
                     db_path = os.path.join(BASE_DIR, db_path)
                 _sc = sqlite3.connect(db_path)
-                _sc.execute("PRAGMA table_info(question_banks)")
-                _existing_cols = [row[1] for row in _sc.fetchall()]
+                _cur = _sc.execute("PRAGMA table_info(question_banks)")
+                _existing_cols = [row[1] for row in _cur.fetchall()]
                 for _cn, _cd in PRECOMPUTED_COLS.items():
                     if _cn not in _existing_cols:
                         _sc.execute(f"ALTER TABLE question_banks ADD COLUMN {_cn} {_cd}")
@@ -294,6 +315,7 @@ try:
         db.create_all()
         _run_migration()
         _init_default_admin()
+        _load_dict_cache()
     print("✅ 数据库连接成功")
     try:
         _ = User.query.first()
@@ -651,6 +673,12 @@ def user_page():
         lang = "zh"
     session["lang"] = lang
     return render_template("user.html", lang=lang)
+
+
+@app.route("/vocab-book")
+def vocab_book_page():
+    """生词本页面"""
+    return render_template("vocab_book.html")
 
 
 @app.route("/app")
@@ -1375,6 +1403,8 @@ def api_sync_all():
     favorites = Favorite.query.filter_by(user_id=user_id).all()
     histories = StudyHistory.query.filter_by(user_id=user_id)\
         .order_by(StudyHistory.created_at.desc()).limit(50).all()
+    vocab_words = VocabWord.query.filter_by(user_id=user_id)\
+        .order_by(VocabWord.created_at.desc()).all()
 
     wrong_book = {}
     for wa in wrong_answers:
@@ -1385,11 +1415,13 @@ def api_sync_all():
         fav_book[f.question_key] = f.to_dict()
 
     history_list = [h.to_dict() for h in histories]
+    vocab_list = [v.to_dict() for v in vocab_words]
 
     return jsonify({
         "wrong_book": wrong_book,
         "favorites": fav_book,
         "history": history_list,
+        "vocab_words": vocab_list,
     })
 
 
@@ -1869,11 +1901,308 @@ def api_admin_delete_user(user_id):
     WrongAnswer.query.filter_by(user_id=user_id).delete()
     Favorite.query.filter_by(user_id=user_id).delete()
     StudyHistory.query.filter_by(user_id=user_id).delete()
+    VocabWord.query.filter_by(user_id=user_id).delete()
     db.session.delete(user)
     db.session.commit()
 
     add_log("warning", "管理员", f"管理员删除了用户: {username}", user_id=current_user.id, username=current_user.username)
     return jsonify({"success": True, "message": f"用户「{username}」已删除"})
+
+
+# =========================== 词典 API ===========================
+
+# 内存 API 缓存：缓存在线查词结果，避免重复请求国外 API
+_dict_api_cache = {}
+
+
+@app.route("/api/dict/<word>")
+def api_dict_lookup(word):
+    """查词：先本地词库，再在线 API 兜底"""
+    word = word.strip().lower()
+    if not word:
+        return jsonify({"error": "empty_word"}), 400
+
+    # 1. 查内存词库
+    meaning = _dict_cache.get(word) or _dict_cache.get(word.capitalize())
+    if meaning:
+        return jsonify({"word": word, "meaning": meaning, "source": "local"})
+
+    # 2. 查内存 API 缓存
+    if word in _dict_api_cache:
+        return jsonify({"word": word, "meaning": _dict_api_cache[word], "source": "api"})
+
+    # 3. 代理 Free Dictionary API
+    meaning = _fetch_dict_online(word)
+    if meaning:
+        _dict_api_cache[word] = meaning
+        return jsonify({"word": word, "meaning": meaning, "source": "api"})
+
+    return jsonify({"error": "not_found"}), 404
+
+
+def _fetch_dict_online(word):
+    """代理查询 Free Dictionary API + MyMemory 翻译，返回中文释义或 None"""
+    import urllib.request as _ur
+    import urllib.error as _ue
+
+    try:
+        # Free Dictionary API
+        req = _ur.Request(
+            f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}",
+            headers={"User-Agent": "QuizApp/1.0"},
+        )
+        with _ur.urlopen(req, timeout=3) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        return None
+
+    if not data or not isinstance(data, list):
+        return None
+
+    entry = data[0]
+    definitions = []
+    for meaning_block in entry.get("meanings", []):
+        for d in meaning_block.get("definitions", []):
+            definitions.append(d.get("definition", ""))
+            if len(definitions) >= 1:
+                break
+        if definitions:
+            break
+
+    en_definition = definitions[0] if definitions else ""
+    if not en_definition:
+        return None
+
+    # MyMemory 英→中翻译
+    try:
+        req2 = _ur.Request(
+            f"https://api.mymemory.translated.net/get?q={word}&langpair=en|zh-CN",
+            headers={"User-Agent": "QuizApp/1.0"},
+        )
+        with _ur.urlopen(req2, timeout=3) as resp2:
+            zh_data = json.loads(resp2.read().decode("utf-8"))
+        zh_meaning = zh_data.get("responseData", {}).get("translatedText", "")
+    except Exception:
+        zh_meaning = ""
+
+    if zh_meaning and zh_meaning.lower() != word.lower():
+        return zh_meaning
+
+    return en_definition[:100]
+
+
+# =========================== 生词本 API ===========================
+
+
+@app.route("/api/vocab/add", methods=["POST"])
+@login_required
+def api_vocab_add():
+    """加入生词本"""
+    data = request.get_json()
+    word = (data.get("word") or "").strip().lower()
+    meaning = (data.get("meaning") or "").strip()
+    context = (data.get("context") or "").strip()
+
+    if not word or not meaning:
+        return jsonify({"error": "缺少 word 或 meaning"}), 400
+
+    user_id = current_user.id
+    existing = VocabWord.query.filter_by(user_id=user_id, word=word).first()
+    if existing:
+        return jsonify({"success": False, "message": "已在生词本中"})
+
+    vw = VocabWord(
+        user_id=user_id,
+        word=word,
+        meaning=meaning,
+        source=data.get("source", "unknown"),
+        context=context,
+    )
+    db.session.add(vw)
+    db.session.commit()
+
+    add_log("info", "生词本", f"用户添加生词: {word}", user_id=user_id, username=current_user.username)
+    return jsonify({"success": True, "message": f"「{word}」已加入生词本"})
+
+
+@app.route("/api/vocab/list")
+@login_required
+def api_vocab_list():
+    """获取生词本列表"""
+    user_id = current_user.id
+    words = VocabWord.query.filter_by(user_id=user_id)\
+        .order_by(VocabWord.created_at.desc()).all()
+    return jsonify({
+        "words": [w.to_dict() for w in words],
+        "total": len(words),
+        "reviewed": sum(1 for w in words if w.review_count > 0),
+    })
+
+
+@app.route("/api/vocab/<word>", methods=["DELETE"])
+@login_required
+def api_vocab_delete(word):
+    """删除单个生词"""
+    user_id = current_user.id
+    w = word.strip().lower()
+    VocabWord.query.filter_by(user_id=user_id, word=w).delete()
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@app.route("/api/vocab/clear", methods=["POST"])
+@login_required
+def api_vocab_clear():
+    """清空生词本"""
+    VocabWord.query.filter_by(user_id=current_user.id).delete()
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@app.route("/api/vocab/review", methods=["POST"])
+@login_required
+def api_vocab_review():
+    """记录复习"""
+    data = request.get_json()
+    word = (data.get("word") or "").strip().lower()
+    remembered = data.get("remembered", True)
+
+    user_id = current_user.id
+    vw = VocabWord.query.filter_by(user_id=user_id, word=word).first()
+    if not vw:
+        return jsonify({"error": "生词不存在"}), 404
+
+    vw.review_count += 1
+    vw.last_review_at = beijing_now()
+    db.session.commit()
+
+    return jsonify({"success": True})
+
+
+# =========================== AI 错题解析 API ===========================
+
+
+@app.route("/api/explain", methods=["POST"])
+@login_required
+def api_explain():
+    """AI 错题解析：调用 DeepSeek 生成详细解释，结果缓存数据库"""
+    data = request.get_json()
+    question_text = (data.get("question_text") or "").strip()
+    options = data.get("options") or {}
+    correct_answer = (data.get("correct_answer") or "").strip()
+    user_answer = (data.get("user_answer") or "").strip()
+    question_type = data.get("type", "single")
+    bank_id = (data.get("bank_id") or "").strip()
+    question_id = (data.get("question_id") or "").strip()
+
+    if not question_text:
+        return jsonify({"error": "缺少题目内容"}), 400
+
+    # 先查缓存
+    question_key = f"{bank_id}_{question_id}" if bank_id and question_id else ""
+    if question_key:
+        cached = Explanation.query.filter_by(question_key=question_key).first()
+        if cached and cached.content:
+            return jsonify({"question_key": question_key, "explanation": cached.content, "cached": True})
+
+    # 调 DeepSeek
+    api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+    if not api_key:
+        return jsonify({"error": "未配置 DEEPSEEK_API_KEY"}), 500
+
+    prompt = _build_explain_prompt(question_text, options, correct_answer, user_answer, question_type)
+
+    try:
+        content = _call_deepseek(api_key, prompt)
+    except Exception as e:
+        return jsonify({"error": f"AI 解析失败: {str(e)}"}), 500
+
+    if not content:
+        return jsonify({"error": "AI 返回为空"}), 500
+
+    # 写入缓存
+    if question_key:
+        cached = Explanation.query.filter_by(question_key=question_key).first()
+        if cached:
+            cached.content = content
+        else:
+            db.session.add(Explanation(question_key=question_key, content=content))
+        db.session.commit()
+
+    return jsonify({"question_key": question_key, "explanation": content, "cached": False})
+
+
+def _build_explain_prompt(question_text, options, correct_answer, user_answer, question_type):
+    """构建 DeepSeek 解析 Prompt"""
+    type_label = {"single": "单选题", "multi": "多选题", "judge": "判断题", "fill": "填空题"}.get(question_type, "题目")
+
+    opts_text = ""
+    if isinstance(options, dict) and options:
+        opts_text = "\n".join([f"{k}. {v}" for k, v in options.items()])
+
+    prompt = f"""你是一位专业的英语教师，请为以下做错的{type_label}生成详细解析。用中文回答。
+
+## 题目
+{question_text}
+
+## 选项
+{opts_text if opts_text else "（无选项）"}
+
+## 学生答案
+{user_answer if user_answer else "（未作答）"}
+
+## 正确答案
+{correct_answer}
+
+## 要求
+请按以下结构输出（Markdown 格式，不要代码块包裹）：
+
+### 📌 题目理解
+简要说明这道题在考察什么知识点。
+
+### 🔍 选项分析
+逐选项分析：
+- 学生选的 {user_answer if user_answer else '（未选）'}：分析为什么错误
+- 正确答案 {correct_answer}：说明为什么对
+- 其他选项：如果是干扰项，说明干扰点
+
+### 💡 知识点
+列出本题涉及的语法、词汇或阅读技巧知识点。
+
+### 🧠 记忆技巧
+给出 1-2 条记住这个知识点的技巧或口诀。"""
+
+    return prompt
+
+
+def _call_deepseek(api_key, prompt, max_tokens=1200):
+    """调用 DeepSeek Chat API"""
+    import urllib.request as _ur
+    import urllib.error as _ue
+
+    req_data = json.dumps({
+        "model": "deepseek-chat",
+        "messages": [
+            {"role": "system", "content": "你是一位专业英语教师，用中文为学生解析错题。直接输出 Markdown，不要用代码块包裹。"},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.7,
+        "max_tokens": max_tokens,
+    }).encode("utf-8")
+
+    req = _ur.Request(
+        "https://api.deepseek.com/chat/completions",
+        data=req_data,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        method="POST",
+    )
+
+    with _ur.urlopen(req, timeout=30) as resp:
+        body = json.loads(resp.read().decode("utf-8"))
+        return body["choices"][0]["message"]["content"]
 
 
 # =========================== 启动 ===========================
