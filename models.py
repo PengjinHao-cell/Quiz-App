@@ -280,6 +280,8 @@ class VocabWord(db.Model):
     meaning = db.Column(db.String(256), default="")
     source = db.Column(db.String(32), default="unknown")   # "local" / "api"
     context = db.Column(db.Text, default="")                # 出处：来自哪个题库
+    lemma = db.Column(db.String(128), default="")           # 词形还原结果（如 deems → deem）
+    is_phrase = db.Column(db.Boolean, default=False)        # 是否为词组
     review_count = db.Column(db.Integer, default=0)
     last_review_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=beijing_now)
@@ -294,6 +296,8 @@ class VocabWord(db.Model):
             "meaning": self.meaning,
             "source": self.source,
             "context": self.context,
+            "lemma": self.lemma,
+            "is_phrase": self.is_phrase,
             "review_count": self.review_count,
             "last_review_at": self.last_review_at.strftime("%Y-%m-%d %H:%M") if self.last_review_at else "",
             "created_at": self.created_at.strftime("%Y-%m-%d %H:%M") if self.created_at else "",

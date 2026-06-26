@@ -9,6 +9,7 @@
     var menuEl = null;
     var lastLookupWord = "";
     var lastLookupTime = 0;
+    var lastLookupData = null;  // 缓存最近一次查词结果
 
     // ===== 初始化 =====
     if (document.readyState === "loading") {
@@ -28,25 +29,33 @@
     function onDoubleClick(e) {
         if (isInputElement(e.target)) return;
 
-        var word = getSelectedWord();
-        if (!word) return;
+        var sel = getSelectionText();
+        if (!sel) return;
 
-        if (word === lastLookupWord && Date.now() - lastLookupTime < 10000) return;
-        lastLookupWord = word;
+        if (sel.text === lastLookupWord && Date.now() - lastLookupTime < 10000) return;
+        lastLookupWord = sel.text;
         lastLookupTime = Date.now();
 
-        showPopup(e.clientX, e.clientY, word);
-        fetchWord(word);
+        showPopup(e.clientX, e.clientY, sel.text, sel.isPhrase);
+        fetchWord(sel.text);
     }
 
     // ===== 右键菜单 =====
     function onRightClick(e) {
-        var word = getWordAtPoint(e.clientX, e.clientY);
-        if (!word) return;
+        // 优先取拖拽选区（支持词组），再退到光标位置单词
+        var sel = getSelectionText();
+        var target;
+        if (sel) {
+            target = sel;
+        } else {
+            var word = getWordAtPoint(e.clientX, e.clientY);
+            if (!word) return;
+            target = { text: word, isPhrase: false };
+        }
 
         e.preventDefault();
         hidePopup();
-        showMenu(e.clientX, e.clientY, word);
+        showMenu(e.clientX, e.clientY, target);
     }
 
     // ===== 点击其他地方关闭 =====
@@ -65,13 +74,23 @@
         return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
     }
 
-    function getSelectedWord() {
+    function getSelectionText() {
         var sel = window.getSelection();
         if (!sel || sel.isCollapsed) return null;
-        var text = sel.toString().trim();
+        var text = sel.toString().trim().toLowerCase();
+
+        // 单 token 单词（含连字符、撇号）
         if (/^[a-zA-Z]+(?:[-'][a-zA-Z]+)*$/.test(text) && text.length >= 2) {
-            return text.toLowerCase();
+            return { text: text, isPhrase: false };
         }
+
+        // 词组：2-5 词，空格分隔
+        var words = text.split(/\s+/);
+        if (words.length >= 2 && words.length <= 5
+            && /^[a-zA-Z]+(?:[-\s'][a-zA-Z]+)*$/.test(text)) {
+            return { text: text, isPhrase: true };
+        }
+
         return null;
     }
 
@@ -115,25 +134,30 @@
                 return res.json();
             })
             .then(function(data) {
-                updatePopupContent(data.word, data.meaning);
+                lastLookupData = data;
+                updatePopupContent(data);
             })
             .catch(function() {
+                lastLookupData = null;
                 hidePopup();
             });
     }
 
     // ===== 浮窗 =====
-    function showPopup(x, y, word) {
+    function showPopup(x, y, word, isPhrase) {
         hideMenu();
         hidePopup();
+
+        var tagHtml = isPhrase ? '<span class="wl-tag wl-tag-phrase">词组</span>' : '';
 
         popupEl = document.createElement("div");
         popupEl.className = "wl-popup";
         popupEl.innerHTML =
             '<div class="wl-popup-word">' +
-                _esc(word) +
+                _esc(word) + ' ' + tagHtml +
                 '<button class="wl-popup-close" title="关闭">✕</button>' +
             '</div>' +
+            '<div class="wl-popup-meta" style="display:none;"></div>' +
             '<div class="wl-popup-loading">' +
                 '<span class="wl-skeleton wl-skeleton-word"></span>' +
                 '<span class="wl-skeleton wl-skeleton-meaning"></span>' +
@@ -148,14 +172,26 @@
         positionElement(popupEl, x, y);
     }
 
-    function updatePopupContent(word, meaning) {
+    function updatePopupContent(data) {
         if (!popupEl) return;
+        var isPhrase = data.is_phrase;
+        var tagHtml = isPhrase ? '<span class="wl-tag wl-tag-phrase">词组</span>' : '';
+
+        // meta: 词形还原提示
+        var metaHtml = '';
+        if (data.lemma && data.lemma_note) {
+            metaHtml = '<span class="wl-lemma-note">' + _esc(data.lemma_note) + '</span>';
+        } else if (data.lemma) {
+            metaHtml = '<span class="wl-lemma-note">原形: ' + _esc(data.lemma) + '</span>';
+        }
+
         popupEl.innerHTML =
             '<div class="wl-popup-word">' +
-                _esc(word) +
+                _esc(data.word) + ' ' + tagHtml +
                 '<button class="wl-popup-close" title="关闭">✕</button>' +
             '</div>' +
-            '<div class="wl-popup-meaning">' + _esc(meaning) + '</div>';
+            (metaHtml ? '<div class="wl-popup-meta">' + metaHtml + '</div>' : '') +
+            '<div class="wl-popup-meaning">' + _esc(data.meaning) + '</div>';
 
         popupEl.querySelector(".wl-popup-close").addEventListener("click", function(e) {
             e.stopPropagation();
@@ -171,17 +207,19 @@
     }
 
     // ===== 右键菜单 =====
-    function showMenu(x, y, word) {
+    function showMenu(x, y, target) {
         hideMenu();
 
         var isReading = (typeof window.applyHighlight === "function");
+        var word = target.text;
+        var isPhrase = target.isPhrase;
 
         menuEl = document.createElement("div");
         menuEl.className = "wl-menu";
 
         var html = '';
         html += '<div class="wl-menu-item" data-action="lookup">🔍 查词</div>';
-        html += '<div class="wl-menu-item" data-action="copy">📋 复制单词</div>';
+        html += '<div class="wl-menu-item" data-action="copy">📋 ' + (isPhrase ? '复制词组' : '复制单词') + '</div>';
         html += '<div class="wl-menu-item" data-action="vocab">⭐ 加入生词本</div>';
 
         if (isReading) {
@@ -194,7 +232,7 @@
 
         menuEl.querySelectorAll(".wl-menu-item").forEach(function(item) {
             item.addEventListener("click", function() {
-                handleMenuAction(item.getAttribute("data-action"), word);
+                handleMenuAction(item.getAttribute("data-action"), target);
                 hideMenu();
             });
         });
@@ -207,13 +245,17 @@
         if (menuEl) { menuEl.remove(); menuEl = null; }
     }
 
-    function handleMenuAction(action, word) {
+    function handleMenuAction(action, target) {
+        var word = target.text;
+        var isPhrase = target.isPhrase;
+
         switch (action) {
             case "lookup":
                 showPopup(
                     menuEl ? parseInt(menuEl.style.left) : 0,
                     menuEl ? parseInt(menuEl.style.top) : 0,
-                    word
+                    word,
+                    isPhrase
                 );
                 fetchWord(word);
                 break;
@@ -242,17 +284,22 @@
             .then(function(res) { return res.json(); })
             .then(function(data) {
                 if (!data.meaning) throw new Error("no meaning");
+                var payload = {
+                    word: data.word,
+                    meaning: data.meaning,
+                    source: data.source || "unknown",
+                    context: document.title || "",
+                    lemma: data.lemma || "",
+                    is_phrase: data.is_phrase || false,
+                };
+                lastLookupData = data;
+
                 if (_isLoggedIn()) {
                     return fetch("/api/vocab/add", {
                         method: "POST",
                         credentials: "same-origin",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            word: data.word,
-                            meaning: data.meaning,
-                            source: data.source || "unknown",
-                            context: document.title || "",
-                        }),
+                        body: JSON.stringify(payload),
                     }).then(function(res) {
                         if (!res.ok) throw new Error("failed");
                         return res.json();
@@ -265,10 +312,13 @@
                         meaning: data.meaning,
                         source: data.source || "unknown",
                         context: document.title || "",
+                        lemma: data.lemma || "",
+                        is_phrase: data.is_phrase || false,
                         created_at: new Date().toISOString(),
                     };
                     _saveVocabLocal(book);
-                    return { success: true, message: "「" + data.word + "」已加入生词本" };
+                    var label = data.is_phrase ? "词组「" + data.word + "」" : "「" + data.word + "」";
+                    return { success: true, message: label + "已加入生词本" };
                 }
             })
             .then(function(result) {

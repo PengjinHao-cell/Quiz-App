@@ -85,9 +85,14 @@ DATA_FOLDER = os.path.join(BASE_DIR, "data")
 _dict_cache = {}  # {word: meaning} — 服务启动时从 JSON 加载到内存
 
 
+_lemma_rules = {}  # {inflected_form: base_form}
+
+
 def _load_dict_cache():
-    """加载本地英汉词库到内存"""
-    global _dict_cache
+    """加载本地英汉词库和词形还原规则到内存"""
+    global _dict_cache, _lemma_rules
+
+    # 1. 词库
     dict_path = os.path.join(DATA_FOLDER, "dict_cache.json")
     if os.path.exists(dict_path):
         try:
@@ -99,6 +104,17 @@ def _load_dict_cache():
             _dict_cache = {}
     else:
         print("⚠️  未找到词库文件 data/dict_cache.json，查词将仅依赖在线 API")
+
+    # 2. 词形还原规则
+    lemma_path = os.path.join(DATA_FOLDER, "lemma_rules.json")
+    if os.path.exists(lemma_path):
+        try:
+            with open(lemma_path, "r", encoding="utf-8") as f:
+                _lemma_rules = json.load(f)
+            print(f"🔧 词形还原规则加载完成：{len(_lemma_rules)} 条")
+        except Exception as e:
+            print(f"⚠️  词形还原规则加载失败：{e}")
+            _lemma_rules = {}
 
 
 # =========================== 默认管理员 ===========================
@@ -1915,27 +1931,136 @@ def api_admin_delete_user(user_id):
 _dict_api_cache = {}
 
 
-@app.route("/api/dict/<word>")
+# =========================== 词形还原 ===========================
+
+# 后缀还原规则（按优先级排列）
+_LEMMA_SUFFIX_RULES = [
+    ("ies", "y"),      # cries → cry, studies → study
+    ("es", ""),        # boxes → box, catches → catch
+    ("s", ""),         # deems → deem, cats → cat
+    ("ied", "y"),      # tried → try
+    ("ed", ""),        # played → play
+    ("ed", "e"),       # liked → like (try without 'e' first, then with)
+    ("ying", "ie"),    # dying → die, lying → lie
+    ("ing", ""),       # playing → play
+    ("ing", "e"),      # making → make (double-check: making→mak→make)
+    ("er", ""),        # bigger → big
+    ("est", ""),       # fastest → fast
+    ("'s", ""),        # cat's → cat
+]
+
+# 不还原的后缀（派生词，非屈折变形）
+_SKIP_SUFFIXES = ("ly", "ness", "tion", "sion", "ment", "ity", "ship", "dom", "ance", "ence")
+
+
+def _lemmatize(word: str):
+    """
+    词形还原：返回 (原形, 是否还原).
+    规则优先级：不规则映射表 > 后缀规则 > 无匹配
+    """
+    if not word or len(word) < 2:
+        return word, False
+
+    # L2-1: 查不规则映射表（went → go, mice → mouse）
+    if word in _lemma_rules:
+        return _lemma_rules[word], True
+
+    # L2-2: 后缀规则
+    for suffix, replacement in _LEMMA_SUFFIX_RULES:
+        if word.endswith(suffix) and len(word) > len(suffix) + 1:
+            stem = word[:-len(suffix)] + replacement
+
+            # 跳过派生词后缀（exactly → exact 不走这里，留给 L4 处理）
+            if any(stem.endswith(skip) for skip in _SKIP_SUFFIXES):
+                continue
+
+            if len(stem) >= 2:
+                return stem, True
+
+    return word, False
+
+
+# =========================== 查词 API ===========================
+
+
+@app.route("/api/dict/<path:word>")
 def api_dict_lookup(word):
-    """查词：先本地词库，再在线 API 兜底"""
+    """查词：4 级管线
+    L1: 本地词库精确匹配
+    L2: 词形还原 → 本地词库
+    L3: Free Dictionary API
+    L4: -ly 副词退查原形
+    """
     word = word.strip().lower()
     if not word:
         return jsonify({"error": "empty_word"}), 400
 
-    # 1. 查内存词库
+    is_phrase = " " in word
+
+    # --- L1: 精确匹配本地词库 ---
     meaning = _dict_cache.get(word) or _dict_cache.get(word.capitalize())
     if meaning:
-        return jsonify({"word": word, "meaning": meaning, "source": "local"})
+        return jsonify({
+            "word": word,
+            "meaning": meaning,
+            "source": "local",
+            "is_phrase": is_phrase,
+        })
 
-    # 2. 查内存 API 缓存
-    if word in _dict_api_cache:
-        return jsonify({"word": word, "meaning": _dict_api_cache[word], "source": "api"})
+    # --- L2: 词形还原（仅单词，词组不做）---
+    if not is_phrase:
+        lemma, did_lemmatize = _lemmatize(word)
+        if did_lemmatize:
+            meaning = _dict_cache.get(lemma) or _dict_cache.get(lemma.capitalize())
+            if meaning:
+                return jsonify({
+                    "word": word,
+                    "meaning": meaning,
+                    "source": "local",
+                    "lemma": lemma,
+                    "is_phrase": False,
+                })
 
-    # 3. 代理 Free Dictionary API
+    # --- L3: 在线 API（Free Dictionary）---
+    # 查内存 API 缓存
+    cache_key = word
+    if cache_key in _dict_api_cache:
+        return jsonify({
+            "word": word,
+            "meaning": _dict_api_cache[cache_key],
+            "source": "api",
+            "lemma": None,
+            "is_phrase": is_phrase,
+        })
+
     meaning = _fetch_dict_online(word)
     if meaning:
-        _dict_api_cache[word] = meaning
-        return jsonify({"word": word, "meaning": meaning, "source": "api"})
+        _dict_api_cache[cache_key] = meaning
+        return jsonify({
+            "word": word,
+            "meaning": meaning,
+            "source": "api",
+            "lemma": None,
+            "is_phrase": is_phrase,
+        })
+
+    # --- L4: -ly 副词退查原型 ---
+    if not is_phrase and word.endswith("ly") and len(word) > 4:
+        base = word[:-2]  # exactly → exact, quickly → quick
+        base_meaning = (_dict_cache.get(base)
+                        or _dict_cache.get(base.capitalize())
+                        or _fetch_dict_online(base))
+        if base_meaning:
+            if base not in _dict_api_cache:
+                _dict_api_cache[base] = base_meaning
+            return jsonify({
+                "word": word,
+                "meaning": base_meaning,
+                "source": "api",
+                "lemma": base,
+                "lemma_note": f"形容词原形 {base}",
+                "is_phrase": False,
+            })
 
     return jsonify({"error": "not_found"}), 404
 
@@ -1948,7 +2073,7 @@ def _fetch_dict_online(word):
     try:
         # Free Dictionary API
         req = _ur.Request(
-            f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}",
+            f"https://api.dictionaryapi.dev/api/v2/entries/en/{_ur.quote(word)}",
             headers={"User-Agent": "QuizApp/1.0"},
         )
         with _ur.urlopen(req, timeout=3) as resp:
@@ -2002,6 +2127,8 @@ def api_vocab_add():
     word = (data.get("word") or "").strip().lower()
     meaning = (data.get("meaning") or "").strip()
     context = (data.get("context") or "").strip()
+    lemma = (data.get("lemma") or "").strip()
+    is_phrase = data.get("is_phrase", False)
 
     if not word or not meaning:
         return jsonify({"error": "缺少 word 或 meaning"}), 400
@@ -2017,6 +2144,8 @@ def api_vocab_add():
         meaning=meaning,
         source=data.get("source", "unknown"),
         context=context,
+        lemma=lemma,
+        is_phrase=bool(is_phrase),
     )
     db.session.add(vw)
     db.session.commit()

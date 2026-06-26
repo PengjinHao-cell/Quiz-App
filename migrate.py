@@ -23,6 +23,10 @@ MIGRATIONS = {
         "fill_count":     {"sqlite": "INTEGER DEFAULT 0", "pg": "INTEGER DEFAULT 0"},
         "passage_count":  {"sqlite": "INTEGER DEFAULT 0", "pg": "INTEGER DEFAULT 0"},
     },
+    "vocab_words": {
+        "lemma":     {"sqlite": "VARCHAR(128) DEFAULT ''", "pg": "VARCHAR(128) DEFAULT ''"},
+        "is_phrase": {"sqlite": "INTEGER DEFAULT 0", "pg": "BOOLEAN DEFAULT FALSE"},
+    },
 }
 
 if DATABASE_URL.startswith("sqlite"):
@@ -30,6 +34,10 @@ if DATABASE_URL.startswith("sqlite"):
     db_path = DATABASE_URL.replace("sqlite:///", "")
     if not os.path.isabs(db_path):
         base = os.path.dirname(os.path.abspath(__file__))
+        # 如果 db_path 以 base 的 basename 开头，去掉重叠（如 quiz-app/instance/ → instance/）
+        base_name = os.path.basename(base)
+        if db_path.startswith(base_name + os.sep):
+            db_path = db_path[len(base_name) + 1:]
         db_path = os.path.join(base, db_path)
     conn = sqlite3.connect(db_path)
     c = conn.cursor()

@@ -2015,6 +2015,33 @@ body {
     line-height: 1.5;
 }
 
+.wl-popup-meta {
+    font-size: 0.75rem;
+    color: #a0aec0;
+    margin-bottom: 4px;
+}
+
+.wl-lemma-note {
+    font-style: italic;
+}
+
+.wl-tag {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin-left: 4px;
+    line-height: 1.4;
+}
+
+.wl-tag-phrase {
+    background: #ebf8ff;
+    color: #2b6cb0;
+    border: 1px solid #bee3f8;
+}
+
 .wl-popup-loading {
     display: flex;
     align-items: center;
