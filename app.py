@@ -291,7 +291,8 @@ def _run_migration():
                 _existing_vocab = [row[1] for row in _cur2.fetchall()]
                 for _cn in VOCAB_COLS:
                     if _cn not in _existing_vocab:
-                        _sc2.execute(f"ALTER TABLE vocab_words ADD COLUMN {_cn} {'INTEGER DEFAULT 0' if _cn == 'is_phrase' else "VARCHAR(128) DEFAULT ''"}")
+                        _col_type = 'INTEGER DEFAULT 0' if _cn == 'is_phrase' else "VARCHAR(128) DEFAULT ''"
+                        _sc2.execute(f"ALTER TABLE vocab_words ADD COLUMN {_cn} {_col_type}")
                         _sc2.commit()
                         print(f"📦 迁移: 已添加 {_cn} 列 (vocab_words, SQLite)")
                 _sc2.close()
