@@ -107,6 +107,22 @@
         </div>
         {% endif %}
 
+        <!-- 服务暂停公告（所有用户可见） -->
+        <div id="shutdown-banner" class="announcement-banner warning">
+            <span class="announcement-icon">⚠️</span>
+            <span class="announcement-text">
+                <strong>云端服务即将暂停</strong> — Railway 试用期到期后，数据库将被清空。
+                请尽快备份您的数据到本地。
+            </span>
+            {% if current_user.is_authenticated %}
+            <button class="backup-btn" onclick="backupAndDownload(event)" title="下载个人数据">💾 备份我的数据</button>
+            {% endif %}
+            {% if current_user.is_authenticated and current_user.is_admin %}
+            <button class="backup-btn" style="background:#d97706;" onclick="adminExportAll(event)" title="导出全部用户数据">📦 全量导出</button>
+            {% endif %}
+            <button class="announcement-close" onclick="this.parentElement.style.display='none'" title="关闭">✕</button>
+        </div>
+
         <!-- 学习统计（由 renderStats 动态填充） -->
         <section class="stats-section" id="stats-section" style="display:none;"></section>
 

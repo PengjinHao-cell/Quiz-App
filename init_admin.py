@@ -13,10 +13,13 @@ sys.path.insert(0, SCRIPT_DIR)
 from app import app, db
 from models import User
 
-ADMIN_USERNAME = "PuertoJupiter"
-ADMIN_PASSWORD = "REDACTED"
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "PuertoJupiter").strip()
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "").strip()
 
 def main():
+    if not ADMIN_PASSWORD:
+        print("❌ 请先设置环境变量 ADMIN_PASSWORD")
+        sys.exit(1)
     with app.app_context():
         existing = User.query.filter_by(username=ADMIN_USERNAME).first()
         if existing:

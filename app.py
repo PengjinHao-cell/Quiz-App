@@ -122,10 +122,13 @@ def _load_dict_cache():
 def _init_default_admin():
     """从环境变量读取管理员账号密码并创建（如已存在则跳过）
     
-    环境变量未设置时使用硬编码默认值（PuertoJupiter / REDACTED）。
+    环境变量未设置时跳过管理员创建。
     """
     username = os.environ.get("ADMIN_USERNAME", "PuertoJupiter").strip()
-    password = os.environ.get("ADMIN_PASSWORD", "REDACTED").strip()
+    password = os.environ.get("ADMIN_PASSWORD", "").strip()
+    if not password:
+        print("⚠️ 未设置 ADMIN_PASSWORD，跳过管理员自动创建")
+        return
     try:
         existing = User.query.filter_by(username=username).first()
         if existing:
@@ -2248,8 +2251,8 @@ def api_vocab_review():
 def api_admin_export():
     """导出全部数据库数据为 JSON（需 key 参数鉴权）"""
     export_key = request.args.get("key", "")
-    admin_pwd = os.environ.get("ADMIN_PASSWORD", "REDACTED")
-    if export_key != admin_pwd:
+    admin_pwd = os.environ.get("ADMIN_PASSWORD", "")
+    if not admin_pwd or export_key != admin_pwd:
         return jsonify({"error": "需要 ?key=管理员密码"}), 403
     dump = {}
 

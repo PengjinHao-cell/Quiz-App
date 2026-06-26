@@ -736,4 +736,79 @@ function _createModal(html) {
 }
 function _closeModal(el) { el.style.opacity = "0"; setTimeout(() => el.remove(), 200); }
 
+// ========== 数据备份到本地 ==========
+
+/**
+ * 一键备份：收集所有 localStorage + 服务器同步数据，保存到 localStorage 并触发 JSON 下载。
+ * 可在首页公告栏和用户中心侧边栏两处调用。
+ */
+function backupAndDownload(evt) {
+    var btn = evt ? evt.target : document.querySelector(".backup-btn");
+    if (btn) { btn.disabled = true; btn.textContent = "⏳ 备份中..."; }
+
+    var localData = {
+        quizHistory: JSON.parse(localStorage.getItem("quizHistory") || "[]"),
+        quizFavorites: JSON.parse(localStorage.getItem("quizFavorites") || "{}"),
+        quizWrongBook: JSON.parse(localStorage.getItem("quizWrongBook") || "{}"),
+        vocabBook: (function(){
+            try { return JSON.parse(localStorage.getItem("vocabBook") || "{}"); } catch(_) { return {}; }
+        })(),
+        quizSettings: {
+            examDuration: localStorage.getItem("examDuration") || "60",
+            quizLastUser: localStorage.getItem("quizLastUser") || "",
+        },
+    };
+
+    var backup = {
+        exportedAt: new Date().toISOString(),
+        version: "1.5.0",
+        local: localData,
+        server: null,
+    };
+
+    function finishBackup(data) {
+        localStorage.setItem("quizBackup", JSON.stringify(data));
+        var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "quizmaster_backup_" + new Date().toISOString().slice(0, 10) + ".json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        if (btn) { btn.textContent = "✅ 已备份"; btn.classList.add("done"); btn.disabled = true; }
+        if (typeof showToast === "function") {
+            showToast("✅ 数据已备份到本地并下载！", "success");
+        }
+    }
+
+    if (isLoggedIn()) {
+        _syncFetchResult("/api/sync/all", { method: "GET" })
+            .then(function(res) { return res.json(); })
+            .then(function(serverData) {
+                backup.server = serverData;
+                finishBackup(backup);
+            })
+            .catch(function() {
+                finishBackup(backup);
+            });
+    } else {
+        finishBackup(backup);
+    }
+}
+
+/**
+ * 管理员：全量导出所有用户数据
+ * 弹出密码输入框，验证后跳转到导出 API
+ */
+function adminExportAll(evt) {
+    var btn = evt ? evt.target : document.querySelector(".backup-btn[style*='#d97706']");
+    var pwd = prompt("请输入管理员密码以导出全部用户数据：");
+    if (!pwd) return;
+    if (btn) { btn.textContent = "⏳ 导出中..."; btn.disabled = true; }
+    // 直接跳转到导出 API，浏览器自动下载 JSON 文件
+    window.location.href = "/api/admin/export?key=" + encodeURIComponent(pwd);
+}
+
 

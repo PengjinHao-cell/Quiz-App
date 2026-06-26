@@ -159,6 +159,32 @@ body {
 }
 .announcement-close:hover { color: #ef4444; background: #fee2e2; }
 
+/* 警告变体（黄/橙） */
+.announcement-banner.warning {
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+}
+.announcement-banner.warning .announcement-close { color: #d97706; }
+.announcement-banner.warning .announcement-close:hover { color: #b45309; background: #fef3c7; }
+
+.announcement-banner .backup-btn {
+    display: inline-block;
+    padding: 6px 14px;
+    background: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+}
+.announcement-banner .backup-btn:hover { background: #dc2626; }
+.announcement-banner .backup-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.announcement-banner .backup-btn.done { background: #16a34a; }
+
 /* ---------- Header ---------- */
 /* ---------- App 首页 Header（含用户菜单） ---------- */
 .app-header {

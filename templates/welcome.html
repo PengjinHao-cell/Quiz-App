@@ -27,7 +27,12 @@
     </style>
 </head>
 <body>
-    <div class="welcome-card">
+    <!-- 服务暂停公告 -->
+    <div style="position:fixed;top:0;left:0;right:0;z-index:1000;background:#fffbeb;border-bottom:2px solid #fcd34d;padding:10px 20px;display:flex;align-items:center;gap:10px;font-size:0.85rem;color:#92400e;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei','PingFang SC',sans-serif;">
+        <span style="font-size:1.1rem;">⚠️</span>
+        <span style="flex:1;"><strong>云端服务即将暂停</strong> — 登录后可下载备份数据到本地保存。</span>
+    </div>
+    <div class="welcome-card" style="margin-top:30px;">
         <div class="welcome-icon">📝</div>
         <h1 class="welcome-title">{% if lang == 'en' %}Quiz Master{% else %}刷题通{% endif %}</h1>
         <p class="welcome-sub">{% if lang == 'en' %}Smart Quiz Platform{% else %}轻量级智能刷题平台{% endif %}</p>

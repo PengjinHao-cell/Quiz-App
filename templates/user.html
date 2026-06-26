@@ -58,6 +58,7 @@
                 <div class="user-sidebar-divider"></div>
                 <a class="user-sidebar-item" href="#settings" onclick="switchTab('settings')">⚙️ <span>{% if lang == 'en' %}Settings{% else %}设置{% endif %}</span></a>
                 <div class="user-sidebar-divider"></div>
+                <a class="user-sidebar-item" href="#" onclick="backupAndDownload(); return false;" style="color:#d97706;">💾 <span>{% if lang == 'en' %}Backup to Local{% else %}备份数据到本地{% endif %}</span></a>
                 <a class="user-sidebar-item" href="#" onclick="handleRestore(); return false;">☁️ <span>{% if lang == 'en' %}Restore from Cloud{% else %}从云端恢复{% endif %}</span></a>
             </nav>
 
