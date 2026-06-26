@@ -276,6 +276,38 @@ def _run_migration():
             except Exception:
                 pass  # SQLite 用 PRAGMA 方式略过，db.create_all() 会处理
 
+            # v1.5.0: 检查并添加 vocab_words 表的新字段
+            VOCAB_COLS = {
+                "lemma": "VARCHAR(128) DEFAULT ''",
+                "is_phrase": "BOOLEAN DEFAULT FALSE",
+            }
+            if DATABASE_URL.startswith("sqlite"):
+                import sqlite3
+                db_path = DATABASE_URL.replace("sqlite:///", "")
+                if not os.path.isabs(db_path):
+                    db_path = os.path.join(BASE_DIR, db_path)
+                _sc2 = sqlite3.connect(db_path)
+                _cur2 = _sc2.execute("PRAGMA table_info(vocab_words)")
+                _existing_vocab = [row[1] for row in _cur2.fetchall()]
+                for _cn in VOCAB_COLS:
+                    if _cn not in _existing_vocab:
+                        _sc2.execute(f"ALTER TABLE vocab_words ADD COLUMN {_cn} {'INTEGER DEFAULT 0' if _cn == 'is_phrase' else "VARCHAR(128) DEFAULT ''"}")
+                        _sc2.commit()
+                        print(f"📦 迁移: 已添加 {_cn} 列 (vocab_words, SQLite)")
+                _sc2.close()
+            elif DATABASE_URL.startswith("postgresql"):
+                from sqlalchemy import text as _t2
+                with engine.connect() as _c2:
+                    for _cn, _cd in VOCAB_COLS.items():
+                        _r2 = _c2.execute(_t2(
+                            "SELECT column_name FROM information_schema.columns "
+                            "WHERE table_name='vocab_words' AND column_name=:cname"
+                        ), {"cname": _cn})
+                        if _r2.fetchone() is None:
+                            _c2.execute(_t2(f"ALTER TABLE vocab_words ADD COLUMN {_cn} {_cd}"))
+                            _c2.commit()
+                            print(f"📦 迁移: 已添加 {_cn} 列 (vocab_words)")
+
             if os.path.isdir(DATA_FOLDER):
                 imported = 0
                 for fname in os.listdir(DATA_FOLDER):
